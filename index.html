@@ -179,6 +179,54 @@ textarea{resize:vertical;min-height:70px}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--mid);border-radius:3px}
+
+/* ── MOBILE ─────────────────────────────── */
+@media (max-width: 768px) {
+  .shell { flex-direction: column; height: auto; min-height: 100vh; }
+
+  .sidebar { width: 100%; min-width: 0; flex-direction: row; align-items: center; padding: 0; height: 56px; overflow-x: auto; overflow-y: hidden; }
+  .sidebar-logo { padding: 0 16px; border-bottom: none; border-right: 1px solid rgba(255,255,255,.12); white-space: nowrap; height: 56px; display: flex; align-items: center; }
+  .sidebar-logo h1 { font-size: 16px; }
+  .sidebar-logo p { display: none; }
+  .nav { display: flex; flex-direction: row; padding: 0; height: 56px; align-items: center; overflow-x: auto; }
+  .nav-item { padding: 0 14px; height: 56px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 12px; }
+  .nav-item.active { border-left: none; border-bottom-color: var(--warm); }
+  .nav-item .icon { display: none; }
+
+  .main { flex: 1; }
+  .topbar { padding: 12px 16px; }
+  .topbar-title { font-size: 16px; }
+  .topbar-actions .btn { font-size: 12px; padding: 6px 12px; }
+  .content { padding: 16px; }
+
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi { padding: 14px; }
+  .kpi-num { font-size: 28px; }
+
+  .chain-bar { grid-template-columns: repeat(2, 1fr); }
+  .chain-step::after { display: none; }
+
+  .table-wrap { overflow-x: auto; }
+  table { min-width: 600px; }
+
+  .followup-row { flex-wrap: wrap; gap: 8px; }
+  .followup-row > span { min-width: 0 !important; }
+  .followup-row .btn { font-size: 11px !important; padding: 5px 8px !important; }
+
+  .modal { width: 95vw !important; max-height: 95vh; margin: 10px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+
+  .card-body .info-grid { grid-template-columns: 1fr; }
+
+  .config-banner { padding: 10px 16px; font-size: 12px; flex-wrap: wrap; gap: 8px; }
+}
+
+@media (max-width: 400px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .chain-bar { grid-template-columns: 1fr 1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -407,8 +455,8 @@ function copySQL() {
   toast('SQL kopierat!');
 }
 
-let SB_URL = localStorage.getItem('sb_url') || '';
-let SB_KEY = localStorage.getItem('sb_key') || '';
+let SB_URL = 'https://nchrbkeyvwqyswwyxkgn.supabase.co';
+let SB_KEY = 'sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23';
 
 function saveConfig() {
   SB_URL = document.getElementById('s-url').value.trim().replace(/\/$/, '');
@@ -1033,7 +1081,7 @@ function toast(msg) {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-if (SB_URL && SB_KEY) {
+if (true) {
   document.getElementById('config-banner').classList.add('hidden');
   document.getElementById('s-url').value = SB_URL;
   document.getElementById('s-key').value = SB_KEY;
