@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CRM – NIS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
 :root {
   --ink:    #0D0D0D;
   --paper:  #F7F4EF;
@@ -230,6 +232,43 @@ textarea{resize:vertical;min-height:70px}
 </style>
 </head>
 <body>
+
+<div id="login-screen" style="position:fixed;inset:0;background:#F7F4EF;z-index:999;display:flex;align-items:center;justify-content:center">
+  <div style="background:white;padding:28px;border-radius:10px;width:340px;border:1px solid #EDE9E2">
+
+    <h2 style="font-family:'DM Serif Display',serif;margin-bottom:16px">
+      Logga in
+    </h2>
+
+    <input
+      id="login-email"
+      type="email"
+      placeholder="E-post"
+      style="width:100%;margin-bottom:10px"
+    >
+
+    <input
+      id="login-password"
+      type="password"
+      placeholder="Lösenord"
+      style="width:100%;margin-bottom:16px"
+    >
+
+    <button
+      class="btn btn-primary"
+      style="width:100%"
+      onclick="login()"
+    >
+      Logga in
+    </button>
+
+    <p
+      id="login-error"
+      style="color:#B03030;font-size:12px;margin-top:10px"
+    ></p>
+
+  </div>
+</div>
 
 <div class="shell">
   <aside class="sidebar">
@@ -457,6 +496,9 @@ function copySQL() {
 
 let SB_URL = 'https://nchrbkeyvwqyswwyxkgn.supabase.co';
 let SB_KEY = 'sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23';
+
+  let supabase = window.supabase.createClient(SB_URL, SB_KEY);
+  let currentUser = null;
 
 function saveConfig() {
   SB_URL = document.getElementById('s-url').value.trim().replace(/\/$/, '');
