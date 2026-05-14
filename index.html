@@ -1,1037 +1,1815 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM – NIS</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    :root {
-      --ink:#0D0D0D;
-      --paper:#F7F4EF;
-      --cream:#EDE9E2;
-      --mid:#C8C0B4;
-      --accent:#1A3A5C;
-      --warm:#C4622D;
-      --gold:#C49A3C;
-      --green:#2D6A4F;
-      --red:#B03030;
-      --r:6px;
-    }
-
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px}
-    button,input,select,textarea{font-family:'DM Sans',sans-serif}
-
-    .shell{display:flex;height:100vh;overflow:hidden}
-    .sidebar{width:220px;min-width:220px;background:var(--accent);display:flex;flex-direction:column;overflow-y:auto}
-    .sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.12)}
-    .sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:22px;color:#fff}
-    .sidebar-logo p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
-    .nav{padding:16px 0;flex:1}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
-    .nav-item:hover{color:#fff;background:rgba(255,255,255,.07)}
-    .nav-item.active{color:#fff;background:rgba(255,255,255,.1);border-left-color:var(--warm)}
-    .nav-item .icon{font-size:15px;width:20px;text-align:center}
-
-    .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-    .topbar{background:#fff;border-bottom:1px solid var(--cream);padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
-    .topbar-title{font-family:'DM Serif Display',serif;font-size:20px}
-    .topbar-actions{display:flex;gap:10px;align-items:center}
-    .content{flex:1;overflow-y:auto;padding:28px}
-    .view{display:none}
-    .view.active{display:block}
-
-    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:28px}
-    .kpi{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:20px;position:relative;overflow:hidden}
-    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-    .kpi.blue::before{background:var(--accent)}
-    .kpi.warm::before{background:var(--warm)}
-    .kpi.gold::before{background:var(--gold)}
-    .kpi.green::before{background:var(--green)}
-    .kpi.red::before{background:var(--red)}
-    .kpi-num{font-family:'DM Serif Display',serif;font-size:36px}
-    .kpi-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
-
-    .chain-bar{display:grid;grid-template-columns:repeat(4,1fr);border-radius:var(--r);overflow:hidden;margin-bottom:28px;border:1px solid var(--cream)}
-    .chain-step{padding:16px;text-align:center;color:#fff}
-    .chain-step.s1{background:#7B8FA1}
-    .chain-step.s2{background:var(--accent)}
-    .chain-step.s3{background:var(--warm)}
-    .chain-step.s4{background:var(--green)}
-    .chain-num{font-family:'DM Serif Display',serif;font-size:28px}
-    .chain-lbl{font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
-    .section-title{font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:14px}
-
-    .table-wrap{background:#fff;border:1px solid var(--cream);border-radius:var(--r);overflow:hidden}
-    table{width:100%;border-collapse:collapse}
-    th{background:var(--accent);color:#fff;text-align:left;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-    td{padding:10px 14px;border-bottom:1px solid var(--cream);font-size:13px;vertical-align:middle}
-    tr:last-child td{border-bottom:none}
-    tr:hover td{background:var(--paper)}
-
-    .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
-    .badge-aktiv{background:#D4EDDA;color:var(--green)}
-    .badge-prospekt{background:#D6E4F0;color:var(--accent)}
-    .badge-varm{background:#FDF3DC;color:#8A6914}
-    .badge-kund{background:#EAD5F5;color:#6B2F8A}
-    .badge-inaktiv{background:var(--cream);color:#888}
-    .prio-hog{color:var(--red);font-weight:600}
-    .prio-medium{color:var(--gold);font-weight:600}
-    .prio-lag{color:#888}
-    .overdue{color:var(--red);font-weight:600}
-    .today{color:var(--warm);font-weight:600}
-    .soon{color:var(--gold)}
-
-    .btn{padding:8px 18px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
-    .btn-primary{background:var(--accent);color:#fff}
-    .btn-primary:hover{background:#254d7a}
-    .btn-warm{background:var(--warm);color:#fff}
-    .btn-outline{background:#fff;color:var(--ink);border:1px solid var(--mid)}
-    .btn-danger{background:var(--red);color:#fff}
-    .btn-green{background:var(--green);color:#fff}
-    .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-size:15px}
-    .btn-icon:hover{background:var(--cream)}
-
-    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
-    .overlay.open{display:flex}
-    .modal{background:#fff;border-radius:10px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-    .modal-header{padding:22px 24px 16px;border-bottom:1px solid var(--cream);display:flex;align-items:center;justify-content:space-between}
-    .modal-header h2{font-family:'DM Serif Display',serif;font-size:20px}
-    .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#888}
-    .modal-body{padding:20px 24px}
-    .modal-footer{padding:16px 24px;border-top:1px solid var(--cream);display:flex;gap:10px;justify-content:flex-end}
-
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .form-group{display:flex;flex-direction:column;gap:5px}
-    .form-group.full{grid-column:1/-1}
-    label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#666}
-    input,select,textarea{padding:8px 12px;border:1px solid var(--mid);border-radius:var(--r);font-size:13px;color:var(--ink);background:#fff;transition:border .15s}
-    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
-    textarea{resize:vertical;min-height:70px}
-
-    .card-header{background:var(--accent);color:#fff;padding:24px 28px;border-radius:var(--r) var(--r) 0 0}
-    .card-header h2{font-family:'DM Serif Display',serif;font-size:24px}
-    .card-header p{opacity:.7;font-size:13px;margin-top:4px}
-    .card-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-    .card-body{padding:24px 28px}
-    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-    .info-item label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:3px}
-    .info-item span{font-size:14px}
-
-    .log-entry{padding:12px 0;border-bottom:1px solid var(--cream);display:grid;grid-template-columns:90px 110px 1fr;gap:12px}
-    .followup-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-radius:var(--r);margin-bottom:8px;border:1px solid var(--cream)}
-    .followup-info{flex:1}
-    .followup-name{font-weight:600;font-size:13px}
-    .followup-meta{font-size:11px;color:#888;margin-top:2px}
-    .empty{text-align:center;padding:60px 20px;color:#aaa}
-    .empty-icon{font-size:40px;margin-bottom:12px}
-
-    #toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none;max-width:360px}
-    #toast.show{opacity:1}
-
-    #login-screen{position:fixed;inset:0;background:var(--paper);z-index:999;display:flex;align-items:center;justify-content:center}
-    .login-card{background:#fff;padding:28px;border-radius:10px;width:360px;max-width:92vw;border:1px solid var(--cream);box-shadow:0 12px 36px rgba(0,0,0,.08)}
-    .login-card h2{font-family:'DM Serif Display',serif;font-size:30px;margin-bottom:18px}
-    .login-card input{width:100%;margin-bottom:10px}
-    .login-card .btn{width:100%;margin-top:4px}
-    .login-error{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}
-    .login-help{font-size:12px;color:#777;margin-top:14px;line-height:1.5}
-
-    @media (max-width:768px){
-      .shell{flex-direction:column;height:auto;min-height:100vh}
-      .sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:56px;overflow-x:auto;overflow-y:hidden}
-      .sidebar-logo{padding:0 16px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:56px;display:flex;align-items:center}
-      .sidebar-logo h1{font-size:16px}.sidebar-logo p{display:none}
-      .nav{display:flex;flex-direction:row;padding:0;height:56px;align-items:center;overflow-x:auto}
-      .nav-item{padding:0 14px;height:56px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:12px}
-      .nav-item.active{border-left:none;border-bottom-color:var(--warm)}
-      .nav-item .icon{display:none}
-      .topbar{padding:12px 16px}.content{padding:16px}
-      .kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-      .chain-bar{grid-template-columns:repeat(2,1fr)}
-      .table-wrap{overflow-x:auto} table{min-width:700px}
-      .form-grid,.info-grid{grid-template-columns:1fr}
-      .form-group.full{grid-column:1}
-      .modal{width:95vw!important}
-      .followup-row{flex-wrap:wrap;gap:8px}
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM – NIS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+<style>
+:root {
+  --ink:#0D0D0D;
+  --paper:#F7F4EF;
+  --cream:#EDE9E2;
+  --mid:#C8C0B4;
+  --accent:#1A3A5C;
+  --warm:#C4622D;
+  --gold:#C49A3C;
+  --green:#2D6A4F;
+  --red:#B03030;
+  --r:6px
+}
+*,*::before,*::after {
+  box-sizing:border-box;
+  margin:0;
+  padding:0
+}
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  font-size:14px
+}
+button,input,select,textarea {
+  font-family:'DM Sans',sans-serif
+}
+.shell {
+  display:flex;
+  height:100vh;
+  overflow:hidden
+}
+.sidebar {
+  width:220px;
+  min-width:220px;
+  background:var(--accent);
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto
+}
+.sidebar-logo {
+  padding:28px 24px 20px;
+  border-bottom:1px solid rgba(255,255,255,.12)
+}
+.sidebar-logo h1 {
+  font-family:'DM Serif Display',serif;
+  font-size:22px;
+  color:#fff
+}
+.sidebar-logo p {
+  font-size:11px;
+  color:rgba(255,255,255,.5);
+  margin-top:2px
+}
+.nav {
+  padding:16px 0;
+  flex:1
+}
+.nav-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 24px;
+  color:rgba(255,255,255,.65);
+  cursor:pointer;
+  font-size:13px;
+  font-weight:500;
+  transition:all .15s;
+  border-left:3px solid transparent
+}
+.nav-item:hover {
+  color:#fff;
+  background:rgba(255,255,255,.07)
+}
+.nav-item.active {
+  color:#fff;
+  background:rgba(255,255,255,.1);
+  border-left-color:var(--warm)
+}
+.nav-item .icon {
+  font-size:15px;
+  width:20px;
+  text-align:center
+}
+.main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden
+}
+.topbar {
+  background:#fff;
+  border-bottom:1px solid var(--cream);
+  padding:14px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between
+}
+.topbar-title {
+  font-family:'DM Serif Display',serif;
+  font-size:20px
+}
+.topbar-actions {
+  display:flex;
+  gap:10px;
+  align-items:center
+}
+.content {
+  flex:1;
+  overflow-y:auto;
+  padding:28px
+}
+.view {
+  display:none
+}
+.view.active {
+  display:block
+}
+.kpi-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:16px;
+  margin-bottom:28px
+}
+.kpi {
+  background:#fff;
+  border:1px solid var(--cream);
+  border-radius:var(--r);
+  padding:20px;
+  position:relative;
+  overflow:hidden
+}
+.kpi::before {
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:3px
+}
+.kpi.blue::before {
+  background:var(--accent)
+}
+.kpi.warm::before {
+  background:var(--warm)
+}
+.kpi.gold::before {
+  background:var(--gold)
+}
+.kpi.green::before {
+  background:var(--green)
+}
+.kpi.red::before {
+  background:var(--red)
+}
+.kpi-num {
+  font-family:'DM Serif Display',serif;
+  font-size:36px
+}
+.kpi-label {
+  font-size:11px;
+  color:#888;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  margin-top:4px
+}
+.chain-bar {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  border-radius:var(--r);
+  overflow:hidden;
+  margin-bottom:28px;
+  border:1px solid var(--cream)
+}
+.chain-step {
+  padding:16px;
+  text-align:center;
+  color:#fff
+}
+.chain-step.s1 {
+  background:#7B8FA1
+}
+.chain-step.s2 {
+  background:var(--accent)
+}
+.chain-step.s3 {
+  background:var(--warm)
+}
+.chain-step.s4 {
+  background:var(--green)
+}
+.chain-num {
+  font-family:'DM Serif Display',serif;
+  font-size:28px
+}
+.chain-lbl {
+  font-size:10px;
+  opacity:.8;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  margin-top:2px
+}
+.section-title {
+  font-family:'DM Serif Display',serif;
+  font-size:17px;
+  margin-bottom:14px
+}
+.table-wrap {
+  background:#fff;
+  border:1px solid var(--cream);
+  border-radius:var(--r);
+  overflow:hidden
+}
+table {
+  width:100%;
+  border-collapse:collapse
+}
+th {
+  background:var(--accent);
+  color:#fff;
+  text-align:left;
+  padding:10px 14px;
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.6px
+}
+td {
+  padding:10px 14px;
+  border-bottom:1px solid var(--cream);
+  font-size:13px;
+  vertical-align:middle
+}
+tr:last-child td {
+  border-bottom:none
+}
+tr:hover td {
+  background:var(--paper)
+}
+.badge {
+  display:inline-block;
+  padding:2px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:500
+}
+.badge-aktiv {
+  background:#D4EDDA;
+  color:var(--green)
+}
+.badge-prospekt {
+  background:#D6E4F0;
+  color:var(--accent)
+}
+.badge-varm {
+  background:#FDF3DC;
+  color:#8A6914
+}
+.badge-kund {
+  background:#EAD5F5;
+  color:#6B2F8A
+}
+.badge-inaktiv {
+  background:var(--cream);
+  color:#888
+}
+.prio-hog {
+  color:var(--red);
+  font-weight:600
+}
+.prio-medium {
+  color:var(--gold);
+  font-weight:600
+}
+.prio-lag {
+  color:#888
+}
+.overdue {
+  color:var(--red);
+  font-weight:600
+}
+.today {
+  color:var(--warm);
+  font-weight:600
+}
+.soon {
+  color:var(--gold)
+}
+.btn {
+  padding:8px 18px;
+  border-radius:var(--r);
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  border:none;
+  transition:all .15s
+}
+.btn-primary {
+  background:var(--accent);
+  color:#fff
+}
+.btn-primary:hover {
+  background:#254d7a
+}
+.btn-warm {
+  background:var(--warm);
+  color:#fff
+}
+.btn-outline {
+  background:#fff;
+  color:var(--ink);
+  border:1px solid var(--mid)
+}
+.btn-danger {
+  background:var(--red);
+  color:#fff
+}
+.btn-green {
+  background:var(--green);
+  color:#fff
+}
+.btn-icon {
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:4px 8px;
+  border-radius:4px;
+  font-size:15px
+}
+.btn-icon:hover {
+  background:var(--cream)
+}
+.overlay {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:100;
+  align-items:center;
+  justify-content:center
+}
+.overlay.open {
+  display:flex
+}
+.modal {
+  background:#fff;
+  border-radius:10px;
+  width:560px;
+  max-width:95vw;
+  max-height:90vh;
+  overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.25)
+}
+.modal-header {
+  padding:22px 24px 16px;
+  border-bottom:1px solid var(--cream);
+  display:flex;
+  align-items:center;
+  justify-content:space-between
+}
+.modal-header h2 {
+  font-family:'DM Serif Display',serif;
+  font-size:20px
+}
+.modal-close {
+  background:none;
+  border:none;
+  font-size:22px;
+  cursor:pointer;
+  color:#888
+}
+.modal-body {
+  padding:20px 24px
+}
+.modal-footer {
+  padding:16px 24px;
+  border-top:1px solid var(--cream);
+  display:flex;
+  gap:10px;
+  justify-content:flex-end
+}
+.form-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px
+}
+.form-group {
+  display:flex;
+  flex-direction:column;
+  gap:5px
+}
+.form-group.full {
+  grid-column:1/-1
+}
+label {
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  color:#666
+}
+input,select,textarea {
+  padding:8px 12px;
+  border:1px solid var(--mid);
+  border-radius:var(--r);
+  font-size:13px;
+  color:var(--ink);
+  background:#fff;
+  transition:border .15s
+}
+input:focus,select:focus,textarea:focus {
+  outline:none;
+  border-color:var(--accent)
+}
+textarea {
+  resize:vertical;
+  min-height:70px
+}
+.card-header {
+  background:var(--accent);
+  color:#fff;
+  padding:24px 28px;
+  border-radius:var(--r) var(--r) 0 0
+}
+.card-header h2 {
+  font-family:'DM Serif Display',serif;
+  font-size:24px
+}
+.card-header p {
+  opacity:.7;
+  font-size:13px;
+  margin-top:4px
+}
+.card-badges {
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+  flex-wrap:wrap
+}
+.card-body {
+  padding:24px 28px
+}
+.info-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:20px
+}
+.info-item label {
+  font-size:10px;
+  color:#999;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  display:block;
+  margin-bottom:3px
+}
+.info-item span {
+  font-size:14px
+}
+.log-entry {
+  padding:12px 0;
+  border-bottom:1px solid var(--cream);
+  display:grid;
+  grid-template-columns:90px 110px 1fr;
+  gap:12px
+}
+.followup-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px;
+  background:#fff;
+  border-radius:var(--r);
+  margin-bottom:8px;
+  border:1px solid var(--cream)
+}
+.followup-info {
+  flex:1
+}
+.followup-name {
+  font-weight:600;
+  font-size:13px
+}
+.followup-meta {
+  font-size:11px;
+  color:#888;
+  margin-top:2px
+}
+.empty {
+  text-align:center;
+  padding:60px 20px;
+  color:#aaa
+}
+.empty-icon {
+  font-size:40px;
+  margin-bottom:12px
+}
+#toast {
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  background:var(--ink);
+  color:#fff;
+  padding:12px 20px;
+  border-radius:var(--r);
+  font-size:13px;
+  opacity:0;
+  transition:opacity .3s;
+  z-index:200;
+  pointer-events:none;
+  max-width:360px
+}
+#toast.show {
+  opacity:1
+}
+#login-screen {
+  position:fixed;
+  inset:0;
+  background:var(--paper);
+  z-index:999;
+  display:flex;
+  align-items:center;
+  justify-content:center
+}
+.login-card {
+  background:#fff;
+  padding:28px;
+  border-radius:10px;
+  width:380px;
+  max-width:92vw;
+  border:1px solid var(--cream);
+  box-shadow:0 12px 36px rgba(0,0,0,.08)
+}
+.login-card h2 {
+  font-family:'DM Serif Display',serif;
+  font-size:30px;
+  margin-bottom:18px
+}
+.login-card input {
+  width:100%;
+  margin-bottom:10px
+}
+.login-card .btn {
+  width:100%;
+  margin-top:4px
+}
+.login-error {
+  color:var(--red);
+  font-size:12px;
+  margin-top:10px;
+  min-height:16px
+}
+.login-help {
+  font-size:12px;
+  color:#777;
+  margin-top:14px;
+  line-height:1.5
+}
+.privacy-note {
+  background:#fff7e8;
+  border:1px solid #f1d3a6;
+  color:#5f4212;
+  border-radius:var(--r);
+  padding:12px 14px;
+  font-size:12px;
+  line-height:1.45;
+  margin-bottom:14px
+}
+@media(max-width:768px) {
+  .shell {
+  flex-direction:column;
+  height:auto;
+  min-height:100vh
+}
+.sidebar {
+  width:100%;
+  min-width:0;
+  flex-direction:row;
+  align-items:center;
+  height:56px;
+  overflow-x:auto;
+  overflow-y:hidden
+}
+.sidebar-logo {
+  padding:0 16px;
+  border-bottom:none;
+  border-right:1px solid rgba(255,255,255,.12);
+  white-space:nowrap;
+  height:56px;
+  display:flex;
+  align-items:center
+}
+.sidebar-logo h1 {
+  font-size:16px
+}
+.sidebar-logo p {
+  display:none
+}
+.nav {
+  display:flex;
+  flex-direction:row;
+  padding:0;
+  height:56px;
+  align-items:center;
+  overflow-x:auto
+}
+.nav-item {
+  padding:0 14px;
+  height:56px;
+  border-left:none;
+  border-bottom:3px solid transparent;
+  white-space:nowrap;
+  font-size:12px
+}
+.nav-item.active {
+  border-left:none;
+  border-bottom-color:var(--warm)
+}
+.nav-item .icon {
+  display:none
+}
+.topbar {
+  padding:12px 16px
+}
+.content {
+  padding:16px
+}
+.kpi-grid {
+  grid-template-columns:repeat(2,1fr);
+  gap:10px
+}
+.chain-bar {
+  grid-template-columns:repeat(2,1fr)
+}
+.table-wrap {
+  overflow-x:auto
+}
+table {
+  min-width:700px
+}
+.form-grid,.info-grid {
+  grid-template-columns:1fr
+}
+.form-group.full {
+  grid-column:1
+}
+.modal {
+  width:95vw!important
+}
+.followup-row {
+  flex-wrap:wrap;
+  gap:8px
+}
+}
+</style>
 </head>
-
 <body>
-  <div id="login-screen">
-    <div class="login-card">
-      <h2>Logga in</h2>
-      <input id="login-email" type="email" placeholder="E-post">
-      <input id="login-password" type="password" placeholder="Lösenord">
-      <button class="btn btn-primary" onclick="login()">Logga in</button>
-      <p id="login-error" class="login-error"></p>
-      <p class="login-help">Användaren måste finnas under Supabase → Authentication → Users.</p>
-    </div>
+<div id="login-screen">
+  <div class="login-card">
+    <h2>Logga in</h2>
+    <input id="login-email" type="email" placeholder="E-post">
+    <input id="login-password" type="password" placeholder="Lösenord">
+    <button class="btn btn-primary" onclick="login()">Logga in</button>
+    <p id="login-error" class="login-error">
+</p>
+    <p class="login-help">Datan visas bara för inloggad användare via Supabase Auth och RLS.</p>
   </div>
-
-  <div class="shell">
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <h1>CRM</h1>
-        <p>NIS</p>
-      </div>
-      <nav class="nav">
-        <div class="nav-item active" onclick="showView('dashboard')"><span class="icon">◈</span>Dashboard</div>
-        <div class="nav-item" onclick="showView('contacts')"><span class="icon">◉</span>Kontakter</div>
-        <div class="nav-item" onclick="showView('followups')"><span class="icon">◷</span>Uppföljningar</div>
-        <div class="nav-item" onclick="showView('log')"><span class="icon">◫</span>Aktivitetslogg</div>
-        <div class="nav-item" onclick="showView('settings')" style="margin-top:auto"><span class="icon">⚙</span>Inställningar</div>
-      </nav>
-    </aside>
-
-    <div class="main">
-      <div class="topbar">
-        <span class="topbar-title" id="topbar-title">Dashboard</span>
-        <div class="topbar-actions" id="topbar-actions"></div>
-      </div>
-
-      <div class="content">
-        <div class="view active" id="view-dashboard">
-          <div class="kpi-grid" id="kpi-grid"></div>
-          <p class="section-title">Relationskedja</p>
-          <div class="chain-bar" id="chain-bar"></div>
-          <p class="section-title">Kommande uppföljningar</p>
-          <div id="dash-followups"></div>
-        </div>
-
-        <div class="view" id="view-contacts">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Namn</th><th>Företag</th><th>Roll</th><th>Status</th>
-                  <th>Senaste kontakt</th><th>Nästa uppföljning</th><th>Prioritet</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="contacts-tbody"></tbody>
-            </table>
+</div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+<h1>CRM</h1>
+<p>NIS</p>
+</div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="showView('dashboard')">
+<span class="icon">◈</span>Dashboard</div>
+      <div class="nav-item" onclick="showView('contacts')">
+<span class="icon">◉</span>Kontakter</div>
+      <div class="nav-item" onclick="showView('followups')">
+<span class="icon">◷</span>Uppföljningar</div>
+      <div class="nav-item" onclick="showView('log')">
+<span class="icon">◫</span>Aktivitetslogg</div>
+      <div class="nav-item" onclick="showView('settings')" style="margin-top:auto">
+<span class="icon">⚙</span>Inställningar</div>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+<span class="topbar-title" id="topbar-title">Dashboard</span>
+<div class="topbar-actions" id="topbar-actions">
+</div>
+</div>
+    <div class="content">
+      <div class="view active" id="view-dashboard">
+<div class="kpi-grid" id="kpi-grid">
+</div>
+<p class="section-title">Relationskedja</p>
+<div class="chain-bar" id="chain-bar">
+</div>
+<p class="section-title">Kommande uppföljningar</p>
+<div id="dash-followups">
+</div>
+</div>
+      <div class="view" id="view-contacts">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Namn</th>
+<th>Företag</th>
+<th>Roll</th>
+<th>Status</th>
+<th>Senaste kontakt</th>
+<th>Nästa uppföljning</th>
+<th>Prioritet</th>
+<th>
+</th>
+</tr>
+</thead>
+<tbody id="contacts-tbody">
+</tbody>
+</table>
+</div>
+</div>
+      <div class="view" id="view-followups">
+<div id="followups-list">
+</div>
+</div>
+      <div class="view" id="view-log">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Datum</th>
+<th>Kontakt</th>
+<th>Typ</th>
+<th>Anteckning</th>
+<th>Nästa steg</th>
+</tr>
+</thead>
+<tbody id="log-tbody">
+</tbody>
+</table>
+</div>
+</div>
+      <div class="view" id="view-settings">
+        <div style="max-width:720px">
+          <p class="section-title">Säkerhet och GDPR</p>
+          <div class="privacy-note">Undvik känsliga personuppgifter i anteckningar, till exempel hälsa, religion, politiska åsikter eller personnummer. Radera kontakter som inte längre behövs.</div>
+          <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:24px;margin-bottom:20px">
+            <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:16px">Appen använder Supabase Auth och Row Level Security. Varje rad sparas med <code>user_id</code> och kan endast läsas/ändras av samma inloggade användare.</p>
+            <button class="btn btn-danger" onclick="logout()">Logga ut</button>
           </div>
+          <p class="section-title">SQL för Supabase</p>
+          <div style="background:#0D0D0D;border-radius:var(--r);padding:20px;font-family:monospace;font-size:12px;color:#98C379;white-space:pre-wrap;line-height:1.6;overflow-x:auto" id="sql-display">
+</div>
+          <button class="btn btn-outline" style="margin-top:10px" onclick="copySQL()">Kopiera SQL</button>
         </div>
-
-        <div class="view" id="view-followups">
-          <div id="followups-list"></div>
-        </div>
-
-        <div class="view" id="view-log">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Datum</th><th>Kontakt</th><th>Typ</th><th>Anteckning</th><th>Nästa steg</th></tr>
-              </thead>
-              <tbody id="log-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="view" id="view-settings">
-          <div style="max-width:680px">
-            <p class="section-title">Inställningar</p>
-            <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:24px;margin-bottom:20px">
-              <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:16px">
-                Inloggningen använder Supabase Auth. Datan skyddas av Row Level Security via <code>user_id</code>.
-              </p>
-              <button class="btn btn-danger" onclick="logout()">Logga ut</button>
-            </div>
-
-            <p class="section-title">SQL för Supabase</p>
-            <div style="background:#0D0D0D;border-radius:var(--r);padding:20px;font-family:monospace;font-size:12px;color:#98C379;white-space:pre-wrap;line-height:1.6;overflow-x:auto" id="sql-display"></div>
-            <button class="btn btn-outline" style="margin-top:10px" onclick="copySQL()">Kopiera SQL</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" id="modal-card">
-    <div class="modal" style="width:680px">
-      <div id="card-content"></div>
-    </div>
-  </div>
-
-  <div class="overlay" id="modal-contact">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="contact-modal-title">Ny kontakt</h2>
-        <button class="modal-close" onclick="closeModal('modal-contact')">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="form-group"><label>Förnamn *</label><input id="f-fornamn"></div>
-          <div class="form-group"><label>Efternamn *</label><input id="f-efternamn"></div>
-          <div class="form-group"><label>Företag</label><input id="f-foretag"></div>
-          <div class="form-group"><label>Roll</label><input id="f-roll"></div>
-          <div class="form-group"><label>Bransch</label><input id="f-bransch"></div>
-          <div class="form-group"><label>Stad</label><input id="f-stad"></div>
-          <div class="form-group"><label>E-post</label><input id="f-epost" type="email"></div>
-          <div class="form-group"><label>Telefon</label><input id="f-telefon"></div>
-          <div class="form-group"><label>LinkedIn</label><input id="f-linkedin"></div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="f-status"><option>Prospekt</option><option>Aktiv</option><option>Varm lead</option><option>Kund</option><option>Inaktiv</option></select>
-          </div>
-          <div class="form-group">
-            <label>Prioritet</label>
-            <select id="f-prioritet"><option>Hög</option><option>Medium</option><option>Låg</option></select>
-          </div>
-          <div class="form-group"><label>Ansvarig</label><input id="f-ansvarig"></div>
-          <div class="form-group full"><label>Anteckningar</label><textarea id="f-anteckningar"></textarea></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('modal-contact')">Avbryt</button>
-        <button class="btn btn-primary" id="save-contact-btn" onclick="saveContact()">Spara kontakt</button>
       </div>
     </div>
   </div>
-
-  <div class="overlay" id="modal-log">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="log-modal-title">Logga aktivitet</h2>
-        <button class="modal-close" onclick="closeModal('modal-log')">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Kontakttyp *</label>
-            <select id="l-typ"><option>Möte</option><option>Telefonsamtal</option><option>LinkedIn</option><option>E-post</option><option>Lunch</option></select>
-          </div>
-          <div class="form-group"><label>Datum</label><input id="l-datum" type="date"></div>
-          <div class="form-group full"><label>Anteckning</label><textarea id="l-anteckning"></textarea></div>
-          <div class="form-group full"><label>Nästa steg</label><input id="l-nastasteg"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('modal-log')">Avbryt</button>
-        <button class="btn btn-warm" onclick="saveLogEntry()">Spara aktivitet</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" id="modal-confirm">
-    <div class="modal" style="width:400px">
-      <div class="modal-header">
-        <h2>Bekräfta borttagning</h2>
-        <button class="modal-close" onclick="closeModal('modal-confirm')">×</button>
-      </div>
-      <div class="modal-body">
-        <p id="confirm-text" style="font-size:14px;line-height:1.6"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Avbryt</button>
-        <button class="btn btn-danger" id="confirm-btn">Ta bort</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast"></div>
-
+</div>
+<div class="overlay" id="modal-card">
+<div class="modal" style="width:680px">
+<div id="card-content">
+</div>
+</div>
+</div>
+<div class="overlay" id="modal-contact">
+<div class="modal">
+<div class="modal-header">
+<h2 id="contact-modal-title">Ny kontakt</h2>
+<button class="modal-close" onclick="closeModal('modal-contact')">×</button>
+</div>
+<div class="modal-body">
+<div class="privacy-note">Skriv bara information som är relevant för affärsrelationen. Undvik känsliga uppgifter.</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Förnamn *</label>
+<input id="f-fornamn">
+</div>
+<div class="form-group">
+<label>Efternamn *</label>
+<input id="f-efternamn">
+</div>
+<div class="form-group">
+<label>Företag</label>
+<input id="f-foretag">
+</div>
+<div class="form-group">
+<label>Roll</label>
+<input id="f-roll">
+</div>
+<div class="form-group">
+<label>Bransch</label>
+<input id="f-bransch">
+</div>
+<div class="form-group">
+<label>Stad</label>
+<input id="f-stad">
+</div>
+<div class="form-group">
+<label>E-post</label>
+<input id="f-epost" type="email">
+</div>
+<div class="form-group">
+<label>Telefon</label>
+<input id="f-telefon">
+</div>
+<div class="form-group">
+<label>LinkedIn</label>
+<input id="f-linkedin">
+</div>
+<div class="form-group">
+<label>Status</label>
+<select id="f-status">
+<option>Prospekt</option>
+<option>Aktiv</option>
+<option>Varm lead</option>
+<option>Kund</option>
+<option>Inaktiv</option>
+</select>
+</div>
+<div class="form-group">
+<label>Prioritet</label>
+<select id="f-prioritet">
+<option>Hög</option>
+<option>Medium</option>
+<option>Låg</option>
+</select>
+</div>
+<div class="form-group">
+<label>Ansvarig</label>
+<input id="f-ansvarig">
+</div>
+<div class="form-group full">
+<label>Anteckningar</label>
+<textarea id="f-anteckningar">
+</textarea>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('modal-contact')">Avbryt</button>
+<button class="btn btn-primary" id="save-contact-btn" onclick="saveContact()">Spara kontakt</button>
+</div>
+</div>
+</div>
+<div class="overlay" id="modal-log">
+<div class="modal">
+<div class="modal-header">
+<h2 id="log-modal-title">Logga aktivitet</h2>
+<button class="modal-close" onclick="closeModal('modal-log')">×</button>
+</div>
+<div class="modal-body">
+<div class="privacy-note">Logga bara nödvändiga affärsanteckningar. Undvik känsliga personuppgifter.</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Kontakttyp *</label>
+<select id="l-typ">
+<option>Möte</option>
+<option>Telefonsamtal</option>
+<option>LinkedIn</option>
+<option>E-post</option>
+<option>Lunch</option>
+</select>
+</div>
+<div class="form-group">
+<label>Datum</label>
+<input id="l-datum" type="date">
+</div>
+<div class="form-group full">
+<label>Anteckning</label>
+<textarea id="l-anteckning">
+</textarea>
+</div>
+<div class="form-group full">
+<label>Nästa steg</label>
+<input id="l-nastasteg">
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('modal-log')">Avbryt</button>
+<button class="btn btn-warm" onclick="saveLogEntry()">Spara aktivitet</button>
+</div>
+</div>
+</div>
+<div class="overlay" id="modal-confirm">
+<div class="modal" style="width:400px">
+<div class="modal-header">
+<h2>Bekräfta borttagning</h2>
+<button class="modal-close" onclick="closeModal('modal-confirm')">×</button>
+</div>
+<div class="modal-body">
+<p id="confirm-text" style="font-size:14px;line-height:1.6">
+</p>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeModal('modal-confirm')">Avbryt</button>
+<button class="btn btn-danger" id="confirm-btn">Ta bort</button>
+</div>
+</div>
+</div>
+<div id="toast">
+</div>
 <script>
-const SB_URL = 'https://nchrbkeyvwqyswwyxkgn.supabase.co';
-const SB_KEY = 'sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23';
-
-const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
-
-let currentUser = null;
-let contacts = [];
-let actLog = [];
-let editingId = null;
-let logContactId = null;
-let currentView = 'dashboard';
-
-const SQL = `create table if not exists contacts (
-  id uuid default gen_random_uuid() primary key,
-  created_at timestamptz default now(),
-  user_id uuid references auth.users(id) on delete cascade,
-  fornamn text not null,
-  efternamn text not null,
-  foretag text,
-  roll text,
-  bransch text,
-  stad text,
-  epost text,
-  telefon text,
-  linkedin text,
-  status text default 'Prospekt',
-  prioritet text default 'Medium',
-  ansvarig text,
-  anteckningar text,
-  senast_typ text,
-  senast_kontakt date,
-  nasta_foljup date
+const SB_URL='https://nchrbkeyvwqyswwyxkgn.supabase.co';
+const SB_KEY='sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23';
+const supabaseClient=window.supabase.createClient(SB_URL,SB_KEY);
+let currentUser=null,contacts=[],actLog=[],editingId=null,logContactId=null,currentView='dashboard';
+const SQL=`-- Kör detta i Supabase SQL Editor innan du använder appen.
+create table if not exists contacts (
+id uuid default gen_random_uuid() primary key,
+created_at timestamptz default now(),
+user_id uuid not null references auth.users(id) on delete cascade,
+fornamn text not null,
+efternamn text not null,
+foretag text,
+roll text,
+bransch text,
+stad text,
+epost text,
+telefon text,
+linkedin text,
+status text default 'Prospekt',
+prioritet text default 'Medium',
+ansvarig text,
+anteckningar text,
+senast_typ text,
+senast_kontakt date,
+nasta_foljup date
 );
-
 create table if not exists activity_log (
-  id uuid default gen_random_uuid() primary key,
-  created_at timestamptz default now(),
-  user_id uuid references auth.users(id) on delete cascade,
-  contact_id uuid references contacts(id) on delete cascade,
-  kontakt_namn text,
-  foretag text,
-  typ text,
-  datum date,
-  anteckning text,
-  nasta_steg text
+id uuid default gen_random_uuid() primary key,
+created_at timestamptz default now(),
+user_id uuid not null references auth.users(id) on delete cascade,
+contact_id uuid references contacts(id) on delete cascade,
+kontakt_namn text,
+foretag text,
+typ text,
+datum date,
+anteckning text,
+nasta_steg text
 );
-
 alter table contacts add column if not exists user_id uuid references auth.users(id) on delete cascade;
 alter table activity_log add column if not exists user_id uuid references auth.users(id) on delete cascade;
-
+-- Lås gamla rader utan ägare tills de manuellt tilldelas rätt user_id.
+alter table contacts alter column user_id set not null;
+alter table activity_log alter column user_id set not null;
 alter table contacts enable row level security;
 alter table activity_log enable row level security;
-
 drop policy if exists "Allow all" on contacts;
 drop policy if exists "Allow all" on activity_log;
-drop policy if exists "Own contacts only" on contacts;
-drop policy if exists "Own activity only" on activity_log;
-
-create policy "Own contacts only"
-on contacts for all
-to authenticated
+drop policy if exists "Own contacts select" on contacts;
+drop policy if exists "Own contacts insert" on contacts;
+drop policy if exists "Own contacts update" on contacts;
+drop policy if exists "Own contacts delete" on contacts;
+drop policy if exists "Own activity select" on activity_log;
+drop policy if exists "Own activity insert" on activity_log;
+drop policy if exists "Own activity update" on activity_log;
+drop policy if exists "Own activity delete" on activity_log;
+create policy "Own contacts select"
+on contacts for select to authenticated
+using (auth.uid() = user_id);
+create policy "Own contacts insert"
+on contacts for insert to authenticated
+with check (auth.uid() = user_id);
+create policy "Own contacts update"
+on contacts for update to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
-
-create policy "Own activity only"
-on activity_log for all
-to authenticated
+create policy "Own contacts delete"
+on contacts for delete to authenticated
+using (auth.uid() = user_id);
+create policy "Own activity select"
+on activity_log for select to authenticated
+using (auth.uid() = user_id);
+create policy "Own activity insert"
+on activity_log for insert to authenticated
+with check (auth.uid() = user_id);
+create policy "Own activity update"
+on activity_log for update to authenticated
 using (auth.uid() = user_id)
-with check (auth.uid() = user_id);`;
-
-const KEDJA = {
-  '':{next:'LinkedIn',steg:'Koppla på LinkedIn eller skicka intro-mail',dagar:0},
-  'Inget':{next:'LinkedIn',steg:'Koppla på LinkedIn eller skicka intro-mail',dagar:0},
-  'LinkedIn':{next:'Telefonsamtal',steg:'Boka telefonsamtal (20 min)',dagar:14},
-  'E-post':{next:'Telefonsamtal',steg:'Boka telefonsamtal (20 min)',dagar:7},
-  'Telefonsamtal':{next:'Lunch',steg:'Bjud in på lunch (90 min)',dagar:5},
-  'Lunch':{next:'Möte',steg:'Aktivt samarbete – offert eller uppföljning',dagar:30},
-  'Möte':{next:'Möte',steg:'Fortsätt relationen',dagar:3}
-};
-
-const viewTitles = {
-  dashboard:'Dashboard',
-  contacts:'Kontakter',
-  followups:'Uppföljningar',
-  log:'Aktivitetslogg',
-  settings:'Inställningar'
-};
-
-function getKedja(t){return KEDJA[t] || KEDJA[''];}
-function kedjaLevel(t){return {'':0,'Inget':0,'LinkedIn':1,'E-post':1,'Telefonsamtal':2,'Lunch':3,'Möte':4}[t] || 0;}
-
-function calcNextDate(typ, fromDate) {
-  const k = getKedja(typ);
-  if (!k.dagar) return null;
-  const d = new Date(fromDate || new Date());
-  d.setDate(d.getDate() + k.dagar);
-  return d.toISOString().split('T')[0];
+with check (auth.uid() = user_id);
+create policy "Own activity delete"
+on activity_log for delete to authenticated
+using (auth.uid() = user_id);
+`;
+const KEDJA={
+  '':{
+    next:'LinkedIn',steg:'Koppla på LinkedIn eller skicka intro-mail',dagar:0
+  }
+  ,'Inget':{
+    next:'LinkedIn',steg:'Koppla på LinkedIn eller skicka intro-mail',dagar:0
+  }
+  ,'LinkedIn':{
+    next:'Telefonsamtal',steg:'Boka telefonsamtal (20 min)',dagar:14
+  }
+  ,'E-post':{
+    next:'Telefonsamtal',steg:'Boka telefonsamtal (20 min)',dagar:7
+  }
+  ,'Telefonsamtal':{
+    next:'Lunch',steg:'Bjud in på lunch (90 min)',dagar:5
+  }
+  ,'Lunch':{
+    next:'Möte',steg:'Aktivt samarbete – offert eller uppföljning',dagar:30
+  }
+  ,'Möte':{
+    next:'Möte',steg:'Fortsätt relationen',dagar:3
+  }
 }
-
-function esc(value) {
-  return String(value ?? '').replace(/[&<>"']/g, m => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#039;'
-  }[m]));
+;
+const viewTitles={
+  dashboard:'Dashboard',contacts:'Kontakter',followups:'Uppföljningar',log:'Aktivitetslogg',settings:'Inställningar'
 }
-
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
+;
+function getKedja(t){
+  return KEDJA[t]||KEDJA['']
+}
+function kedjaLevel(t){
+  return {
+    '':0,'Inget':0,'LinkedIn':1,'E-post':1,'Telefonsamtal':2,'Lunch':3,'Möte':4
+  }
+  [t]||0
+}
+function calcNextDate(typ,fromDate){
+  const k=getKedja(typ);
+  if(!k.dagar)return null;
+  const d=new Date(fromDate||new Date());
+  d.setDate(d.getDate()+k.dagar);
+  return d.toISOString().split('T')[0]
+}
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;
+    ','<':'&lt;
+    ','>':'&gt;
+    ','"':'&quot;
+    ',"'":'&#039;
+    '
+  }
+  [m]))
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
+  setTimeout(()=>t.classList.remove('show'),3500)
 }
-
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-
-function copySQL() {
+function openModal(id){
+  document.getElementById(id).classList.add('open')
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open')
+}
+function copySQL(){
   navigator.clipboard.writeText(SQL);
-  toast('SQL kopierat');
+  toast('SQL kopierat')
 }
-
-async function login() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const err = document.getElementById('login-error');
-
-  err.textContent = 'Loggar in...';
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    err.textContent = error.message;
-    return;
+async function login(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const err=document.getElementById('login-error');
+  err.textContent='Loggar in...';
+  const {
+    data,error
   }
-
-  currentUser = data.user;
-  document.getElementById('login-screen').style.display = 'none';
-  await loadAll();
+  =await supabaseClient.auth.signInWithPassword({
+    email,password
+  }
+  );
+  if(error){
+    err.textContent=error.message;
+    return
+  }
+  currentUser=data.user;
+  document.getElementById('login-screen').style.display='none';
+  await loadAll()
 }
-
-async function checkSession() {
-  document.getElementById('sql-display').textContent = SQL;
-
-  const { data } = await supabaseClient.auth.getSession();
-
-  if (data.session?.user) {
-    currentUser = data.session.user;
-    document.getElementById('login-screen').style.display = 'none';
-    await loadAll();
+async function checkSession(){
+  document.getElementById('sql-display').textContent=SQL;
+  const {
+    data
+  }
+  =await supabaseClient.auth.getSession();
+  if(data.session?.user){
+    currentUser=data.session.user;
+    document.getElementById('login-screen').style.display='none';
+    await loadAll()
   }
 }
-
-async function logout() {
+async function logout(){
   await supabaseClient.auth.signOut();
-  currentUser = null;
-  contacts = [];
-  actLog = [];
-  document.getElementById('login-screen').style.display = 'flex';
+  currentUser=null;
+  contacts=[];
+  actLog=[];
+  document.getElementById('login-screen').style.display='flex'
 }
-
-async function loadAll() {
-  if (!currentUser) return;
+async function loadAll(){
+  if(!currentUser)return;
   await loadContactsFromDB();
   await loadLogFromDB();
-  renderCurrent();
+  renderCurrent()
 }
-
-async function loadContactsFromDB() {
-  const { data, error } = await supabaseClient
-    .from('contacts')
-    .select('*')
-    .order('created_at', { ascending:false });
-
-  if (error) {
-    alert('Fel vid hämtning av kontakter: ' + error.message);
-    contacts = [];
-    return;
+async function loadContactsFromDB(){
+  const {
+    data,error
   }
-
-  contacts = data || [];
-}
-
-async function loadLogFromDB() {
-  const { data, error } = await supabaseClient
-    .from('activity_log')
-    .select('*')
-    .order('created_at', { ascending:false })
-    .limit(200);
-
-  if (error) {
-    alert('Fel vid hämtning av aktivitetslogg: ' + error.message);
-    actLog = [];
-    return;
+  =await supabaseClient.from('contacts').select('*').order('created_at',{
+    ascending:false
   }
-
-  actLog = data || [];
+  );
+  if(error){
+    alert('Fel vid hämtning av kontakter: '+error.message);
+    contacts=[];
+    return
+  }
+  contacts=data||[]
 }
-
-function showView(name) {
-  currentView = name;
-
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-  document.getElementById('view-' + name).classList.add('active');
-
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.textContent.trim().startsWith(viewTitles[name])) n.classList.add('active');
-  });
-
-  document.getElementById('topbar-title').textContent = viewTitles[name];
-
-  const actions = document.getElementById('topbar-actions');
-  actions.innerHTML = '';
-
-  if (name === 'contacts') {
-    actions.innerHTML = '<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button>';
-    renderContacts();
-  } else if (name === 'dashboard') {
-    renderDashboard();
-  } else if (name === 'followups') {
-    actions.innerHTML = '<button class="btn btn-green" onclick="exportAllICS()">📅 Exportera alla till kalender</button>';
-    renderFollowups();
-  } else if (name === 'log') {
-    renderLog();
-  } else if (name === 'settings') {
-    document.getElementById('sql-display').textContent = SQL;
+async function loadLogFromDB(){
+  const {
+    data,error
+  }
+  =await supabaseClient.from('activity_log').select('*').order('created_at',{
+    ascending:false
+  }
+  ).limit(200);
+  if(error){
+    alert('Fel vid hämtning av aktivitetslogg: '+error.message);
+    actLog=[];
+    return
+  }
+  actLog=data||[]
+}
+function showView(name){
+  currentView=name;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.textContent.trim().startsWith(viewTitles[name]))n.classList.add('active')
+  }
+  );
+  document.getElementById('topbar-title').textContent=viewTitles[name];
+  const actions=document.getElementById('topbar-actions');
+  actions.innerHTML='';
+  if(name==='contacts'){
+    actions.innerHTML='<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button>';
+    renderContacts()
+  }
+  else if(name==='dashboard'){
+    renderDashboard()
+  }
+  else if(name==='followups'){
+    actions.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">📅 Exportera alla till kalender</button>';
+    renderFollowups()
+  }
+  else if(name==='log'){
+    renderLog()
+  }
+  else if(name==='settings'){
+    document.getElementById('sql-display').textContent=SQL
   }
 }
-
-function renderCurrent() {
-  showView(currentView);
+function renderCurrent(){
+  showView(currentView)
 }
-
-function renderDashboard() {
-  const today = new Date();
+function renderDashboard(){
+  const today=new Date();
   today.setHours(0,0,0,0);
-
-  const total = contacts.length;
-  const aktiva = contacts.filter(c => c.status === 'Aktiv').length;
-  const varma = contacts.filter(c => c.status === 'Varm lead').length;
-  const forsenade = contacts.filter(c => c.nasta_foljup && new Date(c.nasta_foljup) < today).length;
-  const idag = contacts.filter(c => {
-    if (!c.nasta_foljup) return false;
-    const d = new Date(c.nasta_foljup);
+  const total=contacts.length,aktiva=contacts.filter(c=>c.status==='Aktiv').length,varma=contacts.filter(c=>c.status==='Varm lead').length,forsenade=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today).length,idag=contacts.filter(c=>{
+    if(!c.nasta_foljup)return false;
+    const d=new Date(c.nasta_foljup);
     d.setHours(0,0,0,0);
-    return d.getTime() === today.getTime();
-  }).length;
-
-  document.getElementById('kpi-grid').innerHTML = [
-    ['Totalt kontakter', total, 'blue'],
-    ['Aktiva', aktiva, 'green'],
-    ['Varma leads', varma, 'gold'],
-    ['Uppföljning idag', idag, 'warm'],
-    ['Försenade', forsenade, 'red']
-  ].map(([l,n,c]) => `<div class="kpi ${c}"><div class="kpi-num">${n}</div><div class="kpi-label">${l}</div></div>`).join('');
-
-  const ejRingt = contacts.filter(c => !c.senast_typ || ['','Inget','LinkedIn','E-post'].includes(c.senast_typ)).length;
-  const ringt = contacts.filter(c => c.senast_typ === 'Telefonsamtal').length;
-  const lunch = contacts.filter(c => c.senast_typ === 'Lunch').length;
-  const aktivt = contacts.filter(c => c.senast_typ === 'Möte').length;
-
-  document.getElementById('chain-bar').innerHTML = [
-    ['Ej ringt', ejRingt, 's1'],
-    ['Telefonsamtal', ringt, 's2'],
-    ['Lunch', lunch, 's3'],
-    ['Aktivt', aktivt, 's4']
-  ].map(([l,n,c]) => `<div class="chain-step ${c}"><div class="chain-num">${n}</div><div class="chain-lbl">${l}</div></div>`).join('');
-
-  renderUpcoming('dash-followups', 8);
-}
-
-function renderUpcoming(elementId, limit = null) {
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  let list = contacts
-    .filter(c => c.nasta_foljup)
-    .sort((a,b) => new Date(a.nasta_foljup) - new Date(b.nasta_foljup));
-
-  if (limit) list = list.slice(0, limit);
-
-  if (!list.length) {
-    document.getElementById(elementId).innerHTML = '<div class="empty"><div class="empty-icon">📅</div><p>Inga uppföljningar</p></div>';
-    return;
+    return d.getTime()===today.getTime()
   }
-
-  document.getElementById(elementId).innerHTML = list.map(c => {
-    const d = new Date(c.nasta_foljup);
+  ).length;
+  document.getElementById('kpi-grid').innerHTML=[['Totalt kontakter',total,'blue'],['Aktiva',aktiva,'green'],['Varma leads',varma,'gold'],['Uppföljning idag',idag,'warm'],['Försenade',forsenade,'red']].map(([l,n,c])=>`<div class="kpi ${
+    c
+  }
+  ">
+<div class="kpi-num">${
+    n
+  }
+</div>
+<div class="kpi-label">${
+  l
+}
+</div>
+</div>`).join('');
+const ejRingt=contacts.filter(c=>!c.senast_typ||['','Inget','LinkedIn','E-post'].includes(c.senast_typ)).length,ringt=contacts.filter(c=>c.senast_typ==='Telefonsamtal').length,lunch=contacts.filter(c=>c.senast_typ==='Lunch').length,aktivt=contacts.filter(c=>c.senast_typ==='Möte').length;
+document.getElementById('chain-bar').innerHTML=[['Ej ringt',ejRingt,'s1'],['Telefonsamtal',ringt,'s2'],['Lunch',lunch,'s3'],['Aktivt',aktivt,'s4']].map(([l,n,c])=>`<div class="chain-step ${
+  c
+}
+">
+<div class="chain-num">${
+  n
+}
+</div>
+<div class="chain-lbl">${
+  l
+}
+</div>
+</div>`).join('');
+renderUpcoming('dash-followups',8)
+}
+function renderUpcoming(elementId,limit=null){
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  let list=contacts.filter(c=>c.nasta_foljup).sort((a,b)=>new Date(a.nasta_foljup)-new Date(b.nasta_foljup));
+  if(limit)list=list.slice(0,limit);
+  if(!list.length){
+    document.getElementById(elementId).innerHTML='<div class="empty">
+<div class="empty-icon">📅</div>
+<p>Inga uppföljningar</p>
+</div>';
+    return
+  }
+  document.getElementById(elementId).innerHTML=list.map(c=>{
+    const d=new Date(c.nasta_foljup);
     d.setHours(0,0,0,0);
-    const diff = Math.round((d - today) / 86400000);
-    const cls = diff < 0 ? 'overdue' : diff === 0 ? 'today' : diff <= 3 ? 'soon' : '';
-    const label = diff < 0 ? `${Math.abs(diff)} dagar försenad` : diff === 0 ? 'Idag' : diff === 1 ? 'Imorgon' : `Om ${diff} dagar`;
-    const k = getKedja(c.senast_typ);
-
-    return `<div class="followup-row">
-      <div class="followup-info">
-        <div class="followup-name">${esc(c.fornamn)} ${esc(c.efternamn)} <span style="color:#888;font-weight:400">· ${esc(c.foretag || '')}</span></div>
-        <div class="followup-meta">Nästa: <strong>${esc(k.next)}</strong> · ${esc(c.nasta_foljup)} · ${esc(k.steg)}</div>
-      </div>
-      <span class="${cls}" style="font-size:12px;margin-right:16px">${esc(label)}</span>
-      <button class="btn btn-green" style="font-size:12px;padding:5px 12px;margin-right:6px" onclick="exportSingleICS('${c.id}')">📅 Kalender</button>
-      <button class="btn btn-outline" style="font-size:12px;padding:5px 12px" onclick="openCard('${c.id}')">Öppna</button>
-    </div>`;
-  }).join('');
-}
-
-function renderContacts() {
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  if (!contacts.length) {
-    document.getElementById('contacts-tbody').innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">◉</div><p>Inga kontakter ännu – klicka "+ Ny kontakt"</p></div></td></tr>`;
-    return;
-  }
-
-  document.getElementById('contacts-tbody').innerHTML = contacts.map(c => {
-    const sCls = {'Aktiv':'badge-aktiv','Prospekt':'badge-prospekt','Varm lead':'badge-varm','Kund':'badge-kund','Inaktiv':'badge-inaktiv'}[c.status] || 'badge-prospekt';
-    const pCls = {'Hög':'prio-hog','Medium':'prio-medium','Låg':'prio-lag'}[c.prioritet] || '';
-    let fDate = '—';
-    let fCls = '';
-
-    if (c.nasta_foljup) {
-      const d = new Date(c.nasta_foljup);
-      d.setHours(0,0,0,0);
-      const diff = Math.round((d - today) / 86400000);
-      fDate = c.nasta_foljup;
-      fCls = diff < 0 ? 'overdue' : diff === 0 ? 'today' : diff <= 3 ? 'soon' : '';
+    const diff=Math.round((d-today)/86400000);
+    const cls=diff<0?'overdue':diff===0?'today':diff<=3?'soon':'';
+    const label=diff<0?`${
+      Math.abs(diff)
     }
-
+    dagar försenad`:diff===0?'Idag':diff===1?'Imorgon':`Om ${
+      diff
+    }
+    dagar`;
+    const k=getKedja(c.senast_typ);
+    return `<div class="followup-row">
+<div class="followup-info">
+<div class="followup-name">${
+      esc(c.fornamn)
+    }
+    ${
+      esc(c.efternamn)
+    }
+    <span style="color:#888;
+    font-weight:400">· ${
+      esc(c.foretag||'')
+    }
+  </span>
+</div>
+<div class="followup-meta">Nästa: <strong>${
+    esc(k.next)
+  }
+</strong> · ${
+  esc(c.nasta_foljup)
+}
+· ${
+  esc(k.steg)
+}
+</div>
+</div>
+<span class="${
+  cls
+}
+" style="font-size:12px;
+margin-right:16px">${
+  esc(label)
+}
+</span>
+<button class="btn btn-green" style="font-size:12px;
+padding:5px 12px;
+margin-right:6px" onclick="exportSingleICS('${
+  c.id
+}
+')">📅 Kalender</button>
+<button class="btn btn-outline" style="font-size:12px;
+padding:5px 12px" onclick="openCard('${
+  c.id
+}
+')">Öppna</button>
+</div>`
+}
+).join('')
+}
+function renderContacts(){
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  if(!contacts.length){
+    document.getElementById('contacts-tbody').innerHTML=`<tr>
+<td colspan="8">
+<div class="empty">
+<div class="empty-icon">◉</div>
+<p>Inga kontakter ännu – klicka "+ Ny kontakt"</p>
+</div>
+</td>
+</tr>`;
+    return
+  }
+  document.getElementById('contacts-tbody').innerHTML=contacts.map(c=>{
+    const sCls={
+      'Aktiv':'badge-aktiv','Prospekt':'badge-prospekt','Varm lead':'badge-varm','Kund':'badge-kund','Inaktiv':'badge-inaktiv'
+    }
+    [c.status]||'badge-prospekt';
+    const pCls={
+      'Hög':'prio-hog','Medium':'prio-medium','Låg':'prio-lag'
+    }
+    [c.prioritet]||'';
+    let fDate='—',fCls='';
+    if(c.nasta_foljup){
+      const d=new Date(c.nasta_foljup);
+      d.setHours(0,0,0,0);
+      const diff=Math.round((d-today)/86400000);
+      fDate=c.nasta_foljup;
+      fCls=diff<0?'overdue':diff===0?'today':diff<=3?'soon':''
+    }
     return `<tr>
-      <td><strong style="cursor:pointer" onclick="openCard('${c.id}')">${esc(c.fornamn)} ${esc(c.efternamn)}</strong></td>
-      <td>${esc(c.foretag || '—')}</td>
-      <td>${esc(c.roll || '—')}</td>
-      <td><span class="badge ${sCls}">${esc(c.status || '')}</span></td>
-      <td>${esc(c.senast_kontakt || '—')}</td>
-      <td><span class="${fCls}">${esc(fDate)}</span></td>
-      <td><span class="${pCls}">${esc(c.prioritet || '')}</span></td>
-      <td>
-        <button class="btn-icon" title="Kontaktkort" onclick="openCard('${c.id}')">📋</button>
-        <button class="btn-icon" title="Logga aktivitet" onclick="openLogModal('${c.id}')">✏️</button>
-        <button class="btn-icon" title="Redigera" onclick="openEditContact('${c.id}')">⚙️</button>
-        <button class="btn-icon" title="Ta bort" onclick="confirmDelete('${c.id}')">🗑</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function renderFollowups() {
-  renderUpcoming('followups-list', null);
-}
-
-function renderLog() {
-  if (!actLog.length) {
-    document.getElementById('log-tbody').innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">◫</div><p>Ingen aktivitet loggad ännu</p></div></td></tr>`;
-    return;
+<td>
+<strong style="cursor:pointer" onclick="openCard('${
+      c.id
+    }
+    ')">${
+      esc(c.fornamn)
+    }
+    ${
+      esc(c.efternamn)
+    }
+  </strong>
+</td>
+<td>${
+    esc(c.foretag||'—')
   }
-
-  document.getElementById('log-tbody').innerHTML = actLog.map(l => `
-    <tr>
-      <td>${esc(l.datum || '')}</td>
-      <td><strong>${esc(l.kontakt_namn || '')}</strong>${l.foretag ? '<br><span style="color:#888;font-size:11px">' + esc(l.foretag) + '</span>' : ''}</td>
-      <td>${esc(l.typ || '')}</td>
-      <td>${esc(l.anteckning || '—')}</td>
-      <td>${esc(l.nasta_steg || '—')}</td>
-    </tr>
-  `).join('');
+</td>
+<td>${
+  esc(c.roll||'—')
 }
-
-async function openCard(id) {
-  const c = contacts.find(x => x.id === id);
-  if (!c) return;
-
-  const { data, error } = await supabaseClient
-    .from('activity_log')
-    .select('*')
-    .eq('contact_id', id)
-    .order('datum', { ascending:false })
-    .limit(20);
-
-  const cLog = error ? [] : (data || []);
-  const k = getKedja(c.senast_typ);
-  const level = kedjaLevel(c.senast_typ);
-  const sCls = {'Aktiv':'badge-aktiv','Prospekt':'badge-prospekt','Varm lead':'badge-varm','Kund':'badge-kund','Inaktiv':'badge-inaktiv'}[c.status] || '';
-
-  const steps = ['LinkedIn','Telefon','Lunch','Aktivt'];
-  const chainText = steps.map((s,i) => {
-    const mark = i + 1 <= level ? '✓' : '○';
-    return `${mark} ${s}`;
-  }).join(' · ');
-
-  const logHtml = cLog.length ? cLog.map(l => `
-    <div class="log-entry">
-      <span style="font-size:12px;color:#888">${esc(l.datum || '')}</span>
-      <span style="font-size:12px;font-weight:600">${esc(l.typ || '')}</span>
-      <div>
-        <div>${esc(l.anteckning || '')}</div>
-        ${l.nasta_steg ? `<div style="font-size:11px;color:#888;margin-top:2px">→ ${esc(l.nasta_steg)}</div>` : ''}
-      </div>
-    </div>
-  `).join('') : '<p style="color:#aaa;font-size:13px;padding:12px 0">Ingen logg ännu</p>';
-
-  document.getElementById('card-content').innerHTML = `
-    <div class="card-header">
-      <h2>${esc(c.fornamn)} ${esc(c.efternamn)}</h2>
-      <p>${esc([c.roll, c.foretag].filter(Boolean).join(' · '))}</p>
-      <div class="card-badges">
-        <span class="badge ${sCls}">${esc(c.status || '')}</span>
-        <span class="badge" style="background:rgba(255,255,255,.2);color:#fff">${esc(c.prioritet || '')} prioritet</span>
-        ${c.senast_typ ? `<span class="badge" style="background:rgba(255,255,255,.2);color:#fff">Senast: ${esc(c.senast_typ)}</span>` : ''}
-      </div>
-    </div>
-    <div class="card-body">
-      <p style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Relationskedja</p>
-      <p style="font-size:13px;margin-bottom:14px">${esc(chainText)}</p>
-      <div style="background:var(--paper);border-radius:var(--r);padding:12px 16px;font-size:13px;border:1px solid var(--cream);margin-bottom:20px">
-        <strong>Nästa steg:</strong> ${esc(k.steg)}
-      </div>
-      <div class="info-grid">
-        <div class="info-item"><label>E-post</label><span>${esc(c.epost || '—')}</span></div>
-        <div class="info-item"><label>Telefon</label><span>${esc(c.telefon || '—')}</span></div>
-        <div class="info-item"><label>Stad</label><span>${esc(c.stad || '—')}</span></div>
-        <div class="info-item"><label>Bransch</label><span>${esc(c.bransch || '—')}</span></div>
-        <div class="info-item"><label>Senaste kontakt</label><span>${esc(c.senast_kontakt || '—')}</span></div>
-        <div class="info-item"><label>Nästa uppföljning</label><span>${esc(c.nasta_foljup || '—')}</span></div>
-      </div>
-      ${c.anteckningar ? `<p style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Anteckningar</p><p style="font-size:13px;line-height:1.6;margin-bottom:20px">${esc(c.anteckningar)}</p>` : ''}
-      <p style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Kontaktlogg</p>
-      ${logHtml}
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" onclick="closeModal('modal-card');confirmDelete('${c.id}')">🗑 Ta bort</button>
-      <div style="flex:1"></div>
-      <button class="btn btn-outline" onclick="closeModal('modal-card')">Stäng</button>
-      <button class="btn btn-outline" onclick="exportSingleICS('${c.id}')">📅 Kalender</button>
-      <button class="btn btn-warm" onclick="closeModal('modal-card');openLogModal('${c.id}')">✏️ Logga aktivitet</button>
-    </div>
-  `;
-
-  openModal('modal-card');
+</td>
+<td>
+<span class="badge ${
+  sCls
 }
-
-function openNewContact() {
-  editingId = null;
-  document.getElementById('contact-modal-title').textContent = 'Ny kontakt';
-
-  ['fornamn','efternamn','foretag','roll','bransch','stad','epost','telefon','linkedin','anteckningar','ansvarig'].forEach(f => {
-    document.getElementById('f-' + f).value = '';
-  });
-
-  document.getElementById('f-status').value = 'Prospekt';
-  document.getElementById('f-prioritet').value = 'Medium';
-  openModal('modal-contact');
+">${
+  esc(c.status||'')
 }
-
-function openEditContact(id) {
-  const c = contacts.find(x => x.id === id);
-  if (!c) return;
-
-  editingId = id;
-  document.getElementById('contact-modal-title').textContent = 'Redigera kontakt';
-
-  ['fornamn','efternamn','foretag','roll','bransch','stad','epost','telefon','linkedin','anteckningar','status','prioritet','ansvarig'].forEach(f => {
-    const el = document.getElementById('f-' + f);
-    if (el) el.value = c[f] || '';
-  });
-
-  openModal('modal-contact');
+</span>
+</td>
+<td>${
+  esc(c.senast_kontakt||'—')
 }
-
-async function saveContact() {
-  if (!currentUser) return alert('Du är inte inloggad.');
-
-  const fornamn = document.getElementById('f-fornamn').value.trim();
-  const efternamn = document.getElementById('f-efternamn').value.trim();
-
-  if (!fornamn || !efternamn) {
+</td>
+<td>
+<span class="${
+  fCls
+}
+">${
+  esc(fDate)
+}
+</span>
+</td>
+<td>
+<span class="${
+  pCls
+}
+">${
+  esc(c.prioritet||'')
+}
+</span>
+</td>
+<td>
+<button class="btn-icon" title="Kontaktkort" onclick="openCard('${
+  c.id
+}
+')">📋</button>
+<button class="btn-icon" title="Logga aktivitet" onclick="openLogModal('${
+  c.id
+}
+')">✏️</button>
+<button class="btn-icon" title="Redigera" onclick="openEditContact('${
+  c.id
+}
+')">⚙️</button>
+<button class="btn-icon" title="Ta bort" onclick="confirmDelete('${
+  c.id
+}
+')">🗑</button>
+</td>
+</tr>`
+}
+).join('')
+}
+function renderFollowups(){
+  renderUpcoming('followups-list',null)
+}
+function renderLog(){
+  if(!actLog.length){
+    document.getElementById('log-tbody').innerHTML=`<tr>
+<td colspan="5">
+<div class="empty">
+<div class="empty-icon">◫</div>
+<p>Ingen aktivitet loggad ännu</p>
+</div>
+</td>
+</tr>`;
+    return
+  }
+  document.getElementById('log-tbody').innerHTML=actLog.map(l=>`<tr>
+<td>${
+    esc(l.datum||'')
+  }
+</td>
+<td>
+<strong>${
+  esc(l.kontakt_namn||'')
+}
+</strong>${
+  l.foretag?'<br>
+<span style="color:#888;
+  font-size:11px">'+esc(l.foretag)+'</span>':''
+}
+</td>
+<td>${
+  esc(l.typ||'')
+}
+</td>
+<td>${
+  esc(l.anteckning||'—')
+}
+</td>
+<td>${
+  esc(l.nasta_steg||'—')
+}
+</td>
+</tr>`).join('')
+}
+async function openCard(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  const {
+    data,error
+  }
+  =await supabaseClient.from('activity_log').select('*').eq('contact_id',id).order('datum',{
+    ascending:false
+  }
+  ).limit(20);
+  const cLog=error?[]:(data||[]);
+  const k=getKedja(c.senast_typ);
+  const level=kedjaLevel(c.senast_typ);
+  const sCls={
+    'Aktiv':'badge-aktiv','Prospekt':'badge-prospekt','Varm lead':'badge-varm','Kund':'badge-kund','Inaktiv':'badge-inaktiv'
+  }
+  [c.status]||'';
+  const steps=['LinkedIn','Telefon','Lunch','Aktivt'];
+  const chainText=steps.map((s,i)=>(i+1<=level?'✓':'○')+' '+s).join(' · ');
+  const logHtml=cLog.length?cLog.map(l=>`<div class="log-entry">
+<span style="font-size:12px;
+  color:#888">${
+    esc(l.datum||'')
+  }
+</span>
+<span style="font-size:12px;
+font-weight:600">${
+  esc(l.typ||'')
+}
+</span>
+<div>
+<div>${
+  esc(l.anteckning||'')
+}
+</div>${
+  l.nasta_steg?`<div style="font-size:11px;
+  color:#888;
+  margin-top:2px">→ ${
+    esc(l.nasta_steg)
+  }
+</div>`:''
+}
+</div>
+</div>`).join(''):'<p style="color:#aaa;
+font-size:13px;
+padding:12px 0">Ingen logg ännu</p>';
+document.getElementById('card-content').innerHTML=`<div class="card-header">
+<h2>${
+  esc(c.fornamn)
+}
+${
+  esc(c.efternamn)
+}
+</h2>
+<p>${
+  esc([c.roll,c.foretag].filter(Boolean).join(' · '))
+}
+</p>
+<div class="card-badges">
+<span class="badge ${
+  sCls
+}
+">${
+  esc(c.status||'')
+}
+</span>
+<span class="badge" style="background:rgba(255,255,255,.2);
+color:#fff">${
+  esc(c.prioritet||'')
+}
+prioritet</span>${
+  c.senast_typ?`<span class="badge" style="background:rgba(255,255,255,.2);
+  color:#fff">Senast: ${
+    esc(c.senast_typ)
+  }
+</span>`:''
+}
+</div>
+</div>
+<div class="card-body">
+<p style="font-size:11px;
+color:#999;
+text-transform:uppercase;
+letter-spacing:.7px;
+margin-bottom:8px">Relationskedja</p>
+<p style="font-size:13px;
+margin-bottom:14px">${
+  esc(chainText)
+}
+</p>
+<div style="background:var(--paper);
+border-radius:var(--r);
+padding:12px 16px;
+font-size:13px;
+border:1px solid var(--cream);
+margin-bottom:20px">
+<strong>Nästa steg:</strong> ${
+  esc(k.steg)
+}
+</div>
+<div class="info-grid">
+<div class="info-item">
+<label>E-post</label>
+<span>${
+  esc(c.epost||'—')
+}
+</span>
+</div>
+<div class="info-item">
+<label>Telefon</label>
+<span>${
+  esc(c.telefon||'—')
+}
+</span>
+</div>
+<div class="info-item">
+<label>Stad</label>
+<span>${
+  esc(c.stad||'—')
+}
+</span>
+</div>
+<div class="info-item">
+<label>Bransch</label>
+<span>${
+  esc(c.bransch||'—')
+}
+</span>
+</div>
+<div class="info-item">
+<label>Senaste kontakt</label>
+<span>${
+  esc(c.senast_kontakt||'—')
+}
+</span>
+</div>
+<div class="info-item">
+<label>Nästa uppföljning</label>
+<span>${
+  esc(c.nasta_foljup||'—')
+}
+</span>
+</div>
+</div>${
+  c.anteckningar?`<p style="font-size:11px;
+  color:#999;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+  margin-bottom:6px">Anteckningar</p>
+<p style="font-size:13px;
+  line-height:1.6;
+  margin-bottom:20px">${
+    esc(c.anteckningar)
+  }
+</p>`:''
+}
+<p style="font-size:11px;
+color:#999;
+text-transform:uppercase;
+letter-spacing:.7px;
+margin-bottom:8px">Kontaktlogg</p>${
+  logHtml
+}
+</div>
+<div class="modal-footer">
+<button class="btn btn-danger" onclick="closeModal('modal-card');
+confirmDelete('${
+  c.id
+}
+')">🗑 Ta bort</button>
+<div style="flex:1">
+</div>
+<button class="btn btn-outline" onclick="closeModal('modal-card')">Stäng</button>
+<button class="btn btn-outline" onclick="exportSingleICS('${
+  c.id
+}
+')">📅 Kalender</button>
+<button class="btn btn-warm" onclick="closeModal('modal-card');
+openLogModal('${
+  c.id
+}
+')">✏️ Logga aktivitet</button>
+</div>`;
+openModal('modal-card')
+}
+function openNewContact(){
+  editingId=null;
+  document.getElementById('contact-modal-title').textContent='Ny kontakt';
+  ['fornamn','efternamn','foretag','roll','bransch','stad','epost','telefon','linkedin','anteckningar','ansvarig'].forEach(f=>{
+    document.getElementById('f-'+f).value=''
+  }
+  );
+  document.getElementById('f-status').value='Prospekt';
+  document.getElementById('f-prioritet').value='Medium';
+  openModal('modal-contact')
+}
+function openEditContact(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  editingId=id;
+  document.getElementById('contact-modal-title').textContent='Redigera kontakt';
+  ['fornamn','efternamn','foretag','roll','bransch','stad','epost','telefon','linkedin','anteckningar','status','prioritet','ansvarig'].forEach(f=>{
+    const el=document.getElementById('f-'+f);
+    if(el)el.value=c[f]||''
+  }
+  );
+  openModal('modal-contact')
+}
+async function saveContact(){
+  if(!currentUser)return alert('Du är inte inloggad.');
+  const fornamn=document.getElementById('f-fornamn').value.trim();
+  const efternamn=document.getElementById('f-efternamn').value.trim();
+  if(!fornamn||!efternamn){
     toast('Förnamn och efternamn krävs');
-    return;
+    return
   }
-
-  const data = {
-    user_id: currentUser.id,
-    fornamn,
-    efternamn,
-    foretag: document.getElementById('f-foretag').value.trim(),
-    roll: document.getElementById('f-roll').value.trim(),
-    bransch: document.getElementById('f-bransch').value.trim(),
-    stad: document.getElementById('f-stad').value.trim(),
-    epost: document.getElementById('f-epost').value.trim(),
-    telefon: document.getElementById('f-telefon').value.trim(),
-    linkedin: document.getElementById('f-linkedin').value.trim(),
-    anteckningar: document.getElementById('f-anteckningar').value.trim(),
-    status: document.getElementById('f-status').value,
-    prioritet: document.getElementById('f-prioritet').value,
-    ansvarig: document.getElementById('f-ansvarig').value.trim()
-  };
-
-  const btn = document.getElementById('save-contact-btn');
-  btn.textContent = 'Sparar...';
-  btn.disabled = true;
-
+  const data={
+    user_id:currentUser.id,fornamn,efternamn,foretag:document.getElementById('f-foretag').value.trim(),roll:document.getElementById('f-roll').value.trim(),bransch:document.getElementById('f-bransch').value.trim(),stad:document.getElementById('f-stad').value.trim(),epost:document.getElementById('f-epost').value.trim(),telefon:document.getElementById('f-telefon').value.trim(),linkedin:document.getElementById('f-linkedin').value.trim(),anteckningar:document.getElementById('f-anteckningar').value.trim(),status:document.getElementById('f-status').value,prioritet:document.getElementById('f-prioritet').value,ansvarig:document.getElementById('f-ansvarig').value.trim()
+  }
+  ;
+  const btn=document.getElementById('save-contact-btn');
+  btn.textContent='Sparar...';
+  btn.disabled=true;
   let error;
-
-  if (editingId) {
-    ({ error } = await supabaseClient
-      .from('contacts')
-      .update(data)
-      .eq('id', editingId));
-  } else {
-    ({ error } = await supabaseClient
-      .from('contacts')
-      .insert(data));
+  if(editingId){
+    ({
+      error
+    }
+    =await supabaseClient.from('contacts').update(data).eq('id',editingId))
   }
-
-  btn.textContent = 'Spara kontakt';
-  btn.disabled = false;
-
-  if (error) {
-    alert('Fel vid sparning: ' + error.message);
-    return;
+  else{
+    ({
+      error
+    }
+    =await supabaseClient.from('contacts').insert(data))
   }
-
+  btn.textContent='Spara kontakt';
+  btn.disabled=false;
+  if(error){
+    alert('Fel vid sparning: '+error.message);
+    return
+  }
   closeModal('modal-contact');
-  toast(editingId ? 'Kontakt uppdaterad' : 'Kontakt skapad');
-  await loadAll();
+  toast(editingId?'Kontakt uppdaterad':'Kontakt skapad');
+  await loadAll()
 }
-
-function openLogModal(id) {
-  const c = contacts.find(x => x.id === id);
-  if (!c) return;
-
-  logContactId = id;
-  document.getElementById('log-modal-title').textContent = 'Logga – ' + c.fornamn + ' ' + c.efternamn;
-  document.getElementById('l-datum').value = new Date().toISOString().split('T')[0];
-  document.getElementById('l-anteckning').value = '';
-  document.getElementById('l-nastasteg').value = '';
-  document.getElementById('l-typ').value = 'Möte';
-  openModal('modal-log');
+function openLogModal(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  logContactId=id;
+  document.getElementById('log-modal-title').textContent='Logga – '+c.fornamn+' '+c.efternamn;
+  document.getElementById('l-datum').value=new Date().toISOString().split('T')[0];
+  document.getElementById('l-anteckning').value='';
+  document.getElementById('l-nastasteg').value='';
+  document.getElementById('l-typ').value='Möte';
+  openModal('modal-log')
 }
-
-async function saveLogEntry() {
-  if (!currentUser) return alert('Du är inte inloggad.');
-
-  const c = contacts.find(x => x.id === logContactId);
-  if (!c) return;
-
-  const typ = document.getElementById('l-typ').value;
-  const datum = document.getElementById('l-datum').value;
-  const anteckning = document.getElementById('l-anteckning').value.trim();
-  const nasta_steg = document.getElementById('l-nastasteg').value.trim();
-  const nasta_foljup = calcNextDate(typ, datum);
-
-  const logEntry = {
-    user_id: currentUser.id,
-    contact_id: c.id,
-    kontakt_namn: c.fornamn + ' ' + c.efternamn,
-    foretag: c.foretag,
-    typ,
-    datum,
-    anteckning,
-    nasta_steg
-  };
-
-  const { error: logError } = await supabaseClient
-    .from('activity_log')
-    .insert(logEntry);
-
-  if (logError) {
-    alert('Fel vid loggning: ' + logError.message);
-    return;
+async function saveLogEntry(){
+  if(!currentUser)return alert('Du är inte inloggad.');
+  const c=contacts.find(x=>x.id===logContactId);
+  if(!c)return;
+  const typ=document.getElementById('l-typ').value,datum=document.getElementById('l-datum').value,anteckning=document.getElementById('l-anteckning').value.trim(),nasta_steg=document.getElementById('l-nastasteg').value.trim(),nasta_foljup=calcNextDate(typ,datum);
+  const logEntry={
+    user_id:currentUser.id,contact_id:c.id,kontakt_namn:c.fornamn+' '+c.efternamn,foretag:c.foretag,typ,datum,anteckning,nasta_steg
   }
-
-  const { error: contactError } = await supabaseClient
-    .from('contacts')
-    .update({
-      senast_typ: typ,
-      senast_kontakt: datum,
-      nasta_foljup
-    })
-    .eq('id', c.id);
-
-  if (contactError) {
-    alert('Aktiviteten sparades, men kontakten kunde inte uppdateras: ' + contactError.message);
-    return;
+  ;
+  const {
+    error:logError
   }
-
+  =await supabaseClient.from('activity_log').insert(logEntry);
+  if(logError){
+    alert('Fel vid loggning: '+logError.message);
+    return
+  }
+  const {
+    error:contactError
+  }
+  =await supabaseClient.from('contacts').update({
+    senast_typ:typ,senast_kontakt:datum,nasta_foljup
+  }
+  ).eq('id',c.id);
+  if(contactError){
+    alert('Aktiviteten sparades, men kontakten kunde inte uppdateras: '+contactError.message);
+    return
+  }
   closeModal('modal-log');
   toast('Aktivitet loggad');
-  await loadAll();
+  await loadAll()
 }
-
-function confirmDelete(id) {
-  const c = contacts.find(x => x.id === id);
-  if (!c) return;
-
-  document.getElementById('confirm-text').textContent = `Vill du ta bort kontakten "${c.fornamn} ${c.efternamn}" och hela deras kontaktkort? Detta går inte att ångra.`;
-  document.getElementById('confirm-btn').onclick = () => deleteContact(id);
-  openModal('modal-confirm');
-}
-
-async function deleteContact(id) {
-  const { error } = await supabaseClient
-    .from('contacts')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    alert('Fel vid borttagning: ' + error.message);
-    return;
+function confirmDelete(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  document.getElementById('confirm-text').textContent=`Vill du ta bort kontakten "${
+    c.fornamn
   }
-
+  ${
+    c.efternamn
+  }
+  " och hela deras kontaktkort? Detta går inte att ångra.`;
+  document.getElementById('confirm-btn').onclick=()=>deleteContact(id);
+  openModal('modal-confirm')
+}
+async function deleteContact(id){
+  const {
+    error
+  }
+  =await supabaseClient.from('contacts').delete().eq('id',id);
+  if(error){
+    alert('Fel vid borttagning: '+error.message);
+    return
+  }
   closeModal('modal-confirm');
   toast('Kontakt borttagen');
-  await loadAll();
+  await loadAll()
 }
-
-function makeICS(events) {
-  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CRM NIS//SV','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
-
-  events.forEach(e => {
-    const d = (e.date || '').replace(/-/g, '');
-    lines.push(
-      'BEGIN:VEVENT',
-      'UID:' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@crm.nis',
-      'DTSTART;VALUE=DATE:' + d,
-      'DTEND;VALUE=DATE:' + d,
-      'SUMMARY:' + e.title,
-      'DESCRIPTION:' + (e.desc || '').replace(/\n/g, '\\n'),
-      'BEGIN:VALARM',
-      'TRIGGER:-PT60M',
-      'ACTION:DISPLAY',
-      'DESCRIPTION:Påminnelse: ' + e.title,
-      'END:VALARM',
-      'END:VEVENT'
-    );
-  });
-
+function makeICS(events){
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CRM NIS//SV','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  events.forEach(e=>{
+    const d=(e.date||'').replace(/-/g,'');
+    lines.push('BEGIN:VEVENT','UID:'+Date.now()+'-'+Math.random().toString(36).slice(2)+'@crm.nis','DTSTART;
+    VALUE=DATE:'+d,'DTEND;
+    VALUE=DATE:'+d,'SUMMARY:'+e.title,'DESCRIPTION:'+(e.desc||'').replace(/\n/g,'\\n'),'BEGIN:VALARM','TRIGGER:-PT60M','ACTION:DISPLAY','DESCRIPTION:Påminnelse: '+e.title,'END:VALARM','END:VEVENT')
+  }
+  );
   lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
+  return lines.join('\r\n')
 }
-
-function downloadICS(content, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], { type:'text/calendar;charset=utf-8' }));
-  a.download = filename;
-  a.click();
+function downloadICS(content,filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{
+    type:'text/calendar;
+    charset=utf-8'
+  }
+  ));
+  a.download=filename;
+  a.click()
 }
-
-function exportSingleICS(id) {
-  const c = contacts.find(x => x.id === id);
-  if (!c || !c.nasta_foljup) {
+function exportSingleICS(id){
+  const c=contacts.find(x=>x.id===id);
+  if(!c||!c.nasta_foljup){
     toast('Ingen uppföljning inlagd för denna kontakt');
-    return;
+    return
   }
-
-  const k = getKedja(c.senast_typ);
-
+  const k=getKedja(c.senast_typ);
   downloadICS(makeICS([{
-    date: c.nasta_foljup,
-    title: k.next + ': ' + c.fornamn + ' ' + c.efternamn + (c.foretag ? ' – ' + c.foretag : ''),
-    desc: 'Nästa steg: ' + k.steg + '\nTelefon: ' + (c.telefon || '') + '\nE-post: ' + (c.epost || '') + '\n\nCRM – NIS'
-  }]), 'uppfoljning_' + c.fornamn + '_' + c.efternamn + '.ics');
-
-  toast('Kalenderpost laddas ner');
-}
-
-function exportAllICS() {
-  const events = contacts.filter(c => c.nasta_foljup).map(c => {
-    const k = getKedja(c.senast_typ);
-    return {
-      date: c.nasta_foljup,
-      title: k.next + ': ' + c.fornamn + ' ' + c.efternamn + (c.foretag ? ' – ' + c.foretag : ''),
-      desc: k.steg
-    };
-  });
-
-  if (!events.length) {
-    toast('Inga uppföljningar att exportera');
-    return;
+    date:c.nasta_foljup,title:k.next+': '+c.fornamn+' '+c.efternamn+(c.foretag?' – '+c.foretag:''),desc:'Nästa steg: '+k.steg+'\nTelefon: '+(c.telefon||'')+'\nE-post: '+(c.epost||'')+'\n\nCRM – NIS'
   }
-
-  downloadICS(makeICS(events), 'uppfoljningar_alla.ics');
-  toast(events.length + ' uppföljningar exporterade');
+  ]),'uppfoljning_'+c.fornamn+'_'+c.efternamn+'.ics');
+  toast('Kalenderpost laddas ner')
 }
-
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => {
-    if (e.target === o) o.classList.remove('open');
-  });
-});
-
+function exportAllICS(){
+  const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
+    const k=getKedja(c.senast_typ);
+    return{
+      date:c.nasta_foljup,title:k.next+': '+c.fornamn+' '+c.efternamn+(c.foretag?' – '+c.foretag:''),desc:k.steg
+    }
+  }
+  );
+  if(!events.length){
+    toast('Inga uppföljningar att exportera');
+    return
+  }
+  downloadICS(makeICS(events),'uppfoljningar_alla.ics');
+  toast(events.length+' uppföljningar exporterade')
+}
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{
+    if(e.target===o)o.classList.remove('open')
+  }
+  )
+}
+);
 checkSession();
 </script>
 </body>
