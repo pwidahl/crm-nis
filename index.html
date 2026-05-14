@@ -499,7 +499,44 @@ let SB_KEY = 'sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23';
 
   let supabase = window.supabase.createClient(SB_URL, SB_KEY);
   let currentUser = null;
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
 
+  document.getElementById('login-error').textContent = 'Loggar in...';
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    document.getElementById('login-error').textContent = error.message;
+    return;
+  }
+
+  currentUser = data.user;
+
+  document.getElementById('login-screen').style.display = 'none';
+
+  await loadAll();
+}
+
+async function checkSession() {
+  const { data } = await supabase.auth.getSession();
+
+  if (data.session && data.session.user) {
+    currentUser = data.session.user;
+    document.getElementById('login-screen').style.display = 'none';
+
+    await loadAll();
+  }
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
+}
 function saveConfig() {
   SB_URL = document.getElementById('s-url').value.trim().replace(/\/$/, '');
   SB_KEY = document.getElementById('s-key').value.trim();
