@@ -562,22 +562,25 @@ async function testConnection() {
   } catch { return false; }
 }
 
-function sbHeaders() {
+async function sbHeaders() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
   return {
     'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
+    'Authorization': 'Bearer ' + token,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
 }
-
 async function sbFetch(path, options = {}) {
+  const headers = await sbHeaders();
+
   return fetch(SB_URL + '/rest/v1/' + path, {
     ...options,
-    headers: { ...sbHeaders(), ...(options.headers || {}) }
+    headers: { ...headers, ...(options.headers || {}) }
   });
 }
-
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
@@ -904,7 +907,8 @@ async function saveContact() {
   if (!fornamn || !efternamn) { toast('Förnamn och efternamn krävs'); return; }
 
   const data = {
-    fornamn, efternamn,
+  user_id: currentUser.id,
+  fornamn, efternamn,
     foretag:      document.getElementById('f-foretag').value.trim(),
     roll:         document.getElementById('f-roll').value.trim(),
     bransch:      document.getElementById('f-bransch').value.trim(),
@@ -973,7 +977,8 @@ async function saveLogEntry() {
   const nastaDate = calcNextDate(typ, datum);
 
   const logEntry = {
-    contact_id:   c.id,
+  user_id: currentUser.id,
+  contact_id:   c.id,
     kontakt_namn: c.fornamn + ' ' + c.efternamn,
     foretag:      c.foretag,
     typ, datum,
