@@ -1,23 +1,21 @@
 // /api/cron/news.js
-// Hämtar Google News RSS för bevakade bolag
-// Letar efter: förvärv, varsel, ny CFO/VD, omstrukturering
-// Körs varje natt kl 03:00
-//
-// vercel.json: { "path": "/api/cron/news", "schedule": "0 3 * * *" }
-//
-// Miljövariabler:
-//   SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY
-//   CRON_SECRET
+// Nightly Google News monitoring for broad business-change signals on monitored companies.
 
 import { createClient } from '@supabase/supabase-js';
+import { detectSignalType } from '../signal-config.js';
 
-const SIGNAL_NYCKELORD = [
-  { ord: ['ny cfo', 'new cfo', 'tillträder cfo', 'rekryterat cfo'], typ: 'ny_cfo',    styrka: 3 },
-  { ord: ['ny vd', 'new ceo', 'tillträder vd',  'ny verkställande'], typ: 'ny_vd',    styrka: 2 },
-  { ord: ['förvärvar', 'förvärv', 'acquisition', 'merger', 'fusionerar'], typ: 'forvärv', styrka: 3 },
-  { ord: ['varsel', 'uppsägningar', 'omstrukturering', 'sparpaket'], typ: 'varsel',   styrka: 3 },
-  { ord: ['ny ekonomichef', 'ny finanschef', 'ny controller'],       typ: 'ny_ledning', styrka: 2 },
+const NEWS_QUERY_TERMS = [
+  'CFO OR ekonomichef OR finanschef',
+  'tillväxt OR expansion OR expanderar OR växer',
+  'omstrukturering OR omorganisation OR sparpaket OR effektiviseringsprogram',
+  'varsel OR uppsägningar OR neddragningar',
+  'förvärv OR fusion OR acquisition OR merger',
+  'nyemission OR finansiering OR investering OR ägarskifte',
+  'årsredovisning OR bokslut OR delårsrapport OR kvartalsrapport',
+  'förlust OR vinstvarning OR kassaflöde OR likviditet OR marginal',
+  'balansräkning OR eget kapital OR skuldsättning OR nedskrivning',
+  'ERP OR affärssystem OR SAP OR Dynamics 365 OR systembyte',
+  'revisionsanmärkning OR oren revisionsberättelse'
 ];
 
 export default async function handler(req, res) {
@@ -26,113 +24,78 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-
-  // Hämta bolag som ska bevakas (Watchlist, Intressant, Varm)
-  const { data: bolag } = await supabase
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: companies, error } = await supabase
     .from('companies')
     .select('id, user_id, namn')
-    .in('pipeline_status', ['Watchlist', 'Intressant', 'Varm', 'Mojlighet'])
-    .is('arkiverad_vid', null);
+    .in('pipeline_status', ['Watchlist', 'Intressant', 'Varm', 'Mojlighet', 'Mote', 'Offert'])
+    .is('arkiverad_vid', null)
+    .limit(500);
 
-  if (!bolag?.length) {
-    return res.status(200).json({ message: 'Inga bolag att bevaka' });
-  }
+  if (error) return res.status(500).json({ error: error.message });
+  if (!companies?.length) return res.status(200).json({ message: 'No monitored companies', nya_signaler: 0, errors: [] });
 
-  let totaltNya = 0;
+  let nyaSignaler = 0;
+  const errors = [];
 
-  for (const company of bolag) {
+  for (const company of companies) {
     try {
-      const nyheter = await hamtaGoogleNews(company.namn);
+      const news = await fetchCompanyNews(company.namn);
+      for (const item of news) {
+        const detected = detectSignalType(`${item.titel} ${item.beskrivning}`);
+        if (!detected) continue;
 
-      for (const nyhet of nyheter) {
-        const detekterad = detekteraSignalTyp(nyhet.titel + ' ' + nyhet.beskrivning);
-        if (!detekterad) continue;
+        const { data: exists } = await supabase.from('company_signals').select('id').eq('company_id', company.id).eq('kalla_url', item.url).maybeSingle();
+        if (exists) continue;
 
-        // Kolla om signal redan finns
-        const { data: finns } = await supabase
-          .from('company_signals')
-          .select('id')
-          .eq('company_id', company.id)
-          .eq('kalla_url', nyhet.url)
-          .maybeSingle();
-
-        if (finns) continue;
-
-        await supabase.from('company_signals').insert({
-          user_id:       company.user_id,
-          company_id:    company.id,
-          signal_typ:    detekterad.typ,
-          rubrik:        nyhet.titel,
-          beskrivning:   nyhet.beskrivning,
-          kalla:         'Google News',
-          kalla_url:     nyhet.url,
-          signal_datum:  nyhet.datum,
-          signal_styrka: detekterad.styrka,
-          status:        'ny'
+        const { error: insertError } = await supabase.from('company_signals').insert({
+          user_id: company.user_id,
+          company_id: company.id,
+          signal_typ: detected.typ,
+          rubrik: item.titel,
+          beskrivning: item.beskrivning,
+          kalla: 'Google News',
+          kalla_url: item.url,
+          signal_datum: item.datum,
+          signal_styrka: detected.styrka,
+          status: 'ny'
         });
-
-        totaltNya++;
+        if (insertError) errors.push(`${company.namn}: ${insertError.message}`);
+        else nyaSignaler++;
       }
-
-      await sleep(300);
-
+      await sleep(250);
     } catch (err) {
-      console.error(`Fel för bolag "${company.namn}":`, err.message);
+      errors.push(`${company.namn}: ${err.message}`);
     }
   }
 
-  return res.status(200).json({ message: 'Klart', nya_signaler: totaltNya });
+  return res.status(200).json({ message: 'Done', nya_signaler: nyaSignaler, errors });
 }
 
-async function hamtaGoogleNews(bolagsnamn) {
-  const q = encodeURIComponent(`"${bolagsnamn}" CFO OR VD OR förvärv OR varsel OR ekonomichef`);
-  const url = `https://news.google.com/rss/search?q=${q}&hl=sv&gl=SE&ceid=SE:sv`;
-
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRM-bot/1.0)' }
-  });
-
+async function fetchCompanyNews(companyName) {
+  const query = `"${companyName}" (${NEWS_QUERY_TERMS.join(' OR ')})`;
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=sv&gl=SE&ceid=SE:sv`;
+  const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRM-NIS/1.0)' } });
   if (!response.ok) return [];
-
-  const xml = await response.text();
-  return parseRSS(xml);
+  return parseRSS(await response.text());
 }
 
 function parseRSS(xml) {
   const items = [];
   const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-
-  for (const item of itemMatches.slice(0, 5)) {
-    const titel      = stripTags(item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || '');
-    const url        = item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || '';
-    const beskrivning = stripTags(item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || '').slice(0, 300);
-    const datumStr   = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
-    const datum      = datumStr ? new Date(datumStr).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-    if (titel) items.push({ titel, url, beskrivning, datum });
+  for (const item of itemMatches.slice(0, 8)) {
+    const titel = stripTags(item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || '');
+    const url = item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || '';
+    const beskrivning = stripTags(item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || '').slice(0, 500);
+    const datumStr = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
+    const datum = datumStr ? new Date(datumStr).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    if (titel && url) items.push({ titel, url, beskrivning, datum });
   }
-
   return items;
 }
 
 function stripTags(str) {
-  return str.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").trim();
+  return String(str || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
 }
 
-function detekteraSignalTyp(text) {
-  const t = text.toLowerCase();
-  for (const signal of SIGNAL_NYCKELORD) {
-    if (signal.ord.some(ord => t.includes(ord))) {
-      return { typ: signal.typ, styrka: signal.styrka };
-    }
-  }
-  return null;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
