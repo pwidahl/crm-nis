@@ -1,12 +1,38 @@
 // /api/cron/news.js
-// Nightly MARKET-WIDE business-change discovery.
-// Searches Google News RSS for broad finance-consulting relevance signals,
-// creates new companies automatically for each active user, and creates company_signals.
-//
-// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
+// Nightly MARKET-WIDE business-change discovery via Google News RSS.
+// Runs via Vercel Cron: 0 3 * * *
 
 import { createClient } from '@supabase/supabase-js';
-import { detectSignalType } from '../signal-config.js';
+
+// Signal detection embedded to avoid Vercel ES module import issues
+const SIGNAL_RULES = [
+  { typ: 'finance_hiring', styrka: 3, ord: ['cfo','chief financial officer','ekonomichef','finanschef','finance manager','business controller','financial controller','redovisningschef','head of finance','koncernredovisning','interim cfo','interim finance','interim ekonomi'] },
+  { typ: 'management_change', styrka: 3, ord: ['ny vd','ny ceo','new ceo','ny cfo','new cfo','tillträder','avgår','ny ledning','ledningsgrupp','rekryterar ny','utser','appoints'] },
+  { typ: 'growth', styrka: 2, ord: ['tillväxt','växer','expanderar','kraftig tillväxt','rekordomsättning','ökar omsättningen','growth','rapid growth','scaling','scale-up','växer snabbt'] },
+  { typ: 'expansion', styrka: 2, ord: ['expansion','etablerar','ny marknad','internationell expansion','öppnar kontor','ny fabrik','nytt lager','expand into','new market','new office'] },
+  { typ: 'restructuring', styrka: 3, ord: ['omstrukturering','omorganisation','reorganisation','restructuring','sparpaket','kostnadsprogram','effektiviseringsprogram','turnaround','förändringsprogram'] },
+  { typ: 'layoffs', styrka: 3, ord: ['varsel','varslar','uppsägningar','säger upp','neddragningar','personalminskning','layoffs','redundancies','cut jobs','terminates employees'] },
+  { typ: 'new_hires', styrka: 1, ord: ['nyanställer','anställer','rekryterar','new hires','hiring spree','ökar personalstyrkan','växer med nya medarbetare'] },
+  { typ: 'acquisition', styrka: 3, ord: ['förvärvar','förvärv','acquisition','förvärvat','köper bolag','merger','fusion','fusionerar','sammanslagning','försäljning av verksamhet'] },
+  { typ: 'funding', styrka: 2, ord: ['tar in kapital','nyemission','emission','finansieringsrunda','investerar','investment','funding round','raises capital','venture capital','private equity'] },
+  { typ: 'ownership_change', styrka: 2, ord: ['ny ägare','ägarskifte','owner change','köps av','säljs till','private equity','riskkapital','majoritetsägare','ägande'] },
+  { typ: 'annual_report', styrka: 1, ord: ['årsredovisning','annual report','bokslut','year-end report','delårsrapport','kvartalsrapport','financial statement'] },
+  { typ: 'financial_pressure', styrka: 3, ord: ['förlust','negativt resultat','likviditetsproblem','kassaflödesproblem','pressade marginaler','minskad omsättning','resultatfall','vinstvarning','going concern','negative equity','cash flow pressure','losses','declining margins','profit warning'] },
+  { typ: 'balance_sheet_change', styrka: 2, ord: ['balansräkning','eget kapital','skuldsättning','nettoskuld','soliditet','goodwill impairment','nedskrivning','impairment','debt refinancing','refinansiering'] },
+  { typ: 'profitability_change', styrka: 2, ord: ['ebitda','ebit','rörelseresultat','resultat före skatt','bruttomarginal','lönsamhet','profitability','p&l','profit and loss','margin pressure'] },
+  { typ: 'system_change', styrka: 2, ord: ['erp','affärssystem','systembyte','implementation','implementerar','sap','dynamics 365','netsuite','oracle','workday','digital transformation'] },
+  { typ: 'audit_remark', styrka: 3, ord: ['revisionsanmärkning','revisor anmärker','oren revisionsberättelse','audit remark','qualified opinion','material weakness','internal control weakness'] }
+];
+
+function detectSignalType(text) {
+  const t = String(text || '').toLowerCase();
+  for (const rule of SIGNAL_RULES) {
+    if (rule.ord.some(word => t.includes(word.toLowerCase()))) {
+      return { typ: rule.typ, styrka: rule.styrka };
+    }
+  }
+  return null;
+}
 
 const MARKET_QUERIES = [
   'Sverige företag tillväxt expansion expanderar växer',
@@ -87,18 +113,13 @@ async function discoverForUser(supabase, userId) {
         if (!companyName || isBadCompanyName(companyName)) continue;
 
         const companyResult = await findOrCreateCompany(supabase, userId, companyName);
-        if (companyResult.error) {
-          errors.push(`${companyName}: ${companyResult.error}`);
-          continue;
-        }
+        if (companyResult.error) { errors.push(`${companyName}: ${companyResult.error}`); continue; }
         if (companyResult.created) nyaBolag++;
 
         const { data: existing } = await supabase
-          .from('company_signals')
-          .select('id')
+          .from('company_signals').select('id')
           .eq('company_id', companyResult.companyId)
-          .eq('kalla_url', item.url)
-          .maybeSingle();
+          .eq('kalla_url', item.url).maybeSingle();
         if (existing) continue;
 
         const { error: insertError } = await supabase.from('company_signals').insert({
@@ -136,27 +157,15 @@ async function findOrCreateCompany(supabase, userId, companyName) {
   if (!normalized) return { error: 'No valid company name' };
 
   const { data: existing, error: selectError } = await supabase
-    .from('companies')
-    .select('id')
-    .eq('user_id', userId)
-    .ilike('namn', normalized)
-    .maybeSingle();
-
+    .from('companies').select('id').eq('user_id', userId).ilike('namn', normalized).maybeSingle();
   if (selectError) return { error: selectError.message };
   if (existing?.id) return { companyId: existing.id, created: false };
 
   const { data: created, error: insertError } = await supabase
-    .from('companies')
-    .insert({
-      user_id: userId,
-      namn: normalized,
-      pipeline_status: 'Watchlist',
-      land: 'Sverige',
-      anteckningar: 'Automatiskt skapat från marknadsbrett nyhetsflöde.'
-    })
-    .select('id')
-    .single();
-
+    .from('companies').insert({
+      user_id: userId, namn: normalized, pipeline_status: 'Watchlist',
+      land: 'Sverige', anteckningar: 'Automatiskt skapat från marknadsbrett nyhetsflöde.'
+    }).select('id').single();
   if (insertError) return { error: insertError.message };
   return { companyId: created.id, created: true };
 }
@@ -195,7 +204,7 @@ function extractCompanyName(title, description) {
 }
 
 function stripNewsSource(title) { return String(title || '').replace(/\s+-\s+[^-]{2,80}$/g, '').replace(/\s+–\s+[^–]{2,80}$/g, '').trim(); }
-function normalizeCompanyName(name) { return String(name || '').replace(/["“”]/g, '').replace(/\s+/g, ' ').replace(/^(Bolaget|Företaget|Koncernen|Svenska|Norska|Danska)\s+/i, '').replace(/\b(varslar|säger|rekryterar|anställer|förvärvar|köper|säljer|expanderar|växer|redovisar|rapporterar|tar|genomför|byter|implementerar|lanserar|öppnar|stänger|omstrukturerar|utser|tillsätter).*$/i, '').replace(/[.,:;!?]+$/g, '').trim(); }
-function isBadCompanyName(name) { const n=String(name||'').trim(); const lower=n.toLowerCase(); if(n.length<3||n.length>90)return true; if(/^\d+$/.test(n))return true; return ['sverige','stockholm','göteborg','malmö','dagens industri','di','svd','dn','breakit','realtid','affärsvärlden','resume','placera','finwire','tt','google news','börsen','rapport','årsredovisning','företag','bolag','kommun'].includes(lower); }
+function normalizeCompanyName(name) { return String(name || '').replace(/["""]/g, '').replace(/\s+/g, ' ').replace(/^(Bolaget|Företaget|Koncernen|Svenska|Norska|Danska)\s+/i, '').replace(/\b(varslar|säger|rekryterar|anställer|förvärvar|köper|säljer|expanderar|växer|redovisar|rapporterar|tar|genomför|byter|implementerar|lanserar|öppnar|stänger|omstrukturerar|utser|tillsätter).*$/i, '').replace(/[.,:;!?]+$/g, '').trim(); }
+function isBadCompanyName(name) { const n = String(name || '').trim(); if (n.length < 3 || n.length > 90) return true; if (/^\d+$/.test(n)) return true; return ['sverige','stockholm','göteborg','malmö','dagens industri','di','svd','dn','breakit','realtid','affärsvärlden','resume','placera','finwire','tt','google news','börsen','rapport','årsredovisning','företag','bolag','kommun'].includes(n.toLowerCase()); }
 function stripTags(str) { return String(str || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').trim(); }
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
