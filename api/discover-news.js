@@ -1,22 +1,28 @@
 // /api/discover-news.js
-// Manual, authenticated news discovery for the CRM frontend.
-// Checks the current user's monitored companies and creates company_signals from Google News RSS.
+// Manual, authenticated business-change news discovery.
+// Searches Google News RSS for monitored companies and creates broad finance-consulting relevance signals.
 
 import { createClient } from '@supabase/supabase-js';
+import { detectSignalType } from './signal-config.js';
 
-const SIGNAL_NYCKELORD = [
-  { ord: ['ny cfo', 'new cfo', 'tillträder cfo', 'rekryterat cfo'], typ: 'ny_cfo', styrka: 3 },
-  { ord: ['ny vd', 'new ceo', 'tillträder vd', 'ny verkställande'], typ: 'ny_vd', styrka: 2 },
-  { ord: ['förvärvar', 'förvärv', 'acquisition', 'merger', 'fusionerar'], typ: 'forvärv', styrka: 3 },
-  { ord: ['varsel', 'uppsägningar', 'omstrukturering', 'sparpaket'], typ: 'varsel', styrka: 3 },
-  { ord: ['ny ekonomichef', 'ny finanschef', 'ny controller'], typ: 'ny_ledning', styrka: 2 }
+const NEWS_QUERY_TERMS = [
+  'CFO OR ekonomichef OR finanschef',
+  'tillväxt OR expansion OR expanderar OR växer',
+  'omstrukturering OR omorganisation OR sparpaket OR effektiviseringsprogram',
+  'varsel OR uppsägningar OR neddragningar',
+  'förvärv OR fusion OR acquisition OR merger',
+  'nyemission OR finansiering OR investering OR ägarskifte',
+  'årsredovisning OR bokslut OR delårsrapport OR kvartalsrapport',
+  'förlust OR vinstvarning OR kassaflöde OR likviditet OR marginal',
+  'balansräkning OR eget kapital OR skuldsättning OR nedskrivning',
+  'ERP OR affärssystem OR SAP OR Dynamics 365 OR systembyte',
+  'revisionsanmärkning OR oren revisionsberättelse'
 ];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '');
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -24,51 +30,51 @@ export default async function handler(req, res) {
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = authData.user.id;
-  const { data: bolag, error } = await supabase
+  const { data: companies, error } = await supabase
     .from('companies')
-    .select('id, user_id, namn')
+    .select('id, namn, pipeline_status')
     .eq('user_id', userId)
-    .in('pipeline_status', ['Watchlist', 'Intressant', 'Varm', 'Mojlighet'])
+    .in('pipeline_status', ['Watchlist', 'Intressant', 'Varm', 'Mojlighet', 'Mote', 'Offert'])
     .is('arkiverad_vid', null)
-    .limit(100);
+    .limit(150);
 
   if (error) return res.status(500).json({ error: error.message });
-  if (!bolag?.length) return res.status(200).json({ message: 'No monitored companies found', nya_signaler: 0 });
+  if (!companies?.length) return res.status(200).json({ message: 'No monitored companies found', nya_signaler: 0, errors: [] });
 
-  let totaltNya = 0;
+  let nyaSignaler = 0;
   const errors = [];
 
-  for (const company of bolag) {
+  for (const company of companies) {
     try {
-      const nyheter = await hamtaGoogleNews(company.namn);
-      for (const nyhet of nyheter) {
-        const detekterad = detekteraSignalTyp(`${nyhet.titel} ${nyhet.beskrivning}`);
-        if (!detekterad) continue;
+      const newsItems = await fetchCompanyNews(company.namn);
 
-        const { data: finns } = await supabase
+      for (const item of newsItems) {
+        const detected = detectSignalType(`${item.titel} ${item.beskrivning}`);
+        if (!detected) continue;
+
+        const { data: existing } = await supabase
           .from('company_signals')
           .select('id')
           .eq('company_id', company.id)
-          .eq('kalla_url', nyhet.url)
+          .eq('kalla_url', item.url)
           .maybeSingle();
-
-        if (finns) continue;
+        if (existing) continue;
 
         const { error: insertError } = await supabase.from('company_signals').insert({
           user_id: userId,
           company_id: company.id,
-          signal_typ: detekterad.typ,
-          rubrik: nyhet.titel,
-          beskrivning: nyhet.beskrivning,
+          signal_typ: detected.typ,
+          rubrik: item.titel,
+          beskrivning: item.beskrivning,
           kalla: 'Google News',
-          kalla_url: nyhet.url,
-          signal_datum: nyhet.datum,
-          signal_styrka: detekterad.styrka,
+          kalla_url: item.url,
+          signal_datum: item.datum,
+          signal_styrka: detected.styrka,
           status: 'ny'
         });
 
         if (insertError) errors.push(`${company.namn}: ${insertError.message}`);
-        else totaltNya++;
+        else nyaSignaler++;
       }
       await sleep(250);
     } catch (err) {
@@ -77,15 +83,15 @@ export default async function handler(req, res) {
   }
 
   return res.status(200).json({
-    message: `News search complete: ${totaltNya} new signals`,
-    nya_signaler: totaltNya,
+    message: `News search complete: ${nyaSignaler} new business-change signals`,
+    nya_signaler: nyaSignaler,
     errors
   });
 }
 
-async function hamtaGoogleNews(bolagsnamn) {
-  const q = encodeURIComponent(`"${bolagsnamn}" CFO OR VD OR förvärv OR varsel OR ekonomichef`);
-  const url = `https://news.google.com/rss/search?q=${q}&hl=sv&gl=SE&ceid=SE:sv`;
+async function fetchCompanyNews(companyName) {
+  const query = `"${companyName}" (${NEWS_QUERY_TERMS.join(' OR ')})`;
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=sv&gl=SE&ceid=SE:sv`;
   const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRM-NIS/1.0)' } });
   if (!response.ok) return [];
   return parseRSS(await response.text());
@@ -94,13 +100,13 @@ async function hamtaGoogleNews(bolagsnamn) {
 function parseRSS(xml) {
   const items = [];
   const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-  for (const item of itemMatches.slice(0, 5)) {
+  for (const item of itemMatches.slice(0, 8)) {
     const titel = stripTags(item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || '');
     const url = item.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() || '';
-    const beskrivning = stripTags(item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || '').slice(0, 300);
+    const beskrivning = stripTags(item.match(/<description>([\s\S]*?)<\/description>/)?.[1] || '').slice(0, 500);
     const datumStr = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
     const datum = datumStr ? new Date(datumStr).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    if (titel) items.push({ titel, url, beskrivning, datum });
+    if (titel && url) items.push({ titel, url, beskrivning, datum });
   }
   return items;
 }
@@ -111,16 +117,9 @@ function stripTags(str) {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
-}
-
-function detekteraSignalTyp(text) {
-  const t = String(text || '').toLowerCase();
-  for (const signal of SIGNAL_NYCKELORD) {
-    if (signal.ord.some(ord => t.includes(ord))) return { typ: signal.typ, styrka: signal.styrka };
-  }
-  return null;
 }
 
 function sleep(ms) {
