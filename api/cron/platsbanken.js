@@ -1,8 +1,50 @@
 // /api/cron/platsbanken.js
 // Nightly business-change lead discovery from Platsbanken/JobTech for all active users.
+// Runs via Vercel Cron: 0 2 * * *
 
 import { createClient } from '@supabase/supabase-js';
-import { detectSignalType } from '../signal-config.js';
+
+// Signal detection embedded to avoid Vercel ES module import issues
+const SIGNAL_RULES = [
+  { typ: 'finance_hiring', styrka: 3, ord: ['cfo','chief financial officer','ekonomichef','finanschef','finance manager','business controller','financial controller','redovisningschef','head of finance','koncernredovisning','interim cfo','interim finance','interim ekonomi'] },
+  { typ: 'management_change', styrka: 3, ord: ['ny vd','ny ceo','new ceo','ny cfo','new cfo','tillträder','avgår','ny ledning','ledningsgrupp','rekryterar ny','utser','appoints'] },
+  { typ: 'growth', styrka: 2, ord: ['tillväxt','växer','expanderar','kraftig tillväxt','rekordomsättning','ökar omsättningen','growth','rapid growth','scaling','scale-up','växer snabbt'] },
+  { typ: 'expansion', styrka: 2, ord: ['expansion','etablerar','ny marknad','internationell expansion','öppnar kontor','ny fabrik','nytt lager','expand into','new market','new office'] },
+  { typ: 'restructuring', styrka: 3, ord: ['omstrukturering','omorganisation','reorganisation','restructuring','sparpaket','kostnadsprogram','effektiviseringsprogram','turnaround','förändringsprogram'] },
+  { typ: 'layoffs', styrka: 3, ord: ['varsel','varslar','uppsägningar','säger upp','neddragningar','personalminskning','layoffs','redundancies','cut jobs','terminates employees'] },
+  { typ: 'new_hires', styrka: 1, ord: ['nyanställer','anställer','rekryterar','new hires','hiring spree','ökar personalstyrkan','växer med nya medarbetare'] },
+  { typ: 'acquisition', styrka: 3, ord: ['förvärvar','förvärv','acquisition','förvärvat','köper bolag','merger','fusion','fusionerar','sammanslagning','försäljning av verksamhet'] },
+  { typ: 'funding', styrka: 2, ord: ['tar in kapital','nyemission','emission','finansieringsrunda','investerar','investment','funding round','raises capital','venture capital','private equity'] },
+  { typ: 'ownership_change', styrka: 2, ord: ['ny ägare','ägarskifte','owner change','köps av','säljs till','private equity','riskkapital','majoritetsägare','ägande'] },
+  { typ: 'annual_report', styrka: 1, ord: ['årsredovisning','annual report','bokslut','year-end report','delårsrapport','kvartalsrapport','financial statement'] },
+  { typ: 'financial_pressure', styrka: 3, ord: ['förlust','negativt resultat','likviditetsproblem','kassaflödesproblem','pressade marginaler','minskad omsättning','resultatfall','vinstvarning','going concern','negative equity','cash flow pressure','losses','declining margins','profit warning'] },
+  { typ: 'balance_sheet_change', styrka: 2, ord: ['balansräkning','eget kapital','skuldsättning','nettoskuld','soliditet','goodwill impairment','nedskrivning','impairment','debt refinancing','refinansiering'] },
+  { typ: 'profitability_change', styrka: 2, ord: ['ebitda','ebit','rörelseresultat','resultat före skatt','bruttomarginal','lönsamhet','profitability','p&l','profit and loss','margin pressure'] },
+  { typ: 'system_change', styrka: 2, ord: ['erp','affärssystem','systembyte','implementation','implementerar','sap','dynamics 365','netsuite','oracle','workday','digital transformation'] },
+  { typ: 'audit_remark', styrka: 3, ord: ['revisionsanmärkning','revisor anmärker','oren revisionsberättelse','audit remark','qualified opinion','material weakness','internal control weakness'] }
+];
+
+function detectSignalType(text) {
+  const t = String(text || '').toLowerCase();
+  for (const rule of SIGNAL_RULES) {
+    if (rule.ord.some(word => t.includes(word.toLowerCase()))) {
+      return { typ: rule.typ, styrka: rule.styrka };
+    }
+  }
+  return null;
+}
+
+function signalLabel(type) {
+  return {
+    finance_hiring: 'Finance hiring', system_change: 'Systemförändring',
+    growth: 'Tillväxtsignal', expansion: 'Expansion', restructuring: 'Omstrukturering',
+    layoffs: 'Varsel/uppsägning', management_change: 'Ledningsförändring', jobbannons: 'Jobbannons',
+    acquisition: 'Förvärv/fusion', funding: 'Finansiering', ownership_change: 'Ägarförändring',
+    annual_report: 'Årsredovisning', financial_pressure: 'Finansiell press',
+    balance_sheet_change: 'Balansräkning', profitability_change: 'Resultat/P&L',
+    audit_remark: 'Revisionsanmärkning', new_hires: 'Nyrekrytering'
+  }[type] || 'Signal';
+}
 
 const SEARCH_TERMS = [
   'CFO', 'ekonomichef', 'finanschef', 'finance manager', 'controller', 'business controller',
@@ -73,7 +115,7 @@ export default async function handler(req, res) {
             user_id: userId,
             company_id: company.id,
             signal_typ: detected.typ,
-            rubrik: `${label(detected.typ)}: ${ad.headline || term}`,
+            rubrik: `${signalLabel(detected.typ)}: ${ad.headline || term}`,
             beskrivning: (ad.description?.text || '').slice(0, 700) || null,
             kalla: 'Platsbanken / JobTech',
             kalla_url: ad.webpage_url || null,
@@ -101,17 +143,16 @@ async function findOrCreateCompany(supabase, userId, company) {
   }
   const { data: byName } = await supabase.from('companies').select('id').eq('user_id', userId).ilike('namn', company.namn).maybeSingle();
   if (byName?.id) return { id: byName.id, created: false };
-  const { data: created } = await supabase.from('companies').insert({ user_id: userId, namn: company.namn, orgnr: company.orgnr, stad: company.stad, bransch: company.bransch, pipeline_status: 'Watchlist', land: 'Sverige' }).select('id').single();
+  const { data: created } = await supabase.from('companies').insert({
+    user_id: userId, namn: company.namn, orgnr: company.orgnr,
+    stad: company.stad, bransch: company.bransch, pipeline_status: 'Watchlist', land: 'Sverige'
+  }).select('id').single();
   return { id: created?.id, created: !!created?.id };
 }
 
 async function signalExists(supabase, companyId, sourceUrl) {
   const { data } = await supabase.from('company_signals').select('id').eq('company_id', companyId).eq('kalla_url', sourceUrl || '').maybeSingle();
   return !!data;
-}
-
-function label(type) {
-  return { finance_hiring: 'Finance hiring', system_change: 'Systemförändring', growth: 'Tillväxtsignal', expansion: 'Expansion', restructuring: 'Omstrukturering', layoffs: 'Varsel/uppsägning', management_change: 'Ledningsförändring', jobbannons: 'Jobbannons' }[type] || 'Signal';
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
