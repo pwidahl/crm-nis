@@ -1,24 +1,9 @@
 {
   "crons": [
-    {
-      "path": "/api/cron/platsbanken",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/news",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/reminders",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/weekly",
-      "schedule": "0 7 * * 1"
-    },
-    {
-      "path": "/api/cron/nasdaq-import",
-      "schedule": "0 4 * * 1"
-    }
+    { "path": "/api/cron/platsbanken", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/news", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/reminders", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/weekly", "schedule": "0 7 * * 1" },
+    { "path": "/api/cron/nasdaq-import", "schedule": "0 4 * * 1" }
   ]
 }
