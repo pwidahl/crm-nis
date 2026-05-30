@@ -115,35 +115,6 @@
     #toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none;max-width:360px}#toast.show{opacity:1}
     #login-screen{position:fixed;inset:0;background:var(--paper);z-index:999;display:flex;align-items:center;justify-content:center}.login-card{background:#fff;padding:28px;border-radius:10px;width:380px;max-width:92vw;border:1px solid var(--cream);box-shadow:0 12px 36px rgba(0,0,0,.08)}.login-card h2{font-family:"DM Serif Display",serif;font-size:30px;margin-bottom:18px}.login-card input{width:100%;margin-bottom:10px}.login-card .btn{width:100%;margin-top:4px}.login-error{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}.privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:12px 14px;font-size:12px;line-height:1.45;margin-bottom:14px}
     @media(max-width:768px){.shell{flex-direction:column;height:auto;min-height:100vh}.sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:56px;overflow-x:auto;overflow-y:hidden}.sidebar-logo{padding:0 16px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:56px;display:flex;align-items:center}.sidebar-logo h1{font-size:16px}.sidebar-logo p{display:none}.nav{display:flex;flex-direction:row;padding:0;height:56px;align-items:center;overflow-x:auto}.nav-section{display:none}.nav-item{padding:0 14px;height:56px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:12px}.nav-item.active{border-left:none;border-bottom-color:var(--warm)}.nav-item .icon{display:none}.topbar{padding:12px 16px;flex-wrap:wrap}.topbar-search{order:3;max-width:none;flex-basis:100%}.content{padding:16px}.kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}.chain-bar{grid-template-columns:repeat(2,1fr)}.table-wrap{overflow-x:auto}table{min-width:760px}.form-grid,.info-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}.modal{width:95vw!important}.followup-row{flex-wrap:wrap;gap:8px}.diary-entry-grid{grid-template-columns:1fr}.diary-entry-grid .wide{grid-column:1}.diary-entry-grid .full{grid-column:1}.pipeline{display:block;overflow:visible}.pipe-col{min-height:auto;margin-bottom:12px}.table-wrap.contacts-desktop{display:none}.contacts-card-list{display:block}.task-board{display:block}.task-col{margin-bottom:12px}.quicklog-toggle{right:16px;bottom:72px}.quicklog-panel{right:16px;bottom:118px}}
-
-    /* Layout fix: prevent the diary sheet from becoming wider than the screen */
-    html, body { overflow-x: hidden; }
-    .main, .content, .view, .diary-sheet, .diary-sheet-body { min-width: 0; max-width: 100%; }
-    .content { overflow-x: hidden; }
-    .diary-sheet { overflow: hidden; }
-    .diary-sheet-body { overflow-x: hidden; }
-    .diary-entry-grid {
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      align-items: start;
-    }
-    .diary-entry-grid .wide { grid-column: span 2; }
-    .diary-entry-grid .full { grid-column: 1 / -1; }
-    .diary-entry-grid input,
-    .diary-entry-grid select,
-    .diary-entry-grid textarea { width: 100%; min-width: 0; }
-    .toolbar input,
-    .toolbar select { max-width: 100%; min-width: 0; }
-    @media (max-width: 1200px) {
-      .diary-entry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .diary-entry-grid .wide { grid-column: 1 / -1; }
-    }
-    @media (max-width: 768px) {
-      .diary-entry-grid { grid-template-columns: 1fr; }
-      .diary-entry-grid .wide,
-      .diary-entry-grid .full { grid-column: 1; }
-      .topbar-actions .btn { padding: 7px 12px; font-size: 12px; }
-    }
-
   </style>
 </head>
 <body>
