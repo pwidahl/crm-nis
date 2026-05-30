@@ -1,17 +1,15 @@
 // /api/discover-finland.js
-// Hämtar finska bolag från YTJ/PRH (Patent- och registerstyrelsen).
-// Gratis och öppet API – ingen API-nyckel krävs.
-//
+// Fetches Finnish companies from YTJ/PRH open data.
 // POST /api/discover-finland
 // Requires: Authorization: Bearer <Supabase access token>
 
 import { createClient } from '@supabase/supabase-js';
 
 const YTJ_API = 'https://avoindata.prh.fi/tr/v1';
+const SEARCH_WORDS = ['talousjohtaja', 'controller', 'taloushallinto', 'rahoitusjohtaja', 'kirjanpito', 'finance', 'CFO'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
@@ -20,102 +18,80 @@ export default async function handler(req, res) {
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = authData.user.id;
-  let nyaBolag = 0;
-  let nyaSignaler = 0;
+  let nyaBolag = 0, nyaSignaler = 0;
   const errors = [];
 
-  // Sök på finska bolag med finance-relaterade nyckelord
-  const sokord = [
-    'talousjohtaja',     // CFO/ekonomichef
-    'controller',
-    'taloushallinto',    // ekonomiförvaltning
-    'rahoitusjohtaja',   // finanschef
-    'kirjanpito'         // bokföring
-  ];
-
-  for (const ord of sokord) {
+  for (const word of SEARCH_WORDS) {
     try {
-      const bolag = await fetchFinnishCompanies(ord);
+      const companies = await fetchFinnishCompanies(word);
+      for (const b of companies) {
+        const id = await findOrCreateCompany(supabase, userId, b, errors);
+        if (!id) continue;
+        if (id.created) nyaBolag++;
 
-      for (const b of bolag) {
-        const { data: existing } = await supabase.from('companies').select('id')
-          .eq('user_id', userId).eq('orgnr', b.orgnr).maybeSingle();
+        const exists = await recentSignalExists(supabase, id.id, 'YTJ Finland', word);
+        if (exists) continue;
 
-        let companyId;
-        if (existing?.id) {
-          companyId = existing.id;
-        } else {
-          const { data: created, error } = await supabase.from('companies').insert({
-            user_id: userId,
-            namn: b.namn,
-            orgnr: b.orgnr,
-            stad: b.stad,
-            land: 'Finland',
-            bransch: b.bransch,
-            pipeline_status: 'Watchlist',
-            anteckningar: `Automatiskt importerat från YTJ/PRH Finland. Y-tunnus: ${b.orgnr}.`
-          }).select('id').single();
-
-          if (error) { errors.push(`${b.namn}: ${error.message}`); continue; }
-          companyId = created.id;
-          nyaBolag++;
-        }
-
-        // Skapa signal
-        const { data: sigExists } = await supabase.from('company_signals').select('id')
-          .eq('company_id', companyId)
-          .eq('kalla', 'YTJ Finland')
-          .gte('signal_datum', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0])
-          .maybeSingle();
-
-        if (!sigExists) {
-          await supabase.from('company_signals').insert({
-            user_id: userId,
-            company_id: companyId,
-            signal_typ: 'finance_hiring',
-            rubrik: `Finsk finance-signal: ${b.namn}`,
-            beskrivning: `Identifierat via YTJ Finland. Sökord: ${ord}. Y-tunnus: ${b.orgnr}`,
-            kalla: 'YTJ Finland',
-            kalla_url: `https://www.ytj.fi/yritystiedot.aspx?yavain=${b.orgnr}`,
-            signal_datum: new Date().toISOString().split('T')[0],
-            signal_styrka: 2,
-            status: 'ny'
-          });
-          nyaSignaler++;
-        }
+        const { error } = await supabase.from('company_signals').insert({
+          user_id: userId,
+          company_id: id.id,
+          signal_typ: 'finance_hiring',
+          rubrik: `Finsk finance-signal: ${b.namn}`,
+          beskrivning: `Identifierat via YTJ Finland. Sökord: ${word}. Y-tunnus: ${b.orgnr}.`,
+          kalla: 'YTJ Finland',
+          kalla_url: `https://www.ytj.fi/yritystiedot.aspx?yavain=${encodeURIComponent(b.orgnr)}`,
+          signal_datum: today(),
+          signal_styrka: 2,
+          status: 'ny'
+        });
+        if (error) errors.push(`${b.namn}: ${error.message}`);
+        else nyaSignaler++;
       }
-
-      await sleep(300);
+      await sleep(250);
     } catch (err) {
-      errors.push(`YTJ ${ord}: ${err.message}`);
+      errors.push(`${word}: ${err.message}`);
     }
   }
 
-  return res.status(200).json({
-    message: `Finland discovery: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`,
-    nya_bolag: nyaBolag,
-    nya_signaler: nyaSignaler,
-    errors
-  });
+  return res.status(200).json({ message: `Finland discovery: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`, nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors });
 }
 
 async function fetchFinnishCompanies(name) {
   const url = `${YTJ_API}/companies?name=${encodeURIComponent(name)}&maxResults=20`;
-  const r = await fetch(url, {
-    headers: { 'Accept': 'application/json', 'User-Agent': 'CRM-NIS/1.0' }
-  });
+  const r = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'CRM-NIS/1.0' } });
   if (!r.ok) return [];
-
   const data = await r.json();
-  return (data.results || [])
-    .filter(c => c.registrationDate && c.companyForm === 'OY')
-    .map(c => ({
-      namn: c.name,
-      orgnr: c.businessId,
-      stad: c.addresses?.[0]?.city || null,
-      bransch: null,
-      registrationDate: c.registrationDate
-    }));
+  return (data.results || []).map(c => ({
+    namn: c.name,
+    orgnr: c.businessId,
+    stad: c.addresses?.[0]?.city || null,
+    bransch: null,
+    land: 'Finland'
+  })).filter(c => c.namn && c.orgnr);
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function findOrCreateCompany(supabase, userId, company, errors) {
+  const { data: existing } = await supabase.from('companies').select('id').eq('user_id', userId).eq('orgnr', company.orgnr).maybeSingle();
+  if (existing?.id) return { id: existing.id, created: false };
+  const { data, error } = await supabase.from('companies').insert({
+    user_id: userId,
+    namn: company.namn,
+    orgnr: company.orgnr,
+    stad: company.stad,
+    land: 'Finland',
+    bransch: company.bransch,
+    pipeline_status: 'Watchlist',
+    anteckningar: `Automatiskt importerat från YTJ/PRH Finland. Y-tunnus: ${company.orgnr}.`
+  }).select('id').single();
+  if (error) { errors.push(`${company.namn}: ${error.message}`); return null; }
+  return { id: data.id, created: true };
+}
+
+async function recentSignalExists(supabase, companyId, source, word) {
+  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+  const { data } = await supabase.from('company_signals').select('id').eq('company_id', companyId).eq('kalla', source).ilike('beskrivning', `%${word}%`).gte('signal_datum', cutoff).maybeSingle();
+  return !!data;
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
