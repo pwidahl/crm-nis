@@ -90,9 +90,19 @@
     .task-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}.task-main{flex:1}.task-title{font-weight:600}.task-sub{font-size:11px;color:#888;margin-top:2px}
     .month-summary{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}.month-summary strong{display:block;font-family:"DM Serif Display",serif;font-size:25px}.month-summary span{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.6px}
 
+    .diary-sheet{background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:22px;overflow:hidden}
+    .diary-sheet-body{padding:18px}
+    .diary-entry-grid{display:grid;grid-template-columns:1.2fr 1.2fr 1.2fr .7fr .7fr 1fr;gap:12px;align-items:end}
+    .diary-entry-grid .wide{grid-column:span 3}.diary-entry-grid .full{grid-column:1/-1}
+    .diary-summary-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:20px 0 10px}
+    .diary-day-header{background:var(--paper);font-weight:700;color:var(--accent)}
+    .diary-day-header td{border-top:1px solid var(--cream);border-bottom:1px solid var(--cream)}
+    .diary-total-row td{font-weight:700;background:#fff;border-top:2px solid var(--cream)}
+    .diary-small{font-size:11px;color:#888;line-height:1.45}
+
     #toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none;max-width:360px}#toast.show{opacity:1}
     #login-screen{position:fixed;inset:0;background:var(--paper);z-index:999;display:flex;align-items:center;justify-content:center}.login-card{background:#fff;padding:28px;border-radius:10px;width:380px;max-width:92vw;border:1px solid var(--cream);box-shadow:0 12px 36px rgba(0,0,0,.08)}.login-card h2{font-family:"DM Serif Display",serif;font-size:30px;margin-bottom:18px}.login-card input{width:100%;margin-bottom:10px}.login-card .btn{width:100%;margin-top:4px}.login-error{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}.privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:12px 14px;font-size:12px;line-height:1.45;margin-bottom:14px}
-    @media(max-width:768px){.shell{flex-direction:column;height:auto;min-height:100vh}.sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:56px;overflow-x:auto;overflow-y:hidden}.sidebar-logo{padding:0 16px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:56px;display:flex;align-items:center}.sidebar-logo h1{font-size:16px}.sidebar-logo p{display:none}.nav{display:flex;flex-direction:row;padding:0;height:56px;align-items:center;overflow-x:auto}.nav-section{display:none}.nav-item{padding:0 14px;height:56px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:12px}.nav-item.active{border-left:none;border-bottom-color:var(--warm)}.nav-item .icon{display:none}.topbar{padding:12px 16px;flex-wrap:wrap}.topbar-search{order:3;max-width:none;flex-basis:100%}.content{padding:16px}.kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}.chain-bar{grid-template-columns:repeat(2,1fr)}.table-wrap{overflow-x:auto}table{min-width:760px}.form-grid,.info-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}.modal{width:95vw!important}.followup-row{flex-wrap:wrap;gap:8px}}
+    @media(max-width:768px){.shell{flex-direction:column;height:auto;min-height:100vh}.sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:56px;overflow-x:auto;overflow-y:hidden}.sidebar-logo{padding:0 16px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:56px;display:flex;align-items:center}.sidebar-logo h1{font-size:16px}.sidebar-logo p{display:none}.nav{display:flex;flex-direction:row;padding:0;height:56px;align-items:center;overflow-x:auto}.nav-section{display:none}.nav-item{padding:0 14px;height:56px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:12px}.nav-item.active{border-left:none;border-bottom-color:var(--warm)}.nav-item .icon{display:none}.topbar{padding:12px 16px;flex-wrap:wrap}.topbar-search{order:3;max-width:none;flex-basis:100%}.content{padding:16px}.kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}.chain-bar{grid-template-columns:repeat(2,1fr)}.table-wrap{overflow-x:auto}table{min-width:760px}.form-grid,.info-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}.modal{width:95vw!important}.followup-row{flex-wrap:wrap;gap:8px}.diary-entry-grid{grid-template-columns:1fr}.diary-entry-grid .wide{grid-column:1}.diary-entry-grid .full{grid-column:1}}
   </style>
 </head>
 <body>
@@ -178,7 +188,7 @@
       </div>
       <div class="view" id="view-projects">
         <div class="toolbar">
-          <input id="project-filter" placeholder="Filtrera uppdrag, kund eller arbetskategori..." oninput="renderProjects()">
+          <input id="project-filter" placeholder="Filtrera uppdrag eller kund..." oninput="renderProjects()">
           <select id="project-status-filter" onchange="renderProjects()"><option value="">Alla statusar</option></select>
           <input id="project-month-filter" type="month" onchange="renderProjects()">
         </div>
@@ -507,7 +517,7 @@ function renderCurrent(){showView(currentView);}
 // GLOBAL SEARCH
 function debouncedGlobalSearch(){clearTimeout(globalTimer);globalTimer=setTimeout(globalSearch,250);}
 async function globalSearch(){const q=document.getElementById("global-search").value.trim();const box=document.getElementById("search-results");if(q.length<2){box.classList.remove("open");return;}const r=await supabaseClient.rpc("search_crm",{p_user_id:currentUser.id,p_query:q});const list=r.data||[];box.innerHTML=list.length?list.map(x=>`<div class="search-item" onclick="openSearchResult('${x.typ}','${x.id}')"><div class="search-type">${esc(x.typ)}</div><strong>${esc(x.titel)}</strong><div style="font-size:12px;color:#888">${esc(x.undertitel||"")} ${x.extra?"· "+esc(x.extra):""}</div></div>`).join(""):'<div class="search-item"><span style="color:#aaa">Inga träffar</span></div>';box.classList.add("open");}
-function openSearchResult(type,id){document.getElementById("search-results").classList.remove("open");document.getElementById("global-search").value="";if(type==="kontakt"){showView("contacts");openCard(id);}else if(type==="bolag"){showView("companies");openCompanyCard(id);}else if(type==="underkonsult"){showView("subconsultants");}}
+function openSearchResult(type,id){document.getElementById("search-results").classList.remove("open");document.getElementById("global-search").value="";if(type==="kontakt"){showView("contacts");openCard(id);}else if(type==="bolag"){showView("companies");openCompanyCard(id);}else if(type==="underkonsult"){showView("subconsultants");}else if(type==="uppdrag"){showView("projects");openProjectCard(id);}}
 
 // DASHBOARD
 function renderDashboard(){const today=new Date();today.setHours(0,0,0,0);const total=contacts.length;const aktiva=contacts.filter(c=>c.status==="Aktiv").length;const varma=contacts.filter(c=>c.status==="Varm lead").length;const forsenade=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today).length;const idag=contacts.filter(c=>{if(!c.nasta_foljup)return false;const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);return d.getTime()===today.getTime();}).length;const nyaSignaler=signals.filter(s=>s.status==="ny").length;document.getElementById("kpi-grid").innerHTML=[["Totalt kontakter",total,"blue"],["Bolag",companies.length,"green"],["Nya signaler",nyaSignaler,"gold"],["Uppföljning idag",idag,"warm"],["Försenade",forsenade,"red"],["AI score ≥ 70",companies.filter(c=>(c.ai_score||0)>=70).length,"purple"]].map(([label,num,color])=>`<div class="kpi ${color}"><div class="kpi-num">${num}</div><div class="kpi-label">${label}</div></div>`).join("");const ejRingt=contacts.filter(c=>!c.senast_typ||["","Inget","LinkedIn","E-post"].includes(c.senast_typ)).length;const ringt=contacts.filter(c=>["Telefonsamtal","samtal"].includes(c.senast_typ)).length;const lunch=contacts.filter(c=>["Lunch","lunch"].includes(c.senast_typ)).length;const aktivt=contacts.filter(c=>["Mote","mote"].includes(c.senast_typ)).length;document.getElementById("chain-bar").innerHTML=[["Ej ringt",ejRingt,"s1"],["Telefonsamtal",ringt,"s2"],["Lunch",lunch,"s3"],["Aktivt",aktivt,"s4"]].map(([l,n,c])=>`<div class="chain-step ${c}"><div class="chain-num">${n}</div><div class="chain-lbl">${l}</div></div>`).join("");renderUpcoming("dash-followups",8);}
@@ -606,6 +616,7 @@ function renderProjects(){
   const status=document.getElementById("project-status-filter")?.value||"";
   const month=document.getElementById("project-month-filter")?.value||currentMonth();
   if(document.getElementById("project-month-filter")&&!document.getElementById("project-month-filter").value)document.getElementById("project-month-filter").value=month;
+  const diaryState=getUnifiedDiaryState(month);
   const list=projects.filter(p=>{
     const co=projectCompany(p); const hay=[p.namn,p.uppdragstyp,p.status,co?.namn,p.scope,p.notes].join(" ").toLowerCase();
     return (!q||hay.includes(q))&&(!status||p.status===status);
@@ -614,6 +625,8 @@ function renderProjects(){
   const monthHours=list.reduce((s,p)=>s+projectMonthHours(p.id,month,true),0);
   const amount=list.reduce((s,p)=>s+(projectInvoiceAmount(p,month)||0),0);
   document.getElementById("projects-content").innerHTML=`
+    ${renderUnifiedDiarySheet(diaryState)}
+    <p class="section-title">Uppdragsöversikt</p>
     <div class="kpi-grid" style="margin-bottom:18px">
       <div class="kpi blue"><div class="kpi-num">${projects.length}</div><div class="kpi-label">Totalt uppdrag</div></div>
       <div class="kpi green"><div class="kpi-num">${active}</div><div class="kpi-label">Aktiva uppdrag</div></div>
@@ -621,6 +634,115 @@ function renderProjects(){
       <div class="kpi gold"><div class="kpi-num" style="font-size:26px">${amount?Math.round(amount).toLocaleString("sv-SE"):"--"}</div><div class="kpi-label">Beräknat fakturaunderlag</div></div>
     </div>
     ${list.length?`<div class="table-wrap"><table><thead><tr><th>Uppdrag</th><th>Kund</th><th>Status</th><th>Period</th><th>Timmar ${month}</th><th>Fakturaunderlag</th><th></th></tr></thead><tbody>${list.map(p=>{const co=projectCompany(p);const h=projectMonthHours(p.id,month,true);return `<tr><td><strong style="cursor:pointer" onclick="openProjectCard('${p.id}')">${esc(p.namn)}</strong><br><span style="font-size:11px;color:#888">${esc(p.uppdragstyp||"")}</span></td><td>${esc(co?.namn||"--")}</td><td><span class="${statusClass(p.status)}">${esc(p.status||"")}</span></td><td>${esc(p.start_date||"--")} – ${esc(p.end_date||"")}</td><td>${h.toFixed(1)}</td><td>${money(projectInvoiceAmount(p,month))}</td><td><button class="btn-icon" onclick="openProjectCard('${p.id}')">↗</button><button class="btn-icon" onclick="openEditProject('${p.id}')">⚙</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">&#128188;</div><p>Inga uppdrag ännu</p><p style="font-size:12px;color:#888;margin-top:6px">Skapa ett uppdrag för att logga dagligt arbete, tasks och fakturaunderlag.</p></div>'}`;
+  setTimeout(()=>{updateUnifiedDiaryProjectOptions(false);updateUnifiedDiaryTaskOptions(false);},0);
+}
+
+
+function getUnifiedDiaryState(defaultMonth){
+  return {
+    companyId:document.getElementById("diary-company-id")?.value||"",
+    projectId:document.getElementById("diary-project-id")?.value||"",
+    taskId:document.getElementById("diary-task-id")?.value||"",
+    month:document.getElementById("diary-month-filter")?.value||defaultMonth||currentMonth(),
+    summaryCompanyId:document.getElementById("diary-summary-company-id")?.value||"",
+    summaryProjectId:document.getElementById("diary-summary-project-id")?.value||""
+  };
+}
+function companyOptions(selectedId, onlyWithProjects=false){
+  const allowed=onlyWithProjects?new Set(projects.map(p=>p.company_id).filter(Boolean)):null;
+  return '<option value="">Alla kunder</option>'+companies.filter(c=>!allowed||allowed.has(c.id)).sort((a,b)=>String(a.namn||"").localeCompare(String(b.namn||""),'sv')).map(c=>`<option value="${c.id}" ${selectedId===c.id?"selected":""}>${esc(c.namn)}</option>`).join("");
+}
+function projectOptions(selectedId, companyId="", includeAll=false){
+  const list=projects.filter(p=>!companyId||p.company_id===companyId).sort((a,b)=>String(a.namn||"").localeCompare(String(b.namn||""),'sv'));
+  const first=list[0]?.id||""; const selected=selectedId||(!includeAll?first:"");
+  return (includeAll?'<option value="">Alla uppdrag</option>':'<option value="">Välj uppdrag</option>')+list.map(p=>{const co=projectCompany(p);return `<option value="${p.id}" ${selected===p.id?"selected":""}>${esc(p.namn)}${co?" · "+esc(co.namn):""}</option>`;}).join("");
+}
+function taskOptions(projectId, selectedId=""){
+  const list=projectTasks.filter(t=>t.project_id===projectId).sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),'sv'));
+  return '<option value="">Ingen / välj task</option>'+list.map(t=>`<option value="${t.id}" ${selectedId===t.id?"selected":""}>${esc(t.title)} (${esc(t.status||"")})</option>`).join("");
+}
+function renderUnifiedDiarySheet(state={}){
+  const entryCompanyId=state.companyId||"";
+  const entryProjectCandidates=projects.filter(p=>!entryCompanyId||p.company_id===entryCompanyId);
+  const entryProjectId=state.projectId||(entryProjectCandidates[0]?.id||"");
+  const summaryMonth=state.month||currentMonth();
+  const summaryCompanyId=state.summaryCompanyId||"";
+  const summaryProjectId=state.summaryProjectId||"";
+  const summaryEntries=filteredDiaryEntries(summaryMonth,summaryCompanyId,summaryProjectId);
+  const billable=summaryEntries.filter(e=>e.billable!==false).reduce((s,e)=>s+(parseFloat(e.hours)||0),0);
+  const nonbill=summaryEntries.filter(e=>e.billable===false).reduce((s,e)=>s+(parseFloat(e.hours)||0),0);
+  return `<div class="diary-sheet">
+    <div class="monday-section-header"><span style="font-size:18px">&#128214;</span><h3>Dagboksblad</h3><span class="diary-small">Logga arbete direkt per kund, uppdrag och task</span></div>
+    <div class="diary-sheet-body">
+      <div class="privacy-note">Här kan du arbeta i ett och samma blad: välj kund, uppdrag och task, logga dagens arbete och använd månadsöversikten som underlag för tidrapportering och fakturaspecifikation.</div>
+      ${projects.length?`<div class="diary-entry-grid">
+        <div class="form-group"><label>Kund</label><select id="diary-company-id" onchange="updateUnifiedDiaryProjectOptions(true)">${companyOptions(entryCompanyId,true)}</select></div>
+        <div class="form-group"><label>Uppdrag *</label><select id="diary-project-id" onchange="updateUnifiedDiaryTaskOptions(true)">${projectOptions(entryProjectId,entryCompanyId,false)}</select></div>
+        <div class="form-group"><label>Task</label><select id="diary-task-id">${taskOptions(entryProjectId,state.taskId||"")}</select></div>
+        <div class="form-group"><label>Datum</label><input id="diary-date" type="date" value="${todayISO()}"></div>
+        <div class="form-group"><label>Timmar</label><input id="diary-hours" type="number" step="0.25" min="0" placeholder="7.5"></div>
+        <div class="form-group"><label>Kategori</label><select id="diary-category">${WORK_CATEGORIES.map(x=>`<option value="${x}">${x}</option>`).join("")}</select></div>
+        <div class="form-group wide"><label>Utfört arbete *</label><textarea id="diary-description" placeholder="Vad gjorde du idag?"></textarea></div>
+        <div class="form-group wide"><label>Fakturatext</label><textarea id="diary-invoice-note" placeholder="Text som kan användas i fakturaspecifikationen"></textarea></div>
+        <div class="form-group full"><label>Ny task (valfritt)</label><input id="diary-new-task" placeholder="Skriv här för att skapa och koppla en ny task till denna dagboksrad"></div>
+        <div class="form-group full"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:400"><input type="checkbox" id="diary-billable" checked style="width:auto"> Fakturerbar tid</label></div>
+        <div class="form-group full"><button class="btn btn-primary" onclick="saveUnifiedDiaryEntry()">Spara dagboksrad</button></div>
+      </div>`:`<div class="empty" style="padding:30px"><div class="empty-icon">&#128188;</div><p>Skapa ett uppdrag först för att börja logga dagbok.</p><button class="btn btn-primary" style="margin-top:12px" onclick="openNewProject()">+ Nytt uppdrag</button></div>`}
+      <div class="diary-summary-header"><p class="section-title" style="margin:0">Månadsöversikt datum för datum</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-green" onclick="exportUnifiedMonthCSV()">Exportera månadsunderlag CSV</button></div></div>
+      <div class="toolbar">
+        <input id="diary-month-filter" type="month" value="${summaryMonth}" onchange="renderProjects()">
+        <select id="diary-summary-company-id" onchange="renderProjects()">${companyOptions(summaryCompanyId,true)}</select>
+        <select id="diary-summary-project-id" onchange="renderProjects()">${projectOptions(summaryProjectId,summaryCompanyId,true)}</select>
+      </div>
+      <div class="month-summary"><div><strong>${billable.toFixed(1)}</strong><span>Fakturerbara timmar</span></div><div><strong>${nonbill.toFixed(1)}</strong><span>Ej fakturerbara timmar</span></div><div><strong>${(billable/8).toFixed(1)}</strong><span>Dagar à 8h</span></div><div><strong>${summaryEntries.length}</strong><span>Dagboksrader</span></div></div>
+      ${renderUnifiedDiarySummary(summaryEntries)}
+    </div>
+  </div>`;
+}
+function updateUnifiedDiaryProjectOptions(resetProject){
+  const companyId=document.getElementById("diary-company-id")?.value||"";
+  const projectEl=document.getElementById("diary-project-id"); if(!projectEl)return;
+  const current=resetProject?"":projectEl.value;
+  projectEl.innerHTML=projectOptions(current,companyId,false);
+  updateUnifiedDiaryTaskOptions(true);
+}
+function updateUnifiedDiaryTaskOptions(resetTask){
+  const projectId=document.getElementById("diary-project-id")?.value||"";
+  const taskEl=document.getElementById("diary-task-id"); if(!taskEl)return;
+  const current=resetTask?"":taskEl.value;
+  taskEl.innerHTML=taskOptions(projectId,current);
+}
+function filteredDiaryEntries(month,companyId="",projectId=""){
+  return projectDiary.filter(e=>{
+    const p=projects.find(x=>x.id===e.project_id);
+    return String(e.datum||"").startsWith(month)&&(!companyId||p?.company_id===companyId)&&(!projectId||e.project_id===projectId);
+  }).sort((a,b)=>String(a.datum||"").localeCompare(String(b.datum||""))||String(projectName(projects.find(p=>p.id===a.project_id))).localeCompare(String(projectName(projects.find(p=>p.id===b.project_id))),'sv'));
+}
+function renderUnifiedDiarySummary(entries){
+  if(!entries.length)return '<p style="color:#aaa;font-size:13px">Inga dagboksrader för vald månad/filter.</p>';
+  let last=""; const rows=[]; let total=0;
+  entries.forEach(e=>{
+    const p=projects.find(x=>x.id===e.project_id); const co=p?projectCompany(p):null; const task=projectTasks.find(t=>t.id===e.task_id); const h=parseFloat(e.hours)||0; total+=h;
+    if(e.datum!==last){last=e.datum; const dayHours=entries.filter(x=>x.datum===e.datum).reduce((s,x)=>s+(parseFloat(x.hours)||0),0); rows.push(`<tr class="diary-day-header"><td colspan="8">${esc(e.datum)} · ${dayHours.toFixed(1)}h</td></tr>`);}
+    rows.push(`<tr><td>${esc(e.datum)}</td><td>${esc(co?.namn||"--")}</td><td>${esc(projectName(p))}</td><td>${task?esc(task.title):"--"}</td><td>${h.toFixed(1)}${e.billable===false?" *":""}</td><td>${esc(e.work_category||"")}</td><td>${esc(e.description||"")}</td><td>${esc(e.invoice_note||e.description||"")}</td></tr>`);
+  });
+  rows.push(`<tr class="diary-total-row"><td colspan="4">Totalt</td><td>${total.toFixed(1)}</td><td colspan="3">* = ej fakturerbar tid</td></tr>`);
+  return `<div class="table-wrap"><table><thead><tr><th>Datum</th><th>Kund</th><th>Uppdrag</th><th>Task</th><th>Timmar</th><th>Kategori</th><th>Utfört arbete</th><th>Fakturatext</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+}
+async function saveUnifiedDiaryEntry(){
+  const projectId=val("diary-project-id"); const hours=parseFloat(document.getElementById("diary-hours")?.value||""); const desc=val("diary-description");
+  if(!projectId){toast("Välj uppdrag");return;} if(!Number.isFinite(hours)||hours<=0){toast("Ange timmar");return;} if(!desc){toast("Skriv vad du gjort");return;}
+  let taskId=val("diary-task-id")||null; const newTask=val("diary-new-task");
+  if(newTask){const tr=await supabaseClient.from("project_tasks").insert({user_id:currentUser.id,project_id:projectId,title:newTask,status:"Pågår",priority:"Medium"}).select("id").single(); if(tr.error){alert(tr.error.message);return;} taskId=tr.data.id;}
+  const data={user_id:currentUser.id,project_id:projectId,task_id:taskId,datum:val("diary-date")||todayISO(),hours,billable:document.getElementById("diary-billable").checked,work_category:val("diary-category"),description:desc,invoice_note:val("diary-invoice-note")||desc};
+  const r=await supabaseClient.from("project_diary_entries").insert(data); if(r.error){alert(r.error.message);return;}
+  toast("Dagboksrad sparad"); await loadAll();
+}
+function exportUnifiedMonthCSV(){
+  const month=document.getElementById("diary-month-filter")?.value||currentMonth(); const companyId=document.getElementById("diary-summary-company-id")?.value||""; const projectId=document.getElementById("diary-summary-project-id")?.value||"";
+  const entries=filteredDiaryEntries(month,companyId,projectId); const rows=[["Datum","Kund","Uppdrag","Task","Timmar","Fakturerbar","Kategori","Utfört arbete","Fakturatext","Fakturareferens"]];
+  entries.forEach(e=>{const p=projects.find(x=>x.id===e.project_id); const co=p?projectCompany(p):null; const task=projectTasks.find(t=>t.id===e.task_id); rows.push([e.datum,co?.namn||"",p?.namn||"",task?.title||"",e.hours,e.billable===false?"Nej":"Ja",e.work_category||"",e.description||"",e.invoice_note||e.description||"",p?.invoice_reference||""]);});
+  const csv="\ufeff"+rows.map(r=>r.map(csvCell).join(";")).join("\n"); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=`manadsunderlag_${month}.csv`; a.click();
 }
 
 function openNewProject(){
