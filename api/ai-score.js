@@ -1,108 +1,93 @@
 // /api/ai-score.js
-// Beräknar AI-score för ett bolag baserat på dess signaler
-// Anropas från frontend när man öppnar ett bolagskort
-// eller körs automatiskt av weekly-jobbet
-//
+// Calculates AI score for one company.
 // POST /api/ai-score
 // Body: { company_id: "uuid" }
-//
-// Miljövariabler:
-//   SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY (eller anon key + JWT i Authorization header)
-//   ANTHROPIC_API_KEY
 
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { company_id } = req.body;
-  if (!company_id) {
-    return res.status(400).json({ error: 'company_id krävs' });
-  }
+  const { company_id } = req.body || {};
+  if (!company_id) return res.status(400).json({ error: 'company_id krävs' });
 
-  // Autentisera användaren via Supabase JWT
-  const authHeader = req.headers.authorization;
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
-  // Hämta bolag + signaler
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: authData, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
+  const userId = authData.user.id;
+
   const { data: company, error: companyError } = await supabase
     .from('companies')
     .select('*')
     .eq('id', company_id)
+    .eq('user_id', userId)
     .single();
 
-  if (companyError || !company) {
-    return res.status(404).json({ error: 'Bolag hittades inte' });
-  }
+  if (companyError || !company) return res.status(404).json({ error: 'Bolag hittades inte' });
 
   const { data: signaler } = await supabase
     .from('company_signals')
     .select('signal_typ, rubrik, beskrivning, signal_datum, signal_styrka')
     .eq('company_id', company_id)
+    .eq('user_id', userId)
     .order('signal_datum', { ascending: false })
     .limit(10);
 
-  // Hämta kopplade kontakter
-  const { data: kontakter } = await supabase
+  const contactQuery = supabase
     .from('contacts')
     .select('fornamn, efternamn, roll, beslutsfattare, senast_kontakt')
-    .or(`company_id.eq.${company_id},orgnr.eq.${company.orgnr || 'null'}`)
+    .eq('user_id', userId)
     .is('arkiverad_vid', null);
 
-  // Bygg prompt för Claude
+  const { data: kontakter } = company.orgnr
+    ? await contactQuery.or(`company_id.eq.${company_id},orgnr.eq.${company.orgnr}`)
+    : await contactQuery.eq('company_id', company_id);
+
   const prompt = byggPrompt(company, signaler || [], kontakter || []);
 
-  // Anropa Claude
+  if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY saknas' });
+
   const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'Content-Type':      'application/json',
-      'x-api-key':         process.env.ANTHROPIC_API_KEY,
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
-      system: `Du är en expert på B2B-försäljning av finance consulting och interim management i Norden.
-Analysera bolaget och returnera ENBART ett JSON-objekt utan markdown eller förklaring.`,
+      system: 'Du är en expert på B2B-försäljning av finance consulting, interim finance, controlling, reporting, transformation och financial operations i Norden. Returnera ENBART ett JSON-objekt utan markdown.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
 
-  if (!aiResponse.ok) {
-    const err = await aiResponse.text();
-    console.error('Claude API fel:', err);
-    return res.status(502).json({ error: 'Claude API fel' });
-  }
+  if (!aiResponse.ok) return res.status(502).json({ error: 'Claude API fel', details: await aiResponse.text() });
 
   const aiData = await aiResponse.json();
   const rawText = aiData.content?.[0]?.text || '{}';
 
   let scoring;
   try {
-    const clean = rawText.replace(/```json|```/g, '').trim();
-    scoring = JSON.parse(clean);
-  } catch (e) {
-    console.error('JSON parse fel:', rawText);
-    return res.status(500).json({ error: 'Kunde inte tolka AI-svar' });
+    scoring = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+  } catch {
+    return res.status(500).json({ error: 'Kunde inte tolka AI-svar', raw: rawText });
   }
 
-  // Spara scoring på bolaget
   await supabase
     .from('companies')
     .update({
-      ai_score:         scoring.score || 0,
-      ai_motivering:    scoring.motivering || null,
+      ai_score: Math.max(0, Math.min(100, Number(scoring.score || 0))),
+      ai_motivering: scoring.motivering || null,
       ai_rekommendation: scoring.rekommendation || null,
-      ai_uppdaterad:    new Date().toISOString()
+      ai_uppdaterad: new Date().toISOString()
     })
-    .eq('id', company_id);
+    .eq('id', company_id)
+    .eq('user_id', userId);
 
   return res.status(200).json(scoring);
 }
@@ -116,7 +101,7 @@ function byggPrompt(company, signaler, kontakter) {
     ? kontakter.map(k => `- ${k.fornamn} ${k.efternamn}, ${k.roll || 'okänd roll'}${k.beslutsfattare ? ' (beslutsfattare)' : ''}, senast kontaktad: ${k.senast_kontakt || 'aldrig'}`).join('\n')
     : 'Inga kopplade kontakter';
 
-  return `Analysera detta bolags sannolikhet att behöva hjälp med finance consulting eller interim finance.
+  return `Analysera detta bolags sannolikhet att behöva hjälp med finance consulting, interim finance, controlling, reporting, ERP/systemförändring eller finansiell transformation.
 
 BOLAG: ${company.namn}
 Bransch: ${company.bransch || 'okänd'}
@@ -126,14 +111,16 @@ Pipeline-status: ${company.pipeline_status}
 SIGNALER:
 ${signalerText}
 
+Tolka särskilt signaler som rör tillväxt, expansion, omstrukturering, varsel, nyrekrytering, ledningsförändringar, förvärv, finansiering, ägarförändring, årsredovisning, balansräkning, P&L/resultat, kassaflöde, lönsamhet, revisionsanmärkningar och ERP/systembyten. Sådana händelser kan indikera behov av tillfällig eller extern finansiell kompetens.
+
 KOPPLADE KONTAKTER:
 ${kontakterText}
 
 Returnera ENBART detta JSON-objekt:
 {
   "score": <heltal 0-100>,
-  "motivering": "<2-3 meningar om varför denna score>",
-  "rekommendation": "<konkret nästa steg, max 1 mening>",
+  "motivering": "<2-3 meningar om vilka affärshändelser som driver behovet>",
+  "rekommendation": "<konkret nästa steg för att undersöka finance consulting-behov, max 1 mening>",
   "prioritet": "<hög|medel|låg>"
 }`;
 }
