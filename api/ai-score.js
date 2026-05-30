@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
-      system: 'Du är en expert på B2B-försäljning av finance consulting, interim finance, controlling, reporting, transformation och financial operations i Norden. Returnera ENBART ett JSON-objekt utan markdown.',
+      system: 'Du är en expert på B2B-försäljning av finance consulting och interim management i Norden. Returnera ENBART ett JSON-objekt utan markdown.',
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -101,7 +101,7 @@ function byggPrompt(company, signaler, kontakter) {
     ? kontakter.map(k => `- ${k.fornamn} ${k.efternamn}, ${k.roll || 'okänd roll'}${k.beslutsfattare ? ' (beslutsfattare)' : ''}, senast kontaktad: ${k.senast_kontakt || 'aldrig'}`).join('\n')
     : 'Inga kopplade kontakter';
 
-  return `Analysera detta bolags sannolikhet att behöva hjälp med finance consulting, interim finance, controlling, reporting, ERP/systemförändring eller finansiell transformation.
+  return `Analysera detta bolags sannolikhet att behöva hjälp med finance consulting eller interim finance.
 
 BOLAG: ${company.namn}
 Bransch: ${company.bransch || 'okänd'}
@@ -111,16 +111,14 @@ Pipeline-status: ${company.pipeline_status}
 SIGNALER:
 ${signalerText}
 
-Tolka särskilt signaler som rör tillväxt, expansion, omstrukturering, varsel, nyrekrytering, ledningsförändringar, förvärv, finansiering, ägarförändring, årsredovisning, balansräkning, P&L/resultat, kassaflöde, lönsamhet, revisionsanmärkningar och ERP/systembyten. Sådana händelser kan indikera behov av tillfällig eller extern finansiell kompetens.
-
 KOPPLADE KONTAKTER:
 ${kontakterText}
 
 Returnera ENBART detta JSON-objekt:
 {
   "score": <heltal 0-100>,
-  "motivering": "<2-3 meningar om vilka affärshändelser som driver behovet>",
-  "rekommendation": "<konkret nästa steg för att undersöka finance consulting-behov, max 1 mening>",
+  "motivering": "<2-3 meningar>",
+  "rekommendation": "<konkret nästa steg, max 1 mening>",
   "prioritet": "<hög|medel|låg>"
 }`;
 }
