@@ -1,18 +1,14 @@
 // /api/discover-denmark.js
-// Hämtar danska bolag från CVR (Det Centrale Virksomhedsregister).
-// Gratis och officiellt öppet API via Erhvervsstyrelsen.
-//
+// Fetches recently changed Danish companies from CVR.
 // POST /api/discover-denmark
 // Requires: Authorization: Bearer <Supabase access token>
 
 import { createClient } from '@supabase/supabase-js';
 
-const CVR_SEARCH_API = 'https://cvrapi.dk/api';
 const CVR_ELASTIC = 'http://distribution.virk.dk/cvr-permanent/virksomhed/_search';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
@@ -21,90 +17,50 @@ export default async function handler(req, res) {
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = authData.user.id;
-  let nyaBolag = 0;
-  let nyaSignaler = 0;
+  let nyaBolag = 0, nyaSignaler = 0;
   const errors = [];
 
-  // Hämta nyligen ändrade danska bolag via CVR öppna ElasticSearch
   try {
-    const bolag = await fetchDanishCompanies();
+    const companies = await fetchDanishCompanies();
+    for (const b of companies) {
+      const result = await findOrCreateCompany(supabase, userId, b, errors);
+      if (!result) continue;
+      if (result.created) nyaBolag++;
 
-    for (const b of bolag) {
-      // Kolla om bolaget redan finns
-      const { data: existing } = await supabase.from('companies').select('id')
-        .eq('user_id', userId).eq('orgnr', b.orgnr).maybeSingle();
+      const exists = await recentSignalExists(supabase, result.id, 'CVR Danmark');
+      if (exists) continue;
 
-      let companyId;
-      if (existing?.id) {
-        companyId = existing.id;
-      } else {
-        const { data: created, error } = await supabase.from('companies').insert({
-          user_id: userId,
-          namn: b.namn,
-          orgnr: b.orgnr,
-          stad: b.stad,
-          land: 'Danmark',
-          bransch: b.bransch,
-          pipeline_status: 'Watchlist',
-          anteckningar: `Automatiskt importerat från CVR Danmark. CVR-nr: ${b.orgnr}.`
-        }).select('id').single();
-
-        if (error) { errors.push(`${b.namn}: ${error.message}`); continue; }
-        companyId = created.id;
-        nyaBolag++;
-      }
-
-      // Skapa signal för nylig ändring
-      if (b.sidstOpdateret) {
-        const { data: sigExists } = await supabase.from('company_signals').select('id')
-          .eq('company_id', companyId)
-          .eq('kalla', 'CVR Danmark')
-          .gte('signal_datum', new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0])
-          .maybeSingle();
-
-        if (!sigExists) {
-          const signalTyp = detectDanishSignal(b);
-          await supabase.from('company_signals').insert({
-            user_id: userId,
-            company_id: companyId,
-            signal_typ: signalTyp.typ,
-            rubrik: signalTyp.rubrik,
-            beskrivning: `CVR-opdatering. Branche: ${b.bransch || 'ukendt'}. CVR-nr: ${b.orgnr}`,
-            kalla: 'CVR Danmark',
-            kalla_url: `https://www.cvr.dk/virksomhed/${b.orgnr}`,
-            signal_datum: b.sidstOpdateret,
-            signal_styrka: signalTyp.styrka,
-            status: 'ny'
-          });
-          nyaSignaler++;
-        }
-      }
+      const signal = detectDanishSignal(b);
+      const { error } = await supabase.from('company_signals').insert({
+        user_id: userId,
+        company_id: result.id,
+        signal_typ: signal.typ,
+        rubrik: signal.rubrik,
+        beskrivning: `CVR-opdatering. Branche: ${b.bransch || 'ukendt'}. CVR-nr: ${b.orgnr}`,
+        kalla: 'CVR Danmark',
+        kalla_url: `https://www.cvr.dk/virksomhed/${b.orgnr}`,
+        signal_datum: b.sidstOpdateret || today(),
+        signal_styrka: signal.styrka,
+        status: 'ny'
+      });
+      if (error) errors.push(`${b.namn}: ${error.message}`);
+      else nyaSignaler++;
     }
   } catch (err) {
     errors.push(`CVR fetch: ${err.message}`);
   }
 
-  return res.status(200).json({
-    message: `Danmark discovery: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`,
-    nya_bolag: nyaBolag,
-    nya_signaler: nyaSignaler,
-    errors
-  });
+  return res.status(200).json({ message: `Danmark discovery: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`, nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors });
 }
 
 async function fetchDanishCompanies() {
-  // CVR öppna ElasticSearch – hämta bolag med senaste ändringar
-  const fraDate = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
-
+  const fromDate = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
   const query = {
     query: {
       bool: {
         must: [
-          { range: { 'Vrvirksomhed.sidstOpdateret': { gte: fraDate } } },
+          { range: { 'Vrvirksomhed.sidstOpdateret': { gte: fromDate } } },
           { term: { 'Vrvirksomhed.virksomhedsstatus': 'NORMAL' } }
-        ],
-        filter: [
-          { range: { 'Vrvirksomhed.penheder.pNummer': { gt: 0 } } }
         ]
       }
     },
@@ -113,39 +69,52 @@ async function fetchDanishCompanies() {
     sort: [{ 'Vrvirksomhed.sidstOpdateret': 'desc' }]
   };
 
-  try {
-    const r = await fetch(CVR_ELASTIC, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'CRM-NIS/1.0' },
-      body: JSON.stringify(query)
-    });
+  const r = await fetch(CVR_ELASTIC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'User-Agent': 'CRM-NIS/1.0' },
+    body: JSON.stringify(query)
+  });
+  if (!r.ok) return [];
 
-    if (r.ok) {
-      const data = await r.json();
-      return (data.hits?.hits || []).map(hit => {
-        const v = hit._source?.Vrvirksomhed;
-        const meta = v?.virksomhedMetadata?.nyesteNavn;
-        return {
-          namn: meta?.navn || 'Ukent',
-          orgnr: String(v?.cvrNummer || ''),
-          stad: v?.virksomhedMetadata?.nyesteBeliggenhedsadresse?.postdistrikt || null,
-          bransch: v?.branchekode?.branchetekst || null,
-          sidstOpdateret: v?.sidstOpdateret?.split('T')[0] || null
-        };
-      }).filter(b => b.namn && b.orgnr && b.namn !== 'Ukent');
-    }
-  } catch (err) {
-    console.error('CVR elastic error:', err.message);
-  }
-
-  return [];
+  const data = await r.json();
+  return (data.hits?.hits || []).map(hit => {
+    const v = hit._source?.Vrvirksomhed;
+    const name = v?.virksomhedMetadata?.nyesteNavn?.navn || null;
+    return {
+      namn: name,
+      orgnr: String(v?.cvrNummer || ''),
+      stad: v?.virksomhedMetadata?.nyesteBeliggenhedsadresse?.postdistrikt || null,
+      bransch: v?.branchekode?.branchetekst || null,
+      sidstOpdateret: v?.sidstOpdateret?.split('T')[0] || null,
+      land: 'Danmark'
+    };
+  }).filter(b => b.namn && b.orgnr);
 }
 
-function detectDanishSignal(bolag) {
-  // Standard signal för CVR-opdatering
-  return {
-    typ: 'management_change',
-    rubrik: `CVR-opdatering: ${bolag.namn}`,
-    styrka: 1
-  };
+async function findOrCreateCompany(supabase, userId, company, errors) {
+  const { data: existing } = await supabase.from('companies').select('id').eq('user_id', userId).eq('orgnr', company.orgnr).maybeSingle();
+  if (existing?.id) return { id: existing.id, created: false };
+  const { data, error } = await supabase.from('companies').insert({
+    user_id: userId,
+    namn: company.namn,
+    orgnr: company.orgnr,
+    stad: company.stad,
+    land: 'Danmark',
+    bransch: company.bransch,
+    pipeline_status: 'Watchlist',
+    anteckningar: `Automatiskt importerat från CVR Danmark. CVR-nr: ${company.orgnr}.`
+  }).select('id').single();
+  if (error) { errors.push(`${company.namn}: ${error.message}`); return null; }
+  return { id: data.id, created: true };
 }
+
+async function recentSignalExists(supabase, companyId, source) {
+  const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+  const { data } = await supabase.from('company_signals').select('id').eq('company_id', companyId).eq('kalla', source).gte('signal_datum', cutoff).maybeSingle();
+  return !!data;
+}
+
+function detectDanishSignal(company) {
+  return { typ: 'management_change', rubrik: `CVR-opdatering: ${company.namn}`, styrka: 1 };
+}
+function today() { return new Date().toISOString().split('T')[0]; }
