@@ -95,30 +95,84 @@ export default async function handler(req, res) {
 }
 
 // ============================================================
-// FAS 1: PROAKTIVA KÄLLOR – alla via Google News RSS
-// Verifierat fungerande. Delade i 5 fokuserade hinkar:
-//   bolagsverket_new     → nyregistrerade / scale-ups / funding
-//   bolagsverket_changes → VD/CFO/styrelsebyten
-//   upphandling          → vunna kontrakt / tillväxt
-//   mynewsdesk           → förvärv / kapital / expansion
-//   nasdaq_rss           → finansiell press / omstrukturering
+// FAS 1: PROAKTIVA KÄLLOR – verifierade öppna RSS-flöden
+// DI, Breakit, Realtid, SvD – blockar ej server-requests
 // ============================================================
 
-async function proaktivGoogleNews(supabase, userId, res, { queries, kalla, tip, fallbackTyp = 'management_change' }) {
+// Öppna svenska nyhets-RSS som fungerar från server
+const SVENSKA_RSS = [
+  { url: 'https://www.di.se/rss',                          namn: 'Dagens Industri' },
+  { url: 'https://www.di.se/rss/nyheter',                  namn: 'DI Nyheter' },
+  { url: 'https://www.breakit.se/feed/rss',                namn: 'Breakit' },
+  { url: 'https://www.realtid.se/rss',                     namn: 'Realtid' },
+  { url: 'https://www.svd.se/feed/articles/naringsliv',    namn: 'SvD Näringsliv' },
+  { url: 'https://www.affarsvarlden.se/rss',               namn: 'Affärsvärlden' },
+  { url: 'https://www.va.se/rss/',                         namn: 'Veckans Affärer' },
+  { url: 'https://placera.nu/rss.xml',                     namn: 'Placera' },
+  { url: 'https://www.aktiespararna.se/rss/nyheter',       namn: 'Aktiespararna' },
+  { url: 'https://computersweden.idg.se/2.2683/rss.xml',   namn: 'Computer Sweden' },
+];
+
+// Nyckelord per signal-hink – används för att filtrera artiklar
+const SIGNAL_HINKAR = {
+  bolagsverket_new: {
+    namn: 'Proaktiv – Nyregistrerade & scale-ups',
+    tip: 'Nyregistrerade bolag och scale-ups behöver ekonomifunktion tidigt.',
+    nyckelord: ['nystartat','nyregistrerat','grundar','grundat','seed','serie a','serie b','runda','finansiering','venture','scale-up','scaleup','startup','nytt bolag','startar upp'],
+    typ: 'funding', styrka: 2
+  },
+  bolagsverket_changes: {
+    namn: 'Proaktiv – VD/CFO-byten',
+    tip: 'Ny VD eller CFO gör nästan alltid en genomgång av ekonomifunktionen inom 6 månader.',
+    nyckelord: ['ny vd','ny ceo','ny cfo','ny ekonomichef','ny finanschef','tillträder','avgår som vd','avgår som cfo','ny styrelseordförande','ny ledning','ny koncernchef','rekryterar vd','rekryterar cfo','utsedd till vd','utsedd till cfo','tillträdde'],
+    typ: 'management_change', styrka: 3
+  },
+  upphandling: {
+    namn: 'Proaktiv – Upphandlingar & kontrakt',
+    tip: 'Bolag som vinner stora kontrakt behöver stärkt ekonomifunktion.',
+    nyckelord: ['vinner upphandling','tilldelad upphandling','tecknar avtal','ramavtal','erhåller order','erhåller kontrakt','rekordomsättning','rekordresultat','omsättningstillväxt','kraftig tillväxt','snabb tillväxt'],
+    typ: 'growth', styrka: 2
+  },
+  mynewsdesk: {
+    namn: 'Proaktiv – Förvärv & kapital',
+    tip: 'Förvärv och kapitalresningar skapar omedelbart behov av CFO/controller.',
+    nyckelord: ['förvärvar','förvärv','förvärvas','nyemission','emission','kapitalanskaffning','tar in kapital','fusionerar','slås samman','private equity','riskkapital','ägarskifte','ny ägare','säljer verksamhet','avyttrar'],
+    typ: 'acquisition', styrka: 3
+  },
+  nasdaq_rss: {
+    namn: 'Proaktiv – Finansiell press & omstrukturering',
+    tip: 'Bolag under press behöver extern ekonomiexpertis.',
+    nyckelord: ['vinstvarning','varslar','varsel','omstrukturering','omorganisation','sparpaket','förlust','negativt resultat','likviditetsproblem','kassaflödesproblem','revisionsanmärkning','going concern','rekonstruktion','konkursansökan'],
+    typ: 'financial_pressure', styrka: 3
+  }
+};
+
+async function proaktivRSS(supabase, userId, res, hinkeNamn) {
+  const hink = SIGNAL_HINKAR[hinkeNamn];
+  if (!hink) return res.status(400).json({ error: 'Okänd hink' });
+
   let nyaBolag = 0, nyaSignaler = 0;
   const errors = [], seenUrls = new Set();
+  let totaltHamtade = 0, totaltRelevanta = 0;
 
-  for (const { q, forcedTyp, forcedStyrka } of queries) {
+  for (const feed of SVENSKA_RSS) {
     try {
-      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=sv&gl=SE&ceid=SE:sv`;
-      const items = await fetchRSS(rssUrl);
+      const items = await fetchRSS(feed.url);
+      totaltHamtade += items.length;
 
-      for (const item of items.slice(0, 10)) {
+      for (const item of items) {
         if (!item.url || seenUrls.has(item.url)) continue;
         seenUrls.add(item.url);
 
-        const text = `${item.titel} ${item.beskrivning}`;
-        const detected = detectSignalType(text) || { typ: forcedTyp || fallbackTyp, styrka: forcedStyrka || 2 };
+        const text = `${item.titel} ${item.beskrivning}`.toLowerCase();
+
+        // Kräv minst ett nyckelord för denna hink
+        const matchat = hink.nyckelord.find(w => text.includes(w));
+        if (!matchat) continue;
+        totaltRelevanta++;
+
+        // Kör även generell signaldetektering för mer exakt typ
+        const detected = detectSignalType(text) || { typ: hink.typ, styrka: hink.styrka };
 
         const companyName = extractCompanyName(item.titel, item.beskrivning);
         if (!companyName || isBadName(companyName)) continue;
@@ -133,104 +187,52 @@ async function proaktivGoogleNews(supabase, userId, res, { queries, kalla, tip, 
           company_id: result.id,
           signal_typ: detected.typ,
           rubrik: item.titel,
-          beskrivning: item.beskrivning,
-          kalla,
+          beskrivning: [
+            item.beskrivning,
+            `Matchat nyckelord: "${matchat}"`,
+            `Källa: ${feed.namn}`
+          ].filter(Boolean).join('\n\n'),
+          kalla: hink.namn,
           kalla_url: item.url,
           signal_datum: item.datum,
-          signal_styrka: Math.min(3, detected.styrka + 1),
+          signal_styrka: Math.min(3, detected.styrka),
           status: 'ny'
         });
+
         if (ins.ok) nyaSignaler++;
-        else errors.push(ins.error);
+        else errors.push(`${companyName}: ${ins.error}`);
       }
-      await sleep(400);
-    } catch (err) { errors.push(`${q}: ${err.message}`); }
+      await sleep(200);
+    } catch (err) {
+      errors.push(`${feed.namn}: ${err.message}`);
+    }
   }
 
   return res.status(200).json({
-    message: `${kalla}: ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler, tip, errors
+    message: `${hink.namn}: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler (${totaltHamtade} artiklar granskade, ${totaltRelevanta} relevanta)`,
+    nya_bolag: nyaBolag,
+    nya_signaler: nyaSignaler,
+    hamtade_artiklar: totaltHamtade,
+    relevanta_artiklar: totaltRelevanta,
+    tip: hink.tip,
+    errors
   });
 }
 
-// 1. Nyregistrerade / scale-ups / funding
 async function discoverBolagsverketNew(supabase, userId, res) {
-  return proaktivGoogleNews(supabase, userId, res, {
-    kalla: 'Proaktiv – Nyregistrerade & scale-ups',
-    tip: 'Nyregistrerade bolag och scale-ups behöver ekonomifunktion tidigt – bokföring, löner, rapportering.',
-    fallbackTyp: 'new_hires',
-    queries: [
-      { q: 'nytt bolag grundat Sverige finansiering 2025', forcedTyp: 'funding', forcedStyrka: 2 },
-      { q: 'scale-up Sverige tillväxt rekryterar expanderar', forcedTyp: 'growth', forcedStyrka: 2 },
-      { q: 'venture capital investerar Sverige startup 2025', forcedTyp: 'funding', forcedStyrka: 3 },
-      { q: 'seed round Sverige bolag investering miljon', forcedTyp: 'funding', forcedStyrka: 3 },
-      { q: 'private equity förvärvar Sverige medelstort bolag', forcedTyp: 'ownership_change', forcedStyrka: 3 },
-    ]
-  });
+  return proaktivRSS(supabase, userId, res, 'bolagsverket_new');
 }
-
-// 2. VD/CFO/styrelsebyten – högsta prioritet
 async function discoverBolagsverketChanges(supabase, userId, res) {
-  return proaktivGoogleNews(supabase, userId, res, {
-    kalla: 'Proaktiv – VD/CFO-byten',
-    tip: 'Ny VD eller CFO gör nästan alltid en genomgång av ekonomifunktionen inom 6 månader.',
-    fallbackTyp: 'management_change',
-    queries: [
-      { q: 'ny VD tillträder Sverige bolag 2025', forcedTyp: 'management_change', forcedStyrka: 3 },
-      { q: 'ny CFO ekonomichef utsedd Sverige bolag', forcedTyp: 'finance_hiring', forcedStyrka: 3 },
-      { q: 'VD avgår Sverige bolag rekryterar ny ledning', forcedTyp: 'management_change', forcedStyrka: 3 },
-      { q: 'ny styrelseordförande Sverige bolag utses 2025', forcedTyp: 'management_change', forcedStyrka: 2 },
-      { q: 'ny ledningsgrupp Sverige bolag omorganisation', forcedTyp: 'restructuring', forcedStyrka: 3 },
-    ]
-  });
+  return proaktivRSS(supabase, userId, res, 'bolagsverket_changes');
 }
-
-// 3. Vunna upphandlingar / kontrakt / tillväxt
 async function discoverUpphandling(supabase, userId, res) {
-  return proaktivGoogleNews(supabase, userId, res, {
-    kalla: 'Proaktiv – Upphandlingar & kontrakt',
-    tip: 'Bolag som vinner stora kontrakt behöver ofta stärkt ekonomifunktion för snabb tillväxt och rapportering.',
-    fallbackTyp: 'growth',
-    queries: [
-      { q: 'vinner upphandling kontrakt Sverige miljon 2025', forcedTyp: 'growth', forcedStyrka: 2 },
-      { q: 'tecknar avtal ramavtal Sverige offentlig sektor', forcedTyp: 'growth', forcedStyrka: 2 },
-      { q: 'erhåller order kontrakt Sverige tillväxt', forcedTyp: 'growth', forcedStyrka: 2 },
-      { q: 'bolag expanderar Sverige öppnar nya kontor anställer', forcedTyp: 'expansion', forcedStyrka: 2 },
-      { q: 'rekordomsättning tillväxt Sverige bolag rapport', forcedTyp: 'growth', forcedStyrka: 2 },
-    ]
-  });
+  return proaktivRSS(supabase, userId, res, 'upphandling');
 }
-
-// 4. Förvärv / kapitalresningar / expansion
 async function discoverMynewsdesk(supabase, userId, res) {
-  return proaktivGoogleNews(supabase, userId, res, {
-    kalla: 'Proaktiv – Förvärv & kapital',
-    tip: 'Förvärv och kapitalresningar skapar omedelbart behov av CFO/controller för integration och rapportering.',
-    fallbackTyp: 'acquisition',
-    queries: [
-      { q: 'förvärvar bolag Sverige 2025 affär miljon', forcedTyp: 'acquisition', forcedStyrka: 3 },
-      { q: 'nyemission Sverige bolag kapital anskaffar', forcedTyp: 'funding', forcedStyrka: 3 },
-      { q: 'fusionerar slås samman Sverige bolag integration', forcedTyp: 'acquisition', forcedStyrka: 3 },
-      { q: 'private equity köper Sverige bolag ägarskifte', forcedTyp: 'ownership_change', forcedStyrka: 3 },
-      { q: 'internationell expansion Sverige bolag etablerar marknad', forcedTyp: 'expansion', forcedStyrka: 2 },
-    ]
-  });
+  return proaktivRSS(supabase, userId, res, 'mynewsdesk');
 }
-
-// 5. Finansiell press / omstrukturering / kris
 async function discoverNasdaqRSS(supabase, userId, res) {
-  return proaktivGoogleNews(supabase, userId, res, {
-    kalla: 'Proaktiv – Finansiell press & omstrukturering',
-    tip: 'Bolag under press behöver extern ekonomiexpertis – likviditetsproblem, varsel och omstrukturering öppnar dörrar.',
-    fallbackTyp: 'financial_pressure',
-    queries: [
-      { q: 'vinstvarning förlust Sverige bolag resultat 2025', forcedTyp: 'financial_pressure', forcedStyrka: 3 },
-      { q: 'varsel varslar Sverige bolag omstrukturering', forcedTyp: 'layoffs', forcedStyrka: 3 },
-      { q: 'likviditetsproblem kassaflöde Sverige bolag kris', forcedTyp: 'financial_pressure', forcedStyrka: 3 },
-      { q: 'ERP systembyte affärssystem Sverige bolag implementerar', forcedTyp: 'system_change', forcedStyrka: 2 },
-      { q: 'omorganisation kostnadsbesparingar Sverige bolag effektivisering', forcedTyp: 'restructuring', forcedStyrka: 3 },
-    ]
-  });
+  return proaktivRSS(supabase, userId, res, 'nasdaq_rss');
 }
 
 // ============================================================
