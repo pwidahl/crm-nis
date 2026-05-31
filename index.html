@@ -1041,7 +1041,7 @@ function renderProjektItem(p,month){
       <h4>${e(p.namn)}</h4>
       ${est?`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${progressBar(logged,est,120)}</div>`:""}
       <span style="font-size:11px;color:#888;flex-shrink:0">${billable.toFixed(1)}h ${month}</span>
-      <button class="btn btn-outline btn-xs" onclick="event.stopPropagation();openProjectCard('${p.id}')">Öppna</button>
+      <button class="btn btn-outline btn-xs" onclick="event.stopPropagation();openProjectCard('${p.id}')">Öppna</button><button class="btn-icon" title="Radera projekt" onclick="event.stopPropagation();deleteProject('${p.id}')" style="color:var(--red);font-size:12px">🗑</button>
       <span style="color:#aaa">▾</span>
     </div>
     <div class="projekt-item-body" id="proj-body-${p.id}">
@@ -1267,9 +1267,9 @@ function renderVeckoplan(){
         const pt=tasks.filter(t=>t.project_id===p.id&&t.status!=="Klar");
         const rows=pt.length?pt.map(t=>`
           <div class="week-grid-label" style="padding-left:24px;font-weight:400;font-size:11px">${e(t.title)}</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&x.task_id===t.id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" title="Loggat">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`).join(""):`
+          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&x.task_id===t.id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" title="Klicka för att redigera" onclick="event.stopPropagation();openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer">${logged.toFixed(1)}h ✎</span>`:""}</div>`;}).join("")}`).join(""):`
           <div class="week-grid-label" style="color:#aaa;font-style:italic;font-weight:400">Inga uppgifter</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&!x.task_id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`;
+          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&!x.task_id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" onclick="event.stopPropagation();openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer">${logged.toFixed(1)}h ✎</span>`:""}</div>`;}).join("")}`;
         return`<div class="week-grid-label" style="background:var(--accent);color:#fff;font-size:12px">${e(p.namn)}</div>${weekDates.map(()=>`<div class="week-grid-cell" style="background:var(--accent);opacity:.15"></div>`).join("")}${rows}`;
       }).join("")}
     </div>`;
@@ -1368,7 +1368,23 @@ function openNewSignal(){fillSelects();document.getElementById("sig-coid").value
 async function saveSignal(){const coid=document.getElementById("sig-coid").value,rubrik=v("sig-rubrik");if(!coid||!rubrik){toast("Bolag och rubrik krävs");return;}const r=await sb.from("company_signals").insert({user_id:me.id,company_id:coid,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,status:"ny"});if(r.error){alert(r.error.message);return;}closeM("m-signal");toast("Signal sparad");await loadAll();}
 async function setSigStatus(id,status){await sb.from("company_signals").update({status}).eq("id",id);toast("Uppdaterad");await loadAll();}
 
-async function callDiscover(endpoint,btnId){const btn=document.getElementById(btnId);const orig=btn?.textContent;if(btn){btn.disabled=true;btn.textContent="Hämtar...";}try{const token=await getToken();if(!token){toast("Inte inloggad");return;}const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));if(!r.ok){toast(data.error||"Misslyckades");return;}toast(data.message||"Klart");await loadAll();gotoView("signals");}catch(err){toast("Fel: "+err.message);}finally{if(btn){btn.disabled=false;btn.textContent=orig;}}}
+async function callDiscover(endpoint,btnId){
+  const btn=document.getElementById(btnId);const orig=btn?.textContent;
+  if(btn){btn.disabled=true;btn.textContent="Hämtar...";}
+  try{
+    const token=await getToken();if(!token){toast("Inte inloggad");return;}
+    const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok){toast(data.error||data.message||`Misslyckades (${r.status})`);return;}
+    const parts=[];
+    if(data.message)parts.push(data.message);
+    if(data.nya_signaler!=null)parts.push(data.nya_signaler+" nya signaler");
+    if(data.nya_bolag!=null)parts.push(data.nya_bolag+" nya bolag");
+    toast(parts.join(" · ")||"Klart",8000);
+    await loadAll();gotoView("signals");
+  }catch(err){toast("Fel: "+err.message,8000);}
+  finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
+}
 function discoverLeads(){callDiscover("/api/discover?source=leads","btn-pb");}
 function discoverNews(){callDiscover("/api/discover?source=news","btn-news");}
 function discoverFI(){callDiscover("/api/discover?source=fi","btn-fi");}
@@ -1579,7 +1595,7 @@ function openProjectCard(id){
     <div class="ctpane" id="cpro-tasks"><div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openNewTask('${id}')">+ Ny uppgift</button></div>${renderTaskList(id)}</div>
     <div class="ctpane" id="cpro-people"><div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openAddProjPerson('${id}')">+ Lägg till person</button></div>${renderPeopleList(id)}</div>
     <div class="ctpane" id="cpro-closing"><div class="fg"><div class="fl full"><label>Vad levererades?</label><textarea id="cl-del">${e(cl.delivered||"")}</textarea></div><div class="fl full"><label>Problem som löstes</label><textarea id="cl-prob">${e(cl.problems_solved||"")}</textarea></div><div class="fl full"><label>Nyckelpersoner</label><textarea id="cl-people">${e(cl.key_people||"")}</textarea></div><div class="fl full"><label>Framtida möjligheter</label><textarea id="cl-future">${e(cl.future_opportunities||"")}</textarea></div><div class="fl full"><label>Lärdomar</label><textarea id="cl-learn">${e(cl.lessons_learned||"")}</textarea></div></div><div style="margin-top:12px"><button class="btn btn-warm" onclick="saveCloseout('${id}')">Spara avslut</button></div></div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="archiveProject('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-project-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-project-card');openEditProject('${id}')">Redigera</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="archiveProject('${id}')">Arkivera</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteProject('${id}')">🗑 Radera permanent</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-project-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-project-card');openEditProject('${id}')">Redigera</button></div>`;
   openM("m-project-card");
 }
 
@@ -1593,6 +1609,19 @@ function openAddProjPerson(pid){alert("Funktion: Lägg till person från projekt
 function openEditProjPerson(id){alert("Redigera person "+id);}
 async function addPersonToCRM(id){const p2=projPeople.find(x=>x.id===id);if(!p2)return;const pr=projects.find(x=>x.id===p2.project_id);const r=await sb.from("contacts").insert({user_id:me.id,fornamn:p2.fornamn,efternamn:p2.efternamn,roll:p2.roll,epost:p2.epost,telefon:p2.telefon,status:"Aktiv",prioritet:"Medium",anteckningar:"Skapad från projekt: "+(pr?.namn||"")}).select("id").single();if(r.error){alert(r.error.message);return;}await sb.from("project_contacts").update({contact_id:r.data.id,added_to_crm:true}).eq("id",id);toast("Kontakt skapad ✓");await loadAll();openProjectCard(p2.project_id);}
 function archiveProject(id){confirm2("Arkivera projektet?",async()=>{await sb.from("projects").update({arkiverad_vid:new Date().toISOString()}).eq("id",id);closeM("m-project-card");await loadAll();});}
+function deleteProject(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  confirm2(`Radera "${p.namn}" permanent? Dagbok och uppgifter raderas också.`,async()=>{
+    await sb.from("project_diary_entries").delete().eq("project_id",id);
+    await sb.from("project_tasks").delete().eq("project_id",id);
+    await sb.from("project_contacts").delete().eq("project_id",id);
+    await sb.from("project_closeouts").delete().eq("project_id",id);
+    await sb.from("veckoplan").delete().eq("project_id",id);
+    const r=await sb.from("projects").delete().eq("id",id);
+    if(r.error){alert(r.error.message);return;}
+    closeM("m-project-card");toast("Projekt raderat");await loadAll();
+  });
+}
 async function saveCloseout(pid){const ex=closeouts.find(x=>x.project_id===pid);const data={user_id:me.id,project_id:pid,delivered:v("cl-del"),problems_solved:v("cl-prob"),key_people:v("cl-people"),future_opportunities:v("cl-future"),lessons_learned:v("cl-learn"),closed_at:new Date().toISOString()};const r=ex?await sb.from("project_closeouts").update(data).eq("id",ex.id):await sb.from("project_closeouts").insert(data);if(r.error){alert(r.error.message);return;}await sb.from("projects").update({status:"Slutförd"}).eq("id",pid);toast("Avslut sparat ✓");await loadAll();openProjectCard(pid);}
 
 // TASKS
@@ -1764,9 +1793,22 @@ function doExportContacts(){
 
 // ══ VECKOPLAN: edit existing entry on click ═══════════════════
 function openVeckoplanCellEdit(pid, tid, datum){
-  const existing=diary.find(d=>d.project_id===pid&&(d.task_id||"")===(tid||"")&&d.datum===datum);
-  if(existing){openEditDiaryEntry(existing.id);}
-  else{openNewDiaryEntryForProjectDate(pid,tid,datum);}
+  // Hitta loggade poster för denna cell
+  const diaryEntries=diary.filter(d=>d.project_id===pid&&(d.task_id||"")===(tid||"")&&d.datum===datum);
+  if(diaryEntries.length===1){
+    // Exakt en post – öppna den för redigering
+    openEditDiaryEntry(diaryEntries[0].id);
+  } else if(diaryEntries.length>1){
+    // Flera poster – öppna ny (kan välja vilken via dagboken)
+    openNewDiaryEntryForProjectDate(pid,tid,datum);
+  } else {
+    // Ingen post – skapa ny
+    openNewDiaryEntryForProjectDate(pid,tid,datum);
+  }
+}
+function openVeckoplanChipEdit(entryId){
+  // Direkt redigera ett specifikt inlägg från chip
+  openEditDiaryEntry(entryId);
 }
 
 checkSession();
