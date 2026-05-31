@@ -1,6 +1,7 @@
 // /api/discover.js
 // Samlad endpoint för alla lead discovery-källor.
 // POST /api/discover?source=leads|news|fi|nasdaq|norway|denmark|finland
+// Test utan import: POST /api/discover?source=leads&q=sjuksköterska&dry=1
 // Requires: Authorization: Bearer <Supabase access token>
 
 import { createClient } from '@supabase/supabase-js';
@@ -54,24 +55,25 @@ export default async function handler(req, res) {
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = authData.user.id;
-  const source = req.query.source || '';
+  const source = String(req.query.source || '').trim();
 
   switch (source) {
     case 'leads':    return discoverLeads(supabase, userId, res, req);
+    case 'testads':  return discoverLeads(supabase, userId, res, req, { dryRun: true, forcedQuery: 'sjuksköterska' });
     case 'news':     return discoverNews(supabase, userId, res);
     case 'fi':       return discoverFI(supabase, userId, res);
     case 'nasdaq':   return discoverNasdaq(supabase, userId, res);
     case 'norway':   return discoverNorway(supabase, userId, res);
     case 'denmark':  return discoverDenmark(supabase, userId, res);
     case 'finland':  return discoverFinland(supabase, userId, res);
-    default:         return res.status(400).json({ error: 'Okänd källa. Använd ?source=leads|news|fi|nasdaq|norway|denmark|finland' });
+    default:         return res.status(400).json({ error: 'Okänd källa. Använd ?source=leads|testads|news|fi|nasdaq|norway|denmark|finland' });
   }
 }
 
 // ============================================================
 // LEADS – Platsbanken / JobTech
 // ============================================================
-async function discoverLeads(supabase, userId, res, req) {
+async function discoverLeads(supabase, userId, res, req, options = {}) {
   const DEFAULT_SEARCH_TERMS = [
     'CFO', 'ekonomichef', 'finanschef', 'ekonomiansvarig', 'head of finance',
     'finance manager', 'business controller', 'financial controller', 'controller',
@@ -86,7 +88,8 @@ async function discoverLeads(supabase, userId, res, req) {
   ];
 
   const body = getRequestBody(req);
-  const customQuery = String(req?.query?.q || body.query || '').trim();
+  const dryRun = options.dryRun || ['1','true','yes'].includes(String(req?.query?.dry || body.dry || '').toLowerCase());
+  const customQuery = String(options.forcedQuery || req?.query?.q || body.q || body.query || '').trim();
   const rawTerms = Array.isArray(body.terms) && body.terms.length ? body.terms : (customQuery ? [customQuery] : DEFAULT_SEARCH_TERMS);
   const searchTerms = [...new Set(rawTerms.map(t => String(t || '').trim()).filter(Boolean))];
   const perQueryLimit = Math.max(1, Math.min(Number(req?.query?.limit || body.limit || process.env.JOBTECH_LIMIT_PER_QUERY || 40), 100));
@@ -95,6 +98,7 @@ async function discoverLeads(supabase, userId, res, req) {
 
   let nyaSignaler = 0, nyaBolag = 0, hamtadeAnnonser = 0, relevantaAnnonser = 0, dubbletter = 0, saknarBolag = 0;
   const errors = [];
+  const sampleAds = [];
   const searched = [];
   const seenAds = new Set();
 
@@ -131,11 +135,18 @@ async function discoverLeads(supabase, userId, res, req) {
         seenAds.add(dedupeKey);
 
         if (!jobAd.companyName || isBadName(jobAd.companyName)) { saknarBolag++; continue; }
-        // Custom searches should be allowed through. Default broad searches are filtered to finance/change/ERP wording.
+        // Custom/test searches are allowed through. Default broad searches are filtered to finance/change/ERP wording.
         if (!customQuery && !isRelevantJobAd(jobAd.text)) continue;
         relevantaAnnonser++;
 
         const detected = detectSignalType(jobAd.text) || { typ: 'jobbannons', styrka: 1 };
+        if (dryRun) {
+          if (sampleAds.length < 8) {
+            sampleAds.push({ company: jobAd.companyName, headline: jobAd.headline, city: jobAd.city, url: jobAd.sourceUrl, detected: detected.typ });
+          }
+          continue;
+        }
+
         const companyResult = await findOrCreateCompany(supabase, userId, {
           namn: jobAd.companyName,
           orgnr: jobAd.orgnr,
@@ -150,9 +161,10 @@ async function discoverLeads(supabase, userId, res, req) {
         const { error: insertError } = await supabase.from('company_signals').insert({
           user_id: userId,
           company_id: companyResult.id,
-          signal_typ: detected.typ,
-          rubrik: `${sigLabel(detected.typ)}: ${jobAd.headline || term}`,
-          beskrivning: makeJobAdDescription(jobAd, term),
+          // Keep Platsbanken imports schema-safe even if the database still has the old signal_typ CHECK constraint.
+          signal_typ: 'jobbannons',
+          rubrik: `Jobbannons: ${jobAd.headline || term}`,
+          beskrivning: makeJobAdDescription(jobAd, term, detected),
           kalla: 'Platsbanken / JobTech',
           kalla_url: jobAd.sourceUrl,
           signal_datum: jobAd.publicationDate || new Date().toISOString().split('T')[0],
@@ -168,12 +180,15 @@ async function discoverLeads(supabase, userId, res, req) {
     }
   }
 
-  const msg = nyaSignaler > 0
-    ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler från ${relevantaAnnonser} relevanta annonser`
-    : `Platsbanken: 0 nya signaler. Hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} var relevanta, ${dubbletter} var redan importerade.`;
+  const msg = dryRun
+    ? `Test JobTech: hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} skulle kunna importeras med sökord ${searchTerms.join(', ')}.`
+    : (nyaSignaler > 0
+      ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler från ${relevantaAnnonser} relevanta annonser`
+      : `Platsbanken: 0 nya signaler. Hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} var relevanta, ${dubbletter} var redan importerade.`);
 
   return res.status(200).json({
     message: msg,
+    dry_run: !!dryRun,
     nya_bolag: nyaBolag,
     nya_signaler: nyaSignaler,
     hamtade_annonser: hamtadeAnnonser,
@@ -181,6 +196,7 @@ async function discoverLeads(supabase, userId, res, req) {
     dubbletter,
     saknar_bolag: saknarBolag,
     sokningar: searched,
+    sample_ads: sampleAds,
     errors
   });
 }
@@ -223,7 +239,7 @@ async function discoverNews(supabase, userId, res) {
         const { data: ex } = await supabase.from('company_signals').select('id').eq('company_id', result.id).eq('kalla_url', item.url).maybeSingle();
         if (ex) continue;
         const { error: se } = await supabase.from('company_signals').insert({
-          user_id: userId, company_id: result.id, signal_typ: detected.typ, rubrik: item.titel,
+          user_id: userId, company_id: result.id, signal_typ: dbSignalType(detected.typ), rubrik: item.titel,
           beskrivning: item.beskrivning, kalla: 'Google News', kalla_url: item.url,
           signal_datum: item.datum, signal_styrka: detected.styrka, status: 'ny'
         });
@@ -261,7 +277,7 @@ async function discoverFI(supabase, userId, res) {
         const { data: ex } = await supabase.from('company_signals').select('id').eq('company_id', result.id).eq('kalla_url', item.url).maybeSingle();
         if (ex) continue;
         const { error: se } = await supabase.from('company_signals').insert({
-          user_id: userId, company_id: result.id, signal_typ: detected.typ, rubrik: item.titel,
+          user_id: userId, company_id: result.id, signal_typ: dbSignalType(detected.typ), rubrik: item.titel,
           beskrivning: item.beskrivning, kalla: 'Finansinspektionen', kalla_url: item.url,
           signal_datum: item.datum, signal_styrka: detected.styrka, status: 'ny'
         });
@@ -322,7 +338,7 @@ async function discoverNorway(supabase, userId, res) {
         if (!result.created) continue;
         nyaBolag++;
         await supabase.from('company_signals').insert({
-          user_id: userId, company_id: result.id, signal_typ: 'new_hires',
+          user_id: userId, company_id: result.id, signal_typ: dbSignalType('new_hires'),
           rubrik: `Nyregistrerat norsk bolag: ${e.navn}`,
           beskrivning: `Registrert i Brønnøysundregisteret. Org.nr: ${e.organisasjonsnummer}`,
           kalla: 'Brønnøysundregisteret', kalla_url: `https://www.brreg.no/finn-foretak/oppslag/?orgNr=${e.organisasjonsnummer}`,
@@ -366,7 +382,7 @@ async function discoverDenmark(supabase, userId, res) {
         if (!result.created) continue;
         nyaBolag++;
         await supabase.from('company_signals').insert({
-          user_id: userId, company_id: result.id, signal_typ: 'management_change',
+          user_id: userId, company_id: result.id, signal_typ: dbSignalType('management_change'),
           rubrik: `CVR-opdatering: ${navn}`, beskrivning: `CVR-nr: ${orgnr}`,
           kalla: 'CVR Danmark', kalla_url: `https://www.cvr.dk/virksomhed/${orgnr}`,
           signal_datum: new Date().toISOString().split('T')[0], signal_styrka: 1, status: 'ny'
@@ -402,7 +418,7 @@ async function discoverFinland(supabase, userId, res) {
         const { data: ex } = await supabase.from('company_signals').select('id').eq('company_id', result.id).eq('kalla', 'YTJ Finland').gte('signal_datum', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]).maybeSingle();
         if (ex) continue;
         await supabase.from('company_signals').insert({
-          user_id: userId, company_id: result.id, signal_typ: 'finance_hiring',
+          user_id: userId, company_id: result.id, signal_typ: dbSignalType('finance_hiring'),
           rubrik: `Finsk finance-signal: ${c.name}`, beskrivning: `Y-tunnus: ${c.businessId}. Sökord: ${ord}`,
           kalla: 'YTJ Finland', kalla_url: `https://www.ytj.fi/yritystiedot.aspx?yavain=${c.businessId}`,
           signal_datum: new Date().toISOString().split('T')[0], signal_styrka: 2, status: 'ny'
@@ -413,6 +429,30 @@ async function discoverFinland(supabase, userId, res) {
     } catch (err) { errors.push(`YTJ ${ord}: ${err.message}`); }
   }
   return res.status(200).json({ message: `Finland: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`, nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors });
+}
+
+// Legacy-safe mapping for databases that still have the original company_signals.signal_typ CHECK constraint.
+function dbSignalType(type) {
+  const map = {
+    finance_hiring: 'jobbannons',
+    management_change: 'ny_ledning',
+    growth: 'nyhet',
+    expansion: 'nyhet',
+    restructuring: 'varsel',
+    layoffs: 'varsel',
+    new_hires: 'nyhet',
+    acquisition: 'forvärv',
+    funding: 'nyhet',
+    ownership_change: 'nyhet',
+    annual_report: 'arsredovisning',
+    arsredovisning_publicerad: 'arsredovisning',
+    financial_pressure: 'nyhet',
+    balance_sheet_change: 'nyhet',
+    profitability_change: 'nyhet',
+    system_change: 'nyhet',
+    audit_remark: 'nyhet'
+  };
+  return map[type] || type || 'nyhet';
 }
 
 // ============================================================
@@ -459,11 +499,12 @@ function normalizeISODate(value) {
   return d.toISOString().split('T')[0];
 }
 
-function makeJobAdDescription(jobAd, term) {
+function makeJobAdDescription(jobAd, term, detected = null) {
   const parts = [];
   if (jobAd.occupation) parts.push(`Yrke: ${jobAd.occupation}`);
   if (jobAd.city) parts.push(`Ort: ${jobAd.city}`);
   parts.push(`Sökord: ${term}`);
+  if (detected?.typ && detected.typ !== 'jobbannons') parts.push(`Indikerad signal: ${sigLabel(detected.typ)}`);
   if (jobAd.description) parts.push(jobAd.description);
   return parts.join('\n\n').slice(0, 1200);
 }
