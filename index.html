@@ -237,25 +237,6 @@ textarea{resize:vertical;min-height:68px}
   .timer-panel{width:290px}
   .topbar-right .btn{padding:5px 9px;font-size:12px}
 }
-
-
-/* === NIS missing-functions patch styles === */
-.task-row{flex-wrap:wrap;align-items:center}
-.task-main{min-width:180px;flex:1 1 260px}
-.task-progress{flex:0 1 160px;min-width:90px;max-width:180px}
-.task-actions{display:flex;gap:4px;align-items:center;justify-content:flex-end;flex:0 0 auto;margin-left:auto}
-.task-actions .btn-icon{flex-shrink:0}
-.patch-muted{font-size:12px;color:#888}
-.patch-chip{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600;background:var(--cream);color:#666}
-.week-day-sum{font-size:11px;margin-top:4px;opacity:.85}
-.week-day-ok{color:var(--green)}
-.week-day-warn{color:var(--gold)}
-.week-day-bad{color:var(--red)}
-.jobtech-test{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:12px;margin:10px 0 14px}
-.discovery-param-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.discovery-param-grid textarea{min-height:100px}
-@media(max-width:768px){.discovery-param-grid{grid-template-columns:1fr}.task-progress{flex-basis:100%;max-width:none}.task-actions{margin-left:0}}
-
 </style>
 </head>
 <body>
@@ -362,11 +343,11 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span>Nätverk</div>
     <div class="nav-sec">Uppdrag</div>
     <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span>Uppdrag</div>
-    <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span>Dagbok<span class="nav-badge" id="badge-dagbok">0</span></div>
+    <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span>Dagbok</div>
     <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span>Tidrapport</div>
     <div class="nav-item" data-v="veckoplan" onclick="gotoView('veckoplan')"><span class="nav-icon">🗓️</span>Veckoplan</div>
     <div class="nav-sec">Relationer</div>
-    <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span>Kontakter</div>
+    <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span>Kontakter<span class="nav-badge" id="badge-linkedin">0</span></div>
     <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
     <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span>Uppföljningar<span class="nav-badge" id="badge-followups">0</span></div>
     <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span>Underkonsulter</div>
@@ -410,13 +391,37 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="signals-content"></div>
     </div>
-    <div class="view" id="view-network"><div id="network-content"></div></div>
+    <div class="view" id="view-network">
+      <div class="toolbar">
+        <input id="net-filter" placeholder="Sök namn, bolag, roll..." oninput="renderNetwork()" style="flex:1;max-width:300px">
+        <select id="net-signal-f" onchange="renderNetwork()"><option value="">Alla bolag</option><option value="signals">Med nya signaler</option></select>
+        <select id="net-score-f" onchange="renderNetwork()"><option value="">Alla poäng</option><option value="high">Höga (60+)</option><option value="med">Medel (30–59)</option><option value="low">Låga (&lt;30)</option></select>
+      </div>
+      <div id="network-content"></div>
+    </div>
     <div class="view" id="view-contacts">
       <div class="toolbar">
         <input id="ct-filter" placeholder="Filtrera kontakter..." oninput="renderContacts()" style="flex:1;max-width:280px">
-        <select id="ct-status-f" onchange="renderContacts()"><option value="">Alla statusar</option><option>Prospekt</option><option>Aktiv</option><option>Varm lead</option><option>Kund</option><option>Inaktiv</option></select>
+        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="">Alla (aktiva + inaktiva)</option><option value="aktiv">Aktiva</option><option value="inaktiv">Inaktiva / vilande</option></select>
+        <select id="ct-status-f" onchange="renderContacts()">
+          <option value="">Alla statusar</option>
+          <option>Ny kontakt</option><option>Aktiv relation</option>
+          <option>Varm – möte bokat</option><option>Kund</option>
+          <option>Introduktör</option><option>Kollega / nätverk</option>
+          <option>Tidigare kund</option><option>Vilande</option>
+          <option>Prospekt</option><option>Inaktiv</option>
+        </select>
       </div>
-      <div class="tw"><table><thead><tr><th>Namn</th><th>Företag</th><th>Roll</th><th>Status</th><th>Poäng</th><th>Senaste kontakt</th><th>Nästa uppfölj.</th><th></th></tr></thead><tbody id="contacts-tbody"></tbody></table></div>
+      <div class="tw"><table><thead><tr>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('namn')">Namn <span id="sort-namn">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('foretag')">Företag <span id="sort-foretag">↕</span></th>
+          <th>Roll</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('status')">Status <span id="sort-status">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('score')">Poäng <span id="sort-score">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('senast')">Senaste kontakt <span id="sort-senast">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('nasta')">Nästa uppfölj. <span id="sort-nasta">↕</span></th>
+          <th></th>
+        </tr></thead><tbody id="contacts-tbody"></tbody></table></div>
     </div>
 
     <!-- UPPDRAG - kundkort -->
@@ -498,12 +503,25 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label>E-post</label><input id="f-epost" type="email"></div>
         <div class="fl"><label>Telefon</label><input id="f-telefon"></div>
         <div class="fl"><label>LinkedIn</label><input id="f-linkedin"></div>
-        <div class="fl"><label>Status</label><select id="f-status"><option>Prospekt</option><option>Aktiv</option><option>Varm lead</option><option>Kund</option><option>Inaktiv</option></select></div>
+        <div class="fl"><label>Status / Relation</label><select id="f-status">
+          <option value="Ny kontakt">🔵 Ny kontakt</option>
+          <option value="Aktiv relation">🟢 Aktiv relation</option>
+          <option value="Varm – möte bokat">🟠 Varm – möte bokat</option>
+          <option value="Kund">⭐ Kund</option>
+          <option value="Introduktör">🤝 Introduktör</option>
+          <option value="Kollega / nätverk">👥 Kollega / nätverk</option>
+          <option value="Tidigare kund">📁 Tidigare kund</option>
+          <option value="Vilande">💤 Vilande</option>
+          <option value="Prospekt">📋 Prospekt</option>
+          <option value="Inaktiv">⛔ Inaktiv</option>
+        </select></div>
         <div class="fl"><label>Prioritet</label><select id="f-prio"><option>Hög</option><option selected>Medium</option><option>Låg</option></select></div>
         <div class="fl"><label>Kontaktnivå</label><select id="f-kniva"><option value="medel">Medel (120 dagar)</option><option value="stark">Stark (60 dagar)</option><option value="strategisk">Strategisk</option></select></div>
         <div class="fl"><label>Anpassat intervall (dagar)</label><input id="f-interval" type="number"></div>
         <div class="fl"><label>Introducerad av</label><select id="f-intro-av"><option value="">– Ingen –</option></select></div>
         <div class="fl"><label>Introduktion ledde till</label><input id="f-intro-ledde" placeholder="t.ex. Uppdrag Avonova 2024"></div>
+        <div class="fl"><label>Nästa uppföljning (manuellt datum)</label><input id="f-nasta-foljup" type="date"></div>
+        <div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="f-ar-aktiv" style="width:auto" checked><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-ar-aktiv">Aktiv kontakt (avmarkera för att pausa uppföljning)</label></div>
         <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="f-beslut" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-beslut">Beslutsfattare</label></div>
         <div class="fl full fl-row"><input type="checkbox" id="f-introduktor" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-introduktor">Potentiell introduktör</label></div>
         <div class="fl full"><label>Anteckningar</label><textarea id="f-notes"></textarea></div>
@@ -699,7 +717,50 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-sub"><div class="modal"><div class="mhdr"><h2 id="sub-modal-title">Ny underkonsult</h2><button class="mclose" onclick="closeM('m-sub')">×</button></div><div class="mbody"><div class="fg"><div class="fl"><label>Förnamn *</label><input id="sb-fn"></div><div class="fl"><label>Efternamn *</label><input id="sb-en"></div><div class="fl"><label>E-post</label><input id="sb-epost" type="email"></div><div class="fl"><label>Telefon</label><input id="sb-tel"></div><div class="fl"><label>LinkedIn</label><input id="sb-linkedin"></div><div class="fl"><label>Stad</label><input id="sb-stad"></div><div class="fl"><label>Tillgänglighet</label><select id="sb-av"><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select></div><div class="fl"><label>Tillgänglig från</label><input id="sb-avfrom" type="date"></div><div class="fl"><label>Dagspris från (kr)</label><input id="sb-pricefrom" type="number"></div><div class="fl"><label>Dagspris till (kr)</label><input id="sb-priceto" type="number"></div><div class="fl"><label>Nivå</label><select id="sb-level"><option value="">-</option><option value="junior">Junior</option><option value="senior">Senior</option><option value="expert">Expert</option></select></div><div class="fl full"><label>Kompetenser (kommaseparerade)</label><input id="sb-skills" placeholder="IFRS, SAP, Interim CFO"></div><div class="fl full"><label>Anteckningar</label><textarea id="sb-notes"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub')">Avbryt</button><button class="btn btn-primary" onclick="saveSub()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-snooze">
+  <div class="modal" style="width:380px">
+    <div class="mhdr"><h2>Flytta uppföljning</h2><button class="mclose" onclick="closeM('m-snooze')">×</button></div>
+    <div class="mbody">
+      <input id="snooze-cid" type="hidden">
+      <div class="fl" style="margin-bottom:14px"><label>Välj nytt datum</label><input id="snooze-date" type="date"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(7)">+7 dagar</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(14)">+2 veckor</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(30)">+1 månad</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(90)">+3 månader</button>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-snooze')">Avbryt</button><button class="btn btn-primary" onclick="saveSnooze()">Spara nytt datum</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="m-confirm"><div class="modal" style="width:380px"><div class="mhdr"><h2>Bekräfta</h2><button class="mclose" onclick="closeM('m-confirm')">×</button></div><div class="mbody"><p id="confirm-txt" style="font-size:14px;line-height:1.6"></p></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-confirm')">Avbryt</button><button class="btn btn-danger" id="confirm-ok">Bekräfta</button></div></div></div>
+
+<div class="overlay" id="m-export-contacts">
+  <div class="modal" style="width:480px">
+    <div class="mhdr"><h2>Exportera kontakter till CSV</h2><button class="mclose" onclick="closeM('m-export-contacts')">×</button></div>
+    <div class="mbody">
+      <p style="font-size:13px;color:#666;margin-bottom:14px">Välj fält att ta med i exporten.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="fl-row"><input type="checkbox" id="exp-fn" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-fn">Förnamn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-en" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-en">Efternamn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-co" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-co">Företag</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-roll" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-roll">Roll</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-status" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-status">Status</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-epost" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-epost">E-post</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-telefon" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-telefon">Telefon</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-linkedin" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-linkedin">LinkedIn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-stad" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-stad">Stad</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-bransch" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-bransch">Bransch</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-senast" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-senast">Senaste kontakt</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-nasta" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-nasta">Nästa uppföljning</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-notes" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-notes">Anteckningar</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-poang" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-poang">Relationspoäng</label></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-export-contacts')">Avbryt</button><button class="btn btn-green" onclick="doExportContacts()">📥 Exportera CSV</button></div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -744,7 +805,7 @@ function scoreClass(s){return s>=60?"sh":s>=30?"sm":"sl";}
 function pipeLabel(p){return PIPE_LABEL[p]||p;}
 function sigLabel(t){return SIG_LABEL[t]||t;}
 function statusClass(s){const m=String(s||"").toLowerCase().replace(/ö/g,"o").replace(/å/g,"a").replace(/ä/g,"a");return"proj-status ps-"+({"planering":"planering","aktiv":"aktiv","pausad":"pausad","avslut":"avslut","slutförd":"slutford","slutford":"slutford","förlorad":"forlorad","forlorad":"forlorad"}[m]||"planering");}
-function badgeStatus(s){return{Aktiv:"b-aktiv",Prospekt:"b-prospekt","Varm lead":"b-varm",Kund:"b-kund",Inaktiv:"b-inaktiv"}[s]||"b-prospekt";}
+function badgeStatus(s){return{"Ny kontakt":"b-prospekt","Aktiv relation":"b-aktiv","Varm – möte bokat":"b-varm","Kund":"b-kund","Introduktör":"b-aktiv","Kollega / nätverk":"b-prospekt","Tidigare kund":"b-kund","Vilande":"b-inaktiv","Prospekt":"b-prospekt","Inaktiv":"b-inaktiv","Aktiv":"b-aktiv","Varm lead":"b-varm"}[s]||"b-prospekt";}
 function kedja(t){return KEDJA[t]||KEDJA[""];}
 function kedjaLevel(t){return{"":0,"Inget":0,"LinkedIn":1,"E-post":1,"Telefonsamtal":2,"samtal":2,"Lunch":3,"lunch":3,"Mote":4,"mote":4}[t]||0;}
 function fupInterval(c){if(c.kontakt_niva==="stark")return 60;if(c.kontakt_niva==="strategisk")return c.anpassad_foljup_dagar||45;return 120;}
@@ -822,9 +883,14 @@ function updateBadges(){
   const ns=signals.filter(s=>s.status==="ny").length;const nb=document.getElementById("badge-signals");if(nb){nb.textContent=ns;nb.style.display=ns>0?"inline":"none";}
   const nt=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const ntb=document.getElementById("badge-tasks");if(ntb){ntb.textContent=nt;ntb.style.display=nt>0?"inline":"none";}
   const nf=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;const nfb=document.getElementById("badge-followups");if(nfb){nfb.textContent=nf;nfb.style.display=nf>0?"inline":"none";}
-  // LinkedIn-påminnelser
-  const li=contacts.filter(c=>{const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));const last=logs[0]?.datum;return !last||(Math.round((new Date()-new Date(last))/86400000)>30);}).length;
-  const db=Math.max(0,li);const dbb=document.getElementById("badge-dagbok");if(dbb){dbb.textContent=db;dbb.style.display=db>0?"inline":"none";}
+  // LinkedIn-påminnelser → badge på Kontakter (inte Dagbok)
+  const li=contacts.filter(c=>{
+    if(!c||c.ar_aktiv===false||c.status==="Inaktiv"||c.status==="Vilande")return false;
+    const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));
+    const last=logs[0]?.datum;
+    return !last||(Math.round((new Date()-new Date(last))/86400000)>30);
+  }).length;
+  const lib=document.getElementById("badge-linkedin");if(lib){lib.textContent=li;lib.style.display=li>0?"inline":"none";}
 }
 
 function updateWeekLabel(){const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];document.getElementById("nl-weekly").textContent=days[new Date().getDay()];}
@@ -874,7 +940,7 @@ function gotoView(name){
   const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
   document.getElementById("topbar-title").textContent=name==="weekly"?days[new Date().getDay()]:VIEW_TITLE[name];
   const tr=document.getElementById("topbar-right");tr.innerHTML="";
-  if(name==="contacts")tr.innerHTML='<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button>';
+  if(name==="contacts")tr.innerHTML='<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button><button class="btn btn-green" onclick="openExportContacts()">📥 Exportera</button>';
   else if(name==="projects")tr.innerHTML='<button class="btn btn-primary" onclick="openNewProject()">+ Nytt projekt</button>';
   else if(name==="companies")tr.innerHTML='<button class="btn btn-primary" onclick="openNewCompany()">+ Nytt bolag</button>';
   else if(name==="signals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSignal()">+ Manuell signal</button>';
@@ -1201,9 +1267,9 @@ function renderVeckoplan(){
         const pt=tasks.filter(t=>t.project_id===p.id&&t.status!=="Klar");
         const rows=pt.length?pt.map(t=>`
           <div class="week-grid-label" style="padding-left:24px;font-weight:400;font-size:11px">${e(t.title)}</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&x.task_id===t.id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVpEntry('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" title="Loggat">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`).join(""):`
+          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&x.task_id===t.id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" title="Loggat">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`).join(""):`
           <div class="week-grid-label" style="color:#aaa;font-style:italic;font-weight:400">Inga uppgifter</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&!x.task_id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVpEntry('${p.id}','','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`;
+          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&!x.task_id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social">${logged.toFixed(1)}✓</span>`:""}</div>`;}).join("")}`;
         return`<div class="week-grid-label" style="background:var(--accent);color:#fff;font-size:12px">${e(p.namn)}</div>${weekDates.map(()=>`<div class="week-grid-cell" style="background:var(--accent);opacity:.15"></div>`).join("")}${rows}`;
       }).join("")}
     </div>`;
@@ -1320,22 +1386,119 @@ function openAnalyzeForCo(id){openAnalyze();document.getElementById("ar-coid").v
 async function runAnalyze(){const coid=v("ar-coid"),url=v("ar-url"),txt=v("ar-text");if(!coid){toast("Välj bolag");return;}if(!url&&!txt){toast("Ange URL eller text");return;}const btn=document.getElementById("ar-btn");btn.textContent="Analyserar...";btn.disabled=true;const token=await getToken();if(!token){btn.textContent="Analysera";btn.disabled=false;return;}const r=await fetch("/api/analyze-report",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({company_id:coid,url:url||undefined,text:txt||undefined})});const data=await r.json().catch(()=>({}));btn.textContent="Analysera med AI";btn.disabled=false;if(!r.ok){toast(data.error||"Misslyckades");return;}toast(data.message||"Klar ✓");closeM("m-analyze");await loadAll();}
 
 // NETWORK
-function renderNetwork(){const grouped={};network.forEach(n=>{if(!grouped[n.company_id])grouped[n.company_id]=[];grouped[n.company_id].push(n);});const entries=Object.entries(grouped).sort((a,b)=>(b[1][0].nya_signaler||0)-(a[1][0].nya_signaler||0));document.getElementById("network-content").innerHTML=entries.length?entries.map(([id,arr])=>`<div class="week-sec"><div class="week-sec-hdr"><h3>${e(arr[0].company_namn)}</h3>${arr[0].nya_signaler>0?`<span class="badge b-ny">${arr[0].nya_signaler} nya</span>`:""}<button class="btn btn-outline btn-xs" onclick="openCompanyCard('${id}')">Bolagskort</button></div>${arr.map(n=>`<div class="week-row"><div class="sring ${scoreClass(n.relationspoang)}" style="width:34px;height:34px;font-size:12px;border-width:2px">${n.relationspoang}</div><div style="flex:1"><div class="week-rn">${e(n.fornamn)} ${e(n.efternamn)}</div><div class="week-rs">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join("")}</div>`).join(""):'<div class="empty"><div class="empty-icon">●</div><p>Inga nätverkskopplingar</p></div>';}
-
-// CONTACTS
-function renderContacts(){
-  const q=(v("ct-filter")||"").toLowerCase(),status=v("ct-status-f");const today2=new Date();today2.setHours(0,0,0,0);
-  const list=contacts.filter(c=>{const hay=[c.fornamn,c.efternamn,c.foretag,c.roll,c.stad].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!status||c.status===status);});
-  if(!list.length){document.getElementById("contacts-tbody").innerHTML='<tr><td colspan="8"><div class="empty"><p>Inga kontakter</p></div></td></tr>';return;}
-  document.getElementById("contacts-tbody").innerHTML=list.map(c=>{const sc=calcScore(c.id).total;let fDate="--",fCls="";if(c.nasta_foljup){const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);const diff=Math.round((d-today2)/86400000);fDate=c.nasta_foljup;fCls=diff<0?"overdue":"";} return`<tr onclick="openCard('${c.id}')"><td><strong>${e(c.fornamn)} ${e(c.efternamn)}</strong>${isOverdue(c)?'<span class="overdue-badge" style="margin-left:5px">!</span>':""}</td><td>${e(c.foretag||"--")}</td><td>${e(c.roll||"--")}</td><td><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></td><td><div class="sring ${scoreClass(sc)}" style="width:30px;height:30px;font-size:11px;border-width:2px">${sc}</div></td><td>${e(c.senast_kontakt||"--")}</td><td><span class="${fCls}">${e(fDate)}</span></td><td onclick="event.stopPropagation()" style="white-space:nowrap"><button class="btn-icon" onclick="openLogModal('${c.id}')">✎</button><button class="btn-icon" onclick="openEditContact('${c.id}')">⚙</button><button class="btn-icon" onclick="confirmDeleteContact('${c.id}')">🗑</button></td></tr>`;}).join("");
+function renderNetwork(){
+  const q=(v("net-filter")||"").toLowerCase();
+  const sigF=v("net-signal-f");
+  const scoreF=v("net-score-f");
+  const grouped={};network.forEach(n=>{if(!grouped[n.company_id])grouped[n.company_id]=[];grouped[n.company_id].push(n);});
+  let entries=Object.entries(grouped);
+  if(sigF==="signals")entries=entries.filter(([,arr])=>(arr[0].nya_signaler||0)>0);
+  entries=entries.sort((a,b)=>(b[1][0].nya_signaler||0)-(a[1][0].nya_signaler||0));
+  const filterPerson=n=>{
+    const s=n.relationspoang||0;
+    if(scoreF==="high")return s>=60;if(scoreF==="med")return s>=30&&s<60;if(scoreF==="low")return s<30;
+    if(q)return[n.fornamn,n.efternamn,n.roll,n.company_namn].join(" ").toLowerCase().includes(q);
+    return true;
+  };
+  const rows=entries.map(([id,arr])=>{
+    const filtered=arr.filter(filterPerson);if(!filtered.length)return"";
+    return`<div class="week-sec"><div class="week-sec-hdr"><h3>${e(arr[0].company_namn)}</h3>${arr[0].nya_signaler>0?`<span class="badge b-ny">${arr[0].nya_signaler} nya</span>`:""}<span style="font-size:12px;color:#888">${filtered.length} kontakter</span><button class="btn btn-outline btn-xs" onclick="openCompanyCard('${id}')">Bolagskort</button></div>${filtered.map(n=>`<div class="week-row"><div class="sring ${scoreClass(n.relationspoang)}" style="width:34px;height:34px;font-size:12px;border-width:2px">${n.relationspoang}</div><div style="flex:1"><div class="week-rn">${e(n.fornamn)} ${e(n.efternamn)}</div><div class="week-rs">${e(n.roll||"")}${n.dagar_sedan_kontakt?` · ${n.dagar_sedan_kontakt} dagar sedan`:""}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join("")}</div>`;
+  }).filter(Boolean);
+  document.getElementById("network-content").innerHTML=rows.length?rows.join(""):'<div class="empty"><div class="empty-icon">🔍</div><p>Inga träffar – ändra filter</p></div>';
 }
 
-function openNewContact(){editCid=null;document.getElementById("ct-modal-title").textContent="Ny kontakt";["f-fn","f-en","f-co","f-orgnr","f-roll","f-bransch","f-stad","f-epost","f-telefon","f-linkedin","f-notes","f-intro-ledde"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("f-status").value="Prospekt";document.getElementById("f-prio").value="Medium";document.getElementById("f-kniva").value="medel";document.getElementById("f-beslut").checked=false;document.getElementById("f-introduktor").checked=false;fillSelects();openM("m-contact");}
-function openEditContact(id){const c=contacts.find(x=>x.id===id);if(!c)return;editCid=id;document.getElementById("ct-modal-title").textContent="Redigera kontakt";[["f-fn","fornamn"],["f-en","efternamn"],["f-co","foretag"],["f-orgnr","orgnr"],["f-roll","roll"],["f-bransch","bransch"],["f-stad","stad"],["f-epost","epost"],["f-telefon","telefon"],["f-linkedin","linkedin"],["f-notes","anteckningar"],["f-intro-ledde","introduktion_ledde_till"],["f-status","status"],["f-prio","prioritet"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=c[field]||"";});document.getElementById("f-kniva").value=c.kontakt_niva||"medel";document.getElementById("f-beslut").checked=!!c.beslutsfattare;document.getElementById("f-introduktor").checked=!!c.potentiell_introduktor;fillSelects();setTimeout(()=>{const fa=document.getElementById("f-intro-av");if(fa)fa.value=c.introduktion_av||"";},50);openM("m-contact");}
+// CONTACTS
+let contactSortCol="namn",contactSortDir=1;
+function sortContacts(col){
+  if(contactSortCol===col)contactSortDir*=-1;else{contactSortCol=col;contactSortDir=1;}
+  document.querySelectorAll("[id^=sort-]").forEach(el=>el.textContent="↕");
+  const arrow=contactSortDir===1?"↑":"↓";
+  const idMap={namn:"sort-namn",foretag:"sort-foretag",status:"sort-status",score:"sort-score",senast:"sort-senast",nasta:"sort-nasta"};
+  const sEl=document.getElementById(idMap[col]);if(sEl)sEl.textContent=arrow;
+  renderContacts();
+}
+function renderContacts(){
+  const q=(v("ct-filter")||"").toLowerCase(),status=v("ct-status-f"),aktivF=v("ct-aktiv-f");
+  const today2=new Date();today2.setHours(0,0,0,0);
+  let list=contacts.filter(c=>{
+    const hay=[c.fornamn,c.efternamn,c.foretag,c.roll,c.stad,c.epost,c.status].join(" ").toLowerCase();
+    const aktiv=c.ar_aktiv!==false;
+    const matchAktiv=!aktivF||
+      (aktivF==="aktiv"&&aktiv&&c.status!=="Inaktiv"&&c.status!=="Vilande")||
+      (aktivF==="inaktiv"&&(!aktiv||c.status==="Inaktiv"||c.status==="Vilande"));
+    return(!q||hay.includes(q))&&(!status||c.status===status)&&matchAktiv;
+  });
+  list=[...list].sort((a,b)=>{
+    let va,vb;
+    if(contactSortCol==="namn"){va=(a.fornamn||"")+" "+(a.efternamn||"");vb=(b.fornamn||"")+" "+(b.efternamn||"");}
+    else if(contactSortCol==="foretag"){va=a.foretag||"";vb=b.foretag||"";}
+    else if(contactSortCol==="status"){va=a.status||"";vb=b.status||"";}
+    else if(contactSortCol==="score"){va=calcScore(a.id).total;vb=calcScore(b.id).total;}
+    else if(contactSortCol==="senast"){va=a.senast_kontakt||"";vb=b.senast_kontakt||"";}
+    else if(contactSortCol==="nasta"){va=a.nasta_foljup||"9999";vb=b.nasta_foljup||"9999";}
+    else{va="";vb="";}
+    if(typeof va==="number")return contactSortDir*(va-vb);
+    return contactSortDir*String(va).localeCompare(String(vb),"sv");
+  });
+  if(!list.length){document.getElementById("contacts-tbody").innerHTML='<tr><td colspan="8"><div class="empty"><p>Inga kontakter</p></div></td></tr>';return;}
+  document.getElementById("contacts-tbody").innerHTML=list.map(c=>{
+    const sc=calcScore(c.id).total;
+    const aktiv=c.ar_aktiv!==false;
+    let fDate="--",fCls="";
+    if(c.nasta_foljup&&aktiv&&c.status!=="Inaktiv"&&c.status!=="Vilande"){
+      const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);
+      const diff=Math.round((d-today2)/86400000);fDate=c.nasta_foljup;fCls=diff<0?"overdue":"";
+    }
+    return`<tr onclick="openCard('${c.id}')" ${!aktiv||c.status==="Inaktiv"||c.status==="Vilande"?'style="opacity:.6"':""}>
+      <td><strong>${e(c.fornamn)} ${e(c.efternamn)}</strong>${!aktiv||c.status==="Inaktiv"?'<span class="badge b-inaktiv" style="margin-left:5px;font-size:10px">Inaktiv</span>':c.status==="Vilande"?'<span class="badge b-inaktiv" style="margin-left:5px;font-size:10px">Vilande</span>':aktiv&&isOverdue(c)?'<span class="overdue-badge" style="margin-left:5px">!</span>':""}
+      </td><td>${e(c.foretag||"--")}</td><td>${e(c.roll||"--")}</td>
+      <td><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></td>
+      <td><div class="sring ${scoreClass(sc)}" style="width:30px;height:30px;font-size:11px;border-width:2px">${sc}</div></td>
+      <td>${e(c.senast_kontakt||"--")}</td>
+      <td><span class="${fCls}">${aktiv&&c.nasta_foljup?e(fDate):"–"}</span></td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        <button class="btn-icon" onclick="openLogModal('${c.id}')">✎</button>
+        <button class="btn-icon" onclick="openEditContact('${c.id}')">⚙</button>
+        <button class="btn-icon" onclick="confirmDeleteContact('${c.id}')">🗑</button>
+      </td></tr>`;
+  }).join("");
+}
+
+function openNewContact(){editCid=null;document.getElementById("ct-modal-title").textContent="Ny kontakt";["f-fn","f-en","f-co","f-orgnr","f-roll","f-bransch","f-stad","f-epost","f-telefon","f-linkedin","f-notes","f-intro-ledde","f-nasta-foljup"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("f-status").value="Ny kontakt";document.getElementById("f-prio").value="Medium";document.getElementById("f-kniva").value="medel";document.getElementById("f-beslut").checked=false;document.getElementById("f-introduktor").checked=false;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=true;fillSelects();openM("m-contact");}
+function openEditContact(id){const c=contacts.find(x=>x.id===id);if(!c)return;editCid=id;document.getElementById("ct-modal-title").textContent="Redigera kontakt";[["f-fn","fornamn"],["f-en","efternamn"],["f-co","foretag"],["f-orgnr","orgnr"],["f-roll","roll"],["f-bransch","bransch"],["f-stad","stad"],["f-epost","epost"],["f-telefon","telefon"],["f-linkedin","linkedin"],["f-notes","anteckningar"],["f-intro-ledde","introduktion_ledde_till"],["f-status","status"],["f-prio","prioritet"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=c[field]||"";});document.getElementById("f-kniva").value=c.kontakt_niva||"medel";document.getElementById("f-beslut").checked=!!c.beslutsfattare;document.getElementById("f-introduktor").checked=!!c.potentiell_introduktor;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=c.ar_aktiv!==false;const nf=document.getElementById("f-nasta-foljup");if(nf)nf.value=c.nasta_foljup||"";fillSelects();setTimeout(()=>{const fa=document.getElementById("f-intro-av");if(fa)fa.value=c.introduktion_av||"";},50);openM("m-contact");}
 async function saveContact(){
   const fn=v("f-fn"),en=v("f-en");if(!fn||!en){toast("Förnamn och efternamn krävs");return;}
-  const orgnr=cleanOrg(v("f-orgnr"));let coid=null;if(orgnr){const m=companies.find(c=>c.orgnr===orgnr);coid=m?.id||null;}
-  const data={user_id:me.id,fornamn:fn,efternamn:en,company_id:coid,orgnr,foretag:v("f-co"),roll:v("f-roll"),bransch:v("f-bransch"),stad:v("f-stad"),epost:v("f-epost"),telefon:v("f-telefon"),linkedin:v("f-linkedin"),anteckningar:v("f-notes"),status:document.getElementById("f-status").value,prioritet:document.getElementById("f-prio").value,kontakt_niva:document.getElementById("f-kniva").value,introduktion_av:v("f-intro-av")||null,introduktion_ledde_till:v("f-intro-ledde")||null,beslutsfattare:document.getElementById("f-beslut").checked,potentiell_introduktor:document.getElementById("f-introduktor").checked};
+  const orgnr=cleanOrg(v("f-orgnr"));
+  const foretag=v("f-co");
+  const arAktiv=document.getElementById("f-ar-aktiv")?.checked!==false;
+  const manualFoljup=document.getElementById("f-nasta-foljup")?.value||null;
+  const status=document.getElementById("f-status").value;
+  const isInaktiv=status==="Inaktiv"||status==="Vilande"||!arAktiv;
+
+  // Auto-create or match company by name if no orgnr match
+  let coid=null;
+  if(orgnr){const m=companies.find(c=>c.orgnr===orgnr);coid=m?.id||null;}
+  if(!coid&&foretag){
+    const m=companies.find(c=>c.namn.trim().toLowerCase()===foretag.trim().toLowerCase());
+    if(m){coid=m.id;}
+    else if(foretag.length>1){
+      const cr=await sb.from("companies").insert({user_id:me.id,namn:foretag,land:"Sverige",pipeline_status:"Watchlist",anteckningar:"Skapad automatiskt från kontaktformulär."}).select("id").single();
+      if(!cr.error){coid=cr.data.id;toast("Bolaget "+foretag+" skapades automatiskt");}
+    }
+  }
+
+  const data={user_id:me.id,fornamn:fn,efternamn:en,company_id:coid,orgnr,foretag,
+    roll:v("f-roll"),bransch:v("f-bransch"),stad:v("f-stad"),epost:v("f-epost"),
+    telefon:v("f-telefon"),linkedin:v("f-linkedin"),anteckningar:v("f-notes"),
+    status,prioritet:document.getElementById("f-prio").value,
+    kontakt_niva:document.getElementById("f-kniva").value,
+    introduktion_av:v("f-intro-av")||null,
+    introduktion_ledde_till:v("f-intro-ledde")||null,
+    beslutsfattare:document.getElementById("f-beslut").checked,
+    potentiell_introduktor:document.getElementById("f-introduktor").checked,
+    ar_aktiv:arAktiv,
+    nasta_foljup:isInaktiv?null:(manualFoljup||undefined)
+  };
   const r=editCid?await sb.from("contacts").update(data).eq("id",editCid):await sb.from("contacts").insert(data);
   if(r.error){alert(r.error.message);return;}closeM("m-contact");toast("Kontakt sparad");await loadAll();
 }
@@ -1356,6 +1519,8 @@ async function openCard(id){
       <div class="ig">
         <div class="ii"><label>E-post</label><span>${c.epost?`<a href="mailto:${e(c.epost)}">${e(c.epost)}</a>`:"--"}</span></div>
         <div class="ii"><label>Telefon</label><span>${c.telefon?`<a href="tel:${e(c.telefon)}">${e(c.telefon)}</a>`:"--"}</span></div>
+        <div class="ii"><label>LinkedIn</label><span>${c.linkedin?`<a href="${/^https?:\/\//i.test(c.linkedin)?e(c.linkedin):"https://"+e(c.linkedin)}" target="_blank" rel="noopener">Öppna profil ↗</a>`:"--"}</span></div>
+        ${co?.hemsida?`<div class="ii"><label>Bolagets hemsida</label><span><a href="${e(co.hemsida)}" target="_blank" rel="noopener">${e(co.hemsida.replace(/^https?:\/\//i,""))} ↗</a></span></div>`:""}
         <div class="ii"><label>Senaste kontakt</label><span>${e(c.senast_kontakt||"--")}</span></div>
         <div class="ii"><label>Nästa uppföljning</label><span>${e(c.nasta_foljup||"--")}</span></div>
         ${introBy?`<div class="ii full"><label>Introducerad av</label><span style="cursor:pointer;color:var(--accent)" onclick="closeM('m-card');openCard('${introBy.id}')">${e(introBy.fornamn)} ${e(introBy.efternamn)}</span>${c.introduktion_ledde_till?` → ${e(c.introduktion_ledde_till)}`:""}</div>`:""}
@@ -1365,12 +1530,16 @@ async function openCard(id){
     <div class="ctpane" id="cc-score"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(sc.total)}" style="width:72px;height:72px;font-size:22px">${sc.total}</div><div><p style="font-weight:600;font-size:14px">${sc.total>=60?"Stark relation":sc.total>=30?"Medel relation":"Svag – prioritera!"}</p></div></div>${[["Lunch (90 dagar)","pl"],["Samtal (30 dagar)","ps"],["Svar (60 dagar)","pr"],["Introduktion","pi"],["Inaktiv >12 mån","pn"]].map(([l,k2])=>`<p style="font-size:13px;margin-bottom:5px">${l}: <strong style="color:${sc[k2]<0?"var(--red)":"var(--green)"}">${sc[k2]>0?"+":""}${sc[k2]}</strong></p>`).join("")}</div>
     <div class="ctpane" id="cc-log">${cLog.length?cLog.map(l=>`<div class="log-entry"><span style="font-size:12px;color:#888">${e(l.datum||"")}</span><span style="font-size:12px;font-weight:600">${e(l.typ||"")}</span><div><div style="font-size:13px">${e(l.anteckning||"")}</div>${l.nasta_steg?`<div style="font-size:11px;color:#888">→ ${e(l.nasta_steg)}</div>`:""}</div><div><button class="btn-icon" onclick="openLogModal('${l.contact_id}','${l.id}')">✎</button><button class="btn-icon" onclick="deleteLogEntry('${l.id}')">🗑</button></div></div>`).join(""):'<p style="color:#aaa">Ingen logg</p>'}</div>
     <div class="ctpane" id="cc-notes"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNoteModal('${c.id}')">+ Anteckning</button></div>${cNotes.length?cNotes.map(n=>`<div style="display:flex;gap:7px;padding:8px 0;border-bottom:1px solid var(--cream)"><div class="note-chip" style="flex:1"><span class="chip-cat">${e(n.kategori)}</span>${e(n.anteckning)}</div><button class="btn-icon" onclick="deleteNote('${n.id}','${c.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga anteckningar</p>'}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-card')">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-card')">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
   openM("m-card");
 }
 
 function openLogModal(cid,logId=null){const c=contacts.find(x=>x.id===cid);if(!c)return;logCid=cid;editLogId=logId;const l=logId?actLog.find(x=>x.id===logId):null;document.getElementById("log-modal-title").textContent=(l?"Redigera – ":"Logga – ")+c.fornamn+" "+c.efternamn;document.getElementById("lg-datum").value=l?.datum||today();document.getElementById("lg-note").value=l?.anteckning||"";document.getElementById("lg-next").value=l?.nasta_steg||"";document.getElementById("lg-typ").value=l?.typ||"Mote";document.getElementById("lg-itype").value=l?.interaktionstyp||"";openM("m-log");}
-async function saveLog(){const c=contacts.find(x=>x.id===logCid);if(!c)return;const typ=document.getElementById("lg-typ").value,it=document.getElementById("lg-itype").value||null,datum=document.getElementById("lg-datum").value,note=v("lg-note"),next=v("lg-next");const data={user_id:me.id,contact_id:c.id,kontakt_namn:c.fornamn+" "+c.efternamn,foretag:c.foretag,typ,interaktionstyp:it,datum,anteckning:note,nasta_steg:next};const r=editLogId?await sb.from("activity_log").update(data).eq("id",editLogId):await sb.from("activity_log").insert(data);if(r.error){alert(r.error.message);return;}await sb.from("contacts").update({nasta_foljup:calcNextDate(typ,datum)}).eq("id",c.id);closeM("m-log");toast("Aktivitet sparad");await loadAll();}
+async function saveLog(){const c=contacts.find(x=>x.id===logCid);if(!c)return;const typ=document.getElementById("lg-typ").value,it=document.getElementById("lg-itype").value||null,datum=document.getElementById("lg-datum").value,note=v("lg-note"),next=v("lg-next");const data={user_id:me.id,contact_id:c.id,kontakt_namn:c.fornamn+" "+c.efternamn,foretag:c.foretag,typ,interaktionstyp:it,datum,anteckning:note,nasta_steg:next};const r=editLogId?await sb.from("activity_log").update(data).eq("id",editLogId):await sb.from("activity_log").insert(data);if(r.error){alert(r.error.message);return;}
+const isAktiv=c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande";
+if(isAktiv){const nd=calcNextDate(typ,datum);if(nd)await sb.from("contacts").update({nasta_foljup:nd,senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);else await sb.from("contacts").update({senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);}
+else{await sb.from("contacts").update({senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);}
+closeM("m-log");toast("Aktivitet sparad");await loadAll();}
 function renderLog(){if(!actLog.length){document.getElementById("log-tbody").innerHTML='<tr><td colspan="6"><div class="empty"><p>Ingen aktivitet</p></div></td></tr>';return;}document.getElementById("log-tbody").innerHTML=actLog.map(l=>`<tr><td>${e(l.datum||"")}</td><td><strong>${e(l.kontakt_namn||"")}</strong></td><td>${e(l.typ||"")}</td><td>${e(l.anteckning||"--")}</td><td>${e(l.nasta_steg||"--")}</td><td><button class="btn-icon" onclick="openLogModal('${l.contact_id}','${l.id}')">✎</button><button class="btn-icon" onclick="deleteLogEntry('${l.id}')">🗑</button></td></tr>`).join("");}
 function deleteLogEntry(id){confirm2("Ta bort?",async()=>{await sb.from("activity_log").delete().eq("id",id);await loadAll();});}
 function openNoteModal(cid){noteCid=cid;document.getElementById("nt-text").value="";closeM("m-card");openM("m-note");}
@@ -1459,7 +1628,7 @@ function renderFups(elId,limit){
   else if(filter==="week"){const w=new Date(today2);w.setDate(w.getDate()+7);list=list.filter(c=>new Date(c.nasta_foljup)<=w);}
   if(limit)list=list.slice(0,limit);
   if(!list.length){document.getElementById(elId).innerHTML='<div class="empty"><div class="empty-icon">📅</div><p>Inga uppföljningar</p></div>';return;}
-  document.getElementById(elId).innerHTML=list.map(c=>{const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);const diff=Math.round((d-today2)/86400000);const cls=diff<0?"overdue":"";const lbl=diff<0?Math.abs(diff)+" dagar försenad":diff===0?"Idag":diff===1?"Imorgon":"Om "+diff+" dagar";const k=kedja(c.senast_typ);return`<div class="fup-row"><div class="fup-info"><div class="fup-name">${e(c.fornamn)} ${e(c.efternamn)} <span style="color:#888;font-weight:400">– ${e(c.foretag||"")}</span></div><div class="fup-meta">Nästa: <strong>${e(k[0])}</strong> – ${e(c.nasta_foljup)}</div></div><span class="${cls}" style="font-size:12px;white-space:nowrap">${lbl}</span><button class="btn btn-warm btn-xs" onclick="openLogModal('${c.id}')">Logga</button><button class="btn btn-outline btn-xs" onclick="openCard('${c.id}')">Öppna</button></div>`;}).join("");
+  document.getElementById(elId).innerHTML=list.map(c=>{const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);const diff=Math.round((d-today2)/86400000);const cls=diff<0?"overdue":"";const lbl=diff<0?Math.abs(diff)+" dagar försenad":diff===0?"Idag":diff===1?"Imorgon":"Om "+diff+" dagar";const k=kedja(c.senast_typ);return`<div class="fup-row"><div class="fup-info"><div class="fup-name">${e(c.fornamn)} ${e(c.efternamn)} <span style="color:#888;font-weight:400">– ${e(c.foretag||"")}</span></div><div class="fup-meta">Nästa: <strong>${e(k[0])}</strong> – ${e(c.nasta_foljup)}</div></div><span class="${cls}" style="font-size:12px;white-space:nowrap">${lbl}</span><button class="btn btn-outline btn-xs" title="Flytta datum" onclick="openSnooze('${c.id}')">📅 Flytta</button><button class="btn btn-warm btn-xs" onclick="openLogModal('${c.id}')">Logga</button><button class="btn btn-outline btn-xs" onclick="openCard('${c.id}')">Öppna</button></div>`;}).join("");
 }
 function renderFollowups(){renderFups("followups-list",null);}
 
@@ -1519,584 +1688,71 @@ document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open"));});
 
+// ══ SNOOZE ═══════════════════════════════════════════════════
+let snoozeCid=null;
+function openSnooze(cid){
+  snoozeCid=cid;
+  const c=contacts.find(x=>x.id===cid);if(!c)return;
+  const base=new Date((c.nasta_foljup&&c.nasta_foljup>today())?c.nasta_foljup:today());
+  base.setDate(base.getDate()+7);
+  const sd=document.getElementById("snooze-date");if(sd)sd.value=base.toISOString().split("T")[0];
+  document.getElementById("snooze-cid").value=cid;
+  openM("m-snooze");
+}
+function snoozeRelative(days){
+  const c=contacts.find(x=>x.id===snoozeCid);if(!c)return;
+  const base=new Date((c.nasta_foljup&&c.nasta_foljup>today())?c.nasta_foljup:today());
+  base.setDate(base.getDate()+days);
+  const sd=document.getElementById("snooze-date");if(sd)sd.value=base.toISOString().split("T")[0];
+}
+async function saveSnooze(){
+  const cid=document.getElementById("snooze-cid")?.value||snoozeCid;
+  const nd=document.getElementById("snooze-date")?.value;
+  if(!cid||!nd){toast("Välj datum");return;}
+  const r=await sb.from("contacts").update({nasta_foljup:nd}).eq("id",cid);
+  if(r.error){alert(r.error.message);return;}
+  closeM("m-snooze");toast("Uppföljning flyttad till "+nd);await loadAll();
+}
 
-/* ============================================================
-   NIS MISSING FUNCTIONS PATCH
-   Inserted into current index without removing existing branch code.
-   ============================================================ */
-(function(){
-  // Keep old function references where we only need to extend behavior.
-  const __oldFillSelects = typeof fillSelects === "function" ? fillSelects : null;
+// ══ CONTACT EXPORT ════════════════════════════════════════════
+function openExportContacts(){openM("m-export-contacts");}
+function doExportContacts(){
+  const fields=[
+    {id:"exp-fn",   key:"fornamn",        label:"Förnamn"},
+    {id:"exp-en",   key:"efternamn",      label:"Efternamn"},
+    {id:"exp-co",   key:"foretag",        label:"Företag"},
+    {id:"exp-roll", key:"roll",           label:"Roll"},
+    {id:"exp-status",key:"status",        label:"Status"},
+    {id:"exp-epost",key:"epost",          label:"E-post"},
+    {id:"exp-telefon",key:"telefon",      label:"Telefon"},
+    {id:"exp-linkedin",key:"linkedin",    label:"LinkedIn"},
+    {id:"exp-stad", key:"stad",           label:"Stad"},
+    {id:"exp-bransch",key:"bransch",      label:"Bransch"},
+    {id:"exp-senast",key:"senast_kontakt",label:"Senaste kontakt"},
+    {id:"exp-nasta",key:"nasta_foljup",   label:"Nästa uppföljning"},
+    {id:"exp-notes",key:"anteckningar",   label:"Anteckningar"},
+    {id:"exp-poang",key:"__score__",      label:"Relationspoäng"},
+  ].filter(f=>document.getElementById(f.id)?.checked);
+  if(!fields.length){toast("Välj minst ett fält");return;}
+  const rows=[fields.map(f=>f.label),...contacts.map(c=>fields.map(f=>{
+    if(f.key==="__score__")return calcScore(c.id).total;
+    return c[f.key]||"";
+  }))];
+  const csv="\ufeff"+rows.map(r=>r.map(csvCell).join(";")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="kontakter_"+(new Date().toISOString().slice(0,10))+".csv";
+  a.click();
+  toast("Exporterade "+contacts.length+" kontakter");
+  closeM("m-export-contacts");
+}
 
-  // ---------- constants / labels ----------
-  try{
-    if(Array.isArray(PIPELINE) && !PIPELINE.includes("Kund")) PIPELINE.splice(Math.max(0, PIPELINE.indexOf("Vunnet")), 0, "Kund");
-    if(typeof PIPE_LABEL === "object") PIPE_LABEL.Kund = "Kund";
-    if(Array.isArray(SIG_TYPES) && !SIG_TYPES.includes("jobbannons")) SIG_TYPES.unshift("jobbannons");
-  }catch{}
-
-  if(typeof window.downloadFile !== "function"){
-    window.downloadFile = function downloadFile(content, filename, type="text/plain;charset=utf-8"){
-      const a=document.createElement("a");
-      a.href=URL.createObjectURL(new Blob(["\ufeff"+String(content||"")],{type}));
-      a.download=filename;
-      a.click();
-      setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-    };
-  }
-
-  const NIS_ACTIVITY_TYPES = [
-    {value:"uppdrag",  icon:"💼", label:"Uppdrag",           cls:"dt-uppdrag", log:"Mote"},
-    {value:"lunch",    icon:"🤝", label:"Lunch",             cls:"dt-lunch",   log:"Lunch"},
-    {value:"mote",     icon:"📞", label:"Möte",              cls:"dt-mote",    log:"Mote"},
-    {value:"samtal",   icon:"☎️", label:"Samtal",            cls:"dt-mote",    log:"Telefonsamtal"},
-    {value:"kaffe",    icon:"☕", label:"Kaffe",             cls:"dt-lunch",   log:"Kaffe"},
-    {value:"epost",    icon:"✉️", label:"E-post",            cls:"dt-ovrigt",  log:"E-post"},
-    {value:"linkedin", icon:"🔗", label:"LinkedIn",          cls:"dt-ovrigt",  log:"LinkedIn"},
-    {value:"aw",       icon:"🎉", label:"AW",                cls:"dt-aw",      log:"Mote"},
-    {value:"middag",   icon:"🍽️", label:"Middag",            cls:"dt-middag",  log:"Middag"},
-    {value:"admin",    icon:"🗂️", label:"Internt/admin",     cls:"dt-ovrigt",  log:"Mote"},
-    {value:"ovrigt",   icon:"📋", label:"Övrigt",            cls:"dt-ovrigt",  log:"Mote"}
-  ];
-
-  function patchActivityMaps(){
-    try{
-      NIS_ACTIVITY_TYPES.forEach(t=>{
-        if(typeof ACT_TYPE_LABEL === "object") ACT_TYPE_LABEL[t.value] = `${t.icon} ${t.label}`;
-        if(typeof ACT_TYPE_CLASS === "object") ACT_TYPE_CLASS[t.value] = t.cls;
-      });
-    }catch{}
-  }
-  patchActivityMaps();
-
-  window.actLabel = function actLabel(type){
-    const t=NIS_ACTIVITY_TYPES.find(x=>x.value===(type||"uppdrag"));
-    return t ? `${t.icon} ${t.label}` : (type || "Uppdrag");
-  };
-  window.actClass = function actClass(type){
-    const t=NIS_ACTIVITY_TYPES.find(x=>x.value===(type||"uppdrag"));
-    return t?.cls || "dt-ovrigt";
-  };
-  window.actOptions = function actOptions(selected="", includeEmpty=false){
-    return `${includeEmpty?'<option value="">Alla typer</option>':""}${NIS_ACTIVITY_TYPES.map(t=>`<option value="${t.value}"${t.value===selected?" selected":""}>${t.icon} ${e(t.label)}</option>`).join("")}`;
-  };
-  window.logTypeForActivity = function logTypeForActivity(type){
-    return NIS_ACTIVITY_TYPES.find(x=>x.value===type)?.log || "Mote";
-  };
-
-  window.fillActivityTypeSelects = function fillActivityTypeSelects(){
-    patchActivityMaps();
-    const db=document.getElementById("db-type-filter");
-    if(db){const curr=db.value;db.innerHTML=actOptions(curr,true);db.value=curr;}
-    const tr=document.getElementById("tr-type-filter");
-    if(tr){const curr=tr.value;tr.innerHTML=actOptions(curr,true);tr.value=curr;}
-    const tt=document.getElementById("t-typ");
-    if(tt){const curr=tt.value||"uppdrag";tt.innerHTML=actOptions(curr,false);tt.value=curr;}
-    const grid=document.querySelector("#m-diary-entry .act-type-grid");
-    if(grid){
-      const curr=document.getElementById("de-typ")?.value||"uppdrag";
-      grid.innerHTML=NIS_ACTIVITY_TYPES.map(t=>`<button class="act-type-btn ${t.value===curr?"selected":""}" data-typ="${t.value}" onclick="selectDiaryType('${t.value}',this)"><span class="act-icon">${t.icon}</span>${e(t.label)}</button>`).join("");
-    }
-  };
-
-  function ensureControl(parent, id, html){
-    const p=document.querySelector(parent);
-    if(p && !document.getElementById(id)) p.insertAdjacentHTML("beforeend", html);
-  }
-  window.ensureMissingFunctionControls = function ensureMissingFunctionControls(){
-    ensureControl("#view-companies .toolbar", "co-archived-filter", `<label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400"><input type="checkbox" id="co-archived-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Visa arkiverade</label>`);
-    ensureControl("#view-signals .toolbar", "sig-search-f", `<input id="sig-search-f" placeholder="Sök annonser/signaler..." oninput="renderSignals()" style="flex:1;max-width:280px">`);
-    ensureControl("#view-signals .toolbar", "sig-source-f", `<select id="sig-source-f" onchange="renderSignals()"><option value="">Alla källor</option><option value="Platsbanken">Platsbanken</option><option value="JobTech">JobTech</option><option value="Google News">Google News</option><option value="Bolagsverket">Bolagsverket</option><option value="Upphandling">Upphandling</option><option value="Mynewsdesk">Mynewsdesk</option><option value="Nasdaq">Nasdaq</option></select>`);
-    ensureControl("#view-tidrapport .toolbar", "tr-type-filter", `<select id="tr-type-filter" onchange="renderTidrapport()">${actOptions("",true)}</select>`);
-    const dbToolbar=document.querySelector("#view-dagbok .toolbar");
-    if(dbToolbar && !document.getElementById("btn-export-dagbok")) dbToolbar.insertAdjacentHTML("beforeend", `<button class="btn btn-green btn-sm" id="btn-export-dagbok" onclick="exportDagbokCSV()">Exportera dagbok CSV</button>`);
-    const gs=document.getElementById("gsearch");
-    if(gs) gs.placeholder="Sök kontakter, bolag, annonser, tasks...";
-    fillActivityTypeSelects();
-  };
-
-  fillSelects = function fillSelects(){
-    if(__oldFillSelects) __oldFillSelects();
-    ensureMissingFunctionControls();
-  };
-
-  // ---------- company helpers, archived companies, hard delete ----------
-  window.companyIsArchived = function companyIsArchived(c){return !!(c && c.arkiverad_vid);};
-  window.allCompanies = function allCompanies(){return Array.isArray(companies)?companies:[];};
-  window.findCompany = function findCompany(id){return allCompanies().find(c=>c.id===id)||null;};
-
-  loadCompanies = async function loadCompanies(){
-    const r=await sb.from("companies").select("*").order("created_at",{ascending:false});
-    companies=r.data||[];
-  };
-
-  function companyPipelineList(list){
-    const known=[...PIPELINE];
-    (list||[]).forEach(c=>{const p=c.pipeline_status||"Watchlist";if(!known.includes(p))known.push(p);});
-    return known;
-  }
-
-  renderCompanies = function renderCompanies(){
-    ensureMissingFunctionControls();
-    const q=(v("co-filter")||"").toLowerCase();
-    const pipe=v("co-pipe-filter");
-    const land=v("co-land-filter");
-    const listed=document.getElementById("co-listed-filter")?.checked||false;
-    const showArchived=document.getElementById("co-archived-filter")?.checked||false;
-    const list=allCompanies().filter(c=>{
-      const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land,c.pipeline_status,c.anteckningar].join(" ").toLowerCase();
-      return (!q||hay.includes(q)) && (!pipe||c.pipeline_status===pipe) && (!land||c.land===land) && (!listed||c.borsnoterad) && (showArchived || !companyIsArchived(c));
-    });
-    const pipes=companyPipelineList(list);
-    const el=document.getElementById("companies-content");
-    if(!el)return;
-    el.innerHTML=`<div class="pipe">${pipes.map(p=>{
-      const arr=list.filter(c=>(c.pipeline_status||"Watchlist")===p);
-      return `<div class="pipe-col"><div class="pipe-head">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${arr.map(c=>{
-        const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;
-        const fl=FLAG[c.land]||"🌍";
-        const archived=companyIsArchived(c);
-        return `<div class="pipe-card" onclick="openCompanyCard('${c.id}')" style="${archived?'opacity:.62;border-style:dashed':''}"><div class="pipe-title">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:10px;color:var(--gold);margin-left:3px">★</span>':""}${archived?'<span class="patch-chip" style="margin-left:5px">Arkiverad</span>':""}</div><div class="pipe-meta">AI: ${c.ai_score??"--"} · ${sig>0?`<span style="color:var(--red);font-weight:600">${sig} nya</span>`:"0 nya"} signaler</div></div>`;
-      }).join("")}</div>`;
-    }).join("")}</div>`;
-  };
-
-  openCompanyCard = async function openCompanyCard(id){
-    const c=findCompany(id);if(!c)return;
-    const cs=signals.filter(s=>s.company_id===id);
-    const nm=network.filter(n=>n.company_id===id);
-    const cp=projects.filter(p=>p.company_id===id);
-    const fl=FLAG[c.land]||"🌍";
-    const archived=companyIsArchived(c);
-    document.getElementById("co-card-content").innerHTML=`
-      <div class="card-hdr"><h2>${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}</h2><p>${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span>${archived?'<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">Arkiverad</span>':""}</div></div>
-      <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">Översikt</div><div class="ctab" onclick="cct('co','ai',this)">AI-score</div><div class="ctab" onclick="cct('co','signals',this)">Signaler (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">Kontakter (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">Projekt (${cp.length})</div></div>
-      <div class="ctpane active" id="cco-overview"><div class="ig"><div class="ii"><label>Org.nr</label><span>${e(c.orgnr||"--")}</span></div><div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div><div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div><div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div><div class="ii"><label>Land</label><span>${e(c.land||"--")}</span></div><div class="ii"><label>Hemsida</label><span>${c.hemsida?`<a href="${e(c.hemsida)}" target="_blank" rel="noopener">Öppna ↗</a>`:"--"}</span></div>${archived?`<div class="ii full"><label>Arkiverad</label><span>${e(c.arkiverad_vid||"")}</span></div>`:""}</div>${c.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(c.anteckningar)}</p>`:""}</div>
-      <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Klicka för att beräkna")}</p></div></div><button class="btn btn-warm" onclick="calcAIScore('${c.id}')">Beräkna AI-score</button></div>
-      <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div>${s.kalla_url?`<button class="btn btn-outline btn-xs" onclick="openSignalUrl('${s.id}')">Öppna annons</button>`:""}<span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${e(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
-      <div class="ctpane" id="cco-contacts">${nm.length?nm.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openCard('${n.contact_id}')">Öppna</button></div>`).join(""):'<p style="color:#aaa">Inga kopplade kontakter</p>'}</div>
-      <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">Inga projekt</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
-      <div class="mfoot">${archived?`<button class="btn btn-green" onclick="restoreCompany('${c.id}')">Återställ</button>`:`<button class="btn btn-outline" onclick="archiveCo('${c.id}')">Arkivera</button>`}<button class="btn btn-danger" onclick="deleteCompany('${c.id}')">Radera permanent</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-company-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button><button class="btn btn-warm btn-sm" onclick="openAnalyzeForCo('${c.id}')">AI-analys</button></div>`;
-    openM("m-company-card");
-  };
-
-  archiveCo = async function archiveCo(id){
-    const c=findCompany(id);if(!c)return;
-    confirm2(`Arkivera "${c.namn}"?`,async()=>{
-      const r=await sb.from("companies").update({arkiverad_vid:new Date().toISOString()}).eq("id",id);
-      if(r.error){alert(r.error.message);return;}
-      closeM("m-company-card");toast("Bolaget arkiverades");await loadAll();
-    });
-  };
-  window.restoreCompany = async function restoreCompany(id){
-    const r=await sb.from("companies").update({arkiverad_vid:null}).eq("id",id);
-    if(r.error){alert(r.error.message);return;}
-    closeM("m-company-card");toast("Bolaget återställt");await loadAll();
-  };
-  window.dbStep = async function dbStep(label, promise, errors){
-    try{const r=await promise;if(r?.error)errors.push(`${label}: ${r.error.message}`);return r;}catch(err){errors.push(`${label}: ${err.message}`);return null;}
-  };
-  window.deleteCompany = function deleteCompany(id){
-    const c=findCompany(id);if(!c)return;
-    const phrase=`RADERA ${c.namn}`;
-    const typed=prompt(`Permanent radering kan inte ångras.\n\nSkriv exakt: ${phrase}`);
-    if(typed!==phrase){toast("Radering avbruten");return;}
-    hardDeleteCompany(id);
-  };
-  window.hardDeleteCompany = async function hardDeleteCompany(id){
-    const c=findCompany(id);if(!c)return;
-    const errors=[];
-    const pids=projects.filter(p=>p.company_id===id).map(p=>p.id);
-    const tids=tasks.filter(t=>pids.includes(t.project_id)).map(t=>t.id);
-    await dbStep("company_signals", sb.from("company_signals").delete().eq("company_id",id), errors);
-    await dbStep("company_network_map", sb.from("company_network_map").delete().eq("company_id",id), errors);
-    if(pids.length){
-      await dbStep("project_diary_entries/project", sb.from("project_diary_entries").delete().in("project_id",pids), errors);
-      if(tids.length) await dbStep("project_diary_entries/task", sb.from("project_diary_entries").delete().in("task_id",tids), errors);
-      await dbStep("veckoplan", sb.from("veckoplan").delete().in("project_id",pids), errors);
-      await dbStep("project_contacts", sb.from("project_contacts").delete().in("project_id",pids), errors);
-      await dbStep("project_closeouts", sb.from("project_closeouts").delete().in("project_id",pids), errors);
-      await dbStep("project_tasks", sb.from("project_tasks").delete().in("project_id",pids), errors);
-      await dbStep("projects", sb.from("projects").delete().in("id",pids), errors);
-    }
-    await dbStep("contacts koppla loss company_id", sb.from("contacts").update({company_id:null,foretag:null,orgnr:null}).eq("company_id",id), errors);
-    if(c.orgnr) await dbStep("contacts koppla loss orgnr", sb.from("contacts").update({company_id:null,foretag:null,orgnr:null}).eq("orgnr",c.orgnr), errors);
-    if(c.namn) await dbStep("contacts koppla loss foretag", sb.from("contacts").update({company_id:null,foretag:null,orgnr:null}).eq("foretag",c.namn), errors);
-    const del=await dbStep("companies", sb.from("companies").delete().eq("id",id), errors);
-    if(del?.error){alert("Bolaget kunde inte raderas:\n"+errors.join("\n"));return;}
-    closeM("m-company-card");toast(errors.length?`Raderat med ${errors.length} varningar`:`Bolaget raderades permanent`);await loadAll();
-  };
-
-  // ---------- contact hard delete ----------
-  window.hardDeleteContact = async function hardDeleteContact(id){
-    const c=contacts.find(x=>x.id===id);if(!c)return;
-    const errors=[];
-    await dbStep("contact_notes", sb.from("contact_notes").delete().eq("contact_id",id), errors);
-    await dbStep("activity_log", sb.from("activity_log").delete().eq("contact_id",id), errors);
-    await dbStep("project_contacts", sb.from("project_contacts").delete().eq("contact_id",id), errors);
-    await dbStep("company_network_map", sb.from("company_network_map").delete().eq("contact_id",id), errors);
-    await dbStep("projects contact_id", sb.from("projects").update({contact_id:null}).eq("contact_id",id), errors);
-    const del=await dbStep("contacts", sb.from("contacts").delete().eq("id",id), errors);
-    if(del?.error){alert("Kontakten kunde inte raderas:\n"+errors.join("\n"));return;}
-    closeM("m-card");toast(errors.length?`Kontakt raderad med ${errors.length} varningar`:`Kontakt raderad permanent`);await loadAll();
-  };
-  confirmDeleteContact = function confirmDeleteContact(id){
-    const c=contacts.find(x=>x.id===id);if(!c)return;
-    const name=`${c.fornamn||""} ${c.efternamn||""}`.trim();
-    const phrase=`RADERA ${name}`;
-    const typed=prompt(`Permanent radering av kontakt kan inte ångras.\n\nSkriv exakt: ${phrase}`);
-    if(typed!==phrase){toast("Radering avbruten");return;}
-    hardDeleteContact(id);
-  };
-
-  // ---------- discovery settings ----------
-  const DISCOVERY_STORAGE_KEY="crm_nis_discovery_config";
-  const DEFAULT_DISCOVERY_CONFIG={
-    search_terms:["controller","ekonomichef","CFO","redovisningschef","business controller","financial controller","interim finance","systembyte ekonomi","ERP ekonomi"],
-    include_words:[], stop_words:[], cities:[], max_age_days:45, limit_per_term:25, max_import:80, auto_create_companies:true, apply_filters_to_manual_search:true
-  };
-  function linesToArray(s){return String(s||"").split(/\n|,/).map(x=>x.trim()).filter(Boolean);}
-  window.normalizeDiscoveryConfigClient = function normalizeDiscoveryConfigClient(cfg={}){
-    const out={...DEFAULT_DISCOVERY_CONFIG,...(cfg||{})};
-    ["search_terms","include_words","stop_words","cities"].forEach(k=>{out[k]=Array.isArray(out[k])?out[k].map(String).map(x=>x.trim()).filter(Boolean):linesToArray(out[k]);});
-    out.max_age_days=Math.max(0,parseInt(out.max_age_days||DEFAULT_DISCOVERY_CONFIG.max_age_days,10)||DEFAULT_DISCOVERY_CONFIG.max_age_days);
-    out.limit_per_term=Math.max(1,parseInt(out.limit_per_term||DEFAULT_DISCOVERY_CONFIG.limit_per_term,10)||DEFAULT_DISCOVERY_CONFIG.limit_per_term);
-    out.max_import=Math.max(1,parseInt(out.max_import||DEFAULT_DISCOVERY_CONFIG.max_import,10)||DEFAULT_DISCOVERY_CONFIG.max_import);
-    out.auto_create_companies=out.auto_create_companies!==false;
-    out.apply_filters_to_manual_search=out.apply_filters_to_manual_search!==false;
-    return out;
-  };
-  window.storedDiscoveryConfig = function storedDiscoveryConfig(){
-    let cfg=null;
-    try{cfg=JSON.parse(localStorage.getItem(DISCOVERY_STORAGE_KEY)||"null");}catch{}
-    if(!cfg && settings?.discovery_config){
-      try{cfg=typeof settings.discovery_config==="string"?JSON.parse(settings.discovery_config):settings.discovery_config;}catch{cfg=settings.discovery_config;}
-    }
-    return normalizeDiscoveryConfigClient(cfg||DEFAULT_DISCOVERY_CONFIG);
-  };
-  window.discoveryConfig = function discoveryConfig(){return storedDiscoveryConfig();};
-  window.readDiscoverySettingsForm = function readDiscoverySettingsForm(){
-    return normalizeDiscoveryConfigClient({
-      search_terms:linesToArray(v("disc-search-terms")), include_words:linesToArray(v("disc-include-words")), stop_words:linesToArray(v("disc-stop-words")), cities:linesToArray(v("disc-cities")),
-      max_age_days:intv("disc-max-age")||45, limit_per_term:intv("disc-limit-term")||25, max_import:intv("disc-max-import")||80,
-      auto_create_companies:document.getElementById("disc-auto-create")?.checked!==false,
-      apply_filters_to_manual_search:document.getElementById("disc-apply-manual")?.checked!==false
-    });
-  };
-  window.saveDiscoverySettings = async function saveDiscoverySettings(){
-    const cfg=readDiscoverySettingsForm();
-    localStorage.setItem(DISCOVERY_STORAGE_KEY, JSON.stringify(cfg));
-    if(settings){
-      const r=await sb.from("user_settings").update({discovery_config:cfg}).eq("user_id",me.id).select("*").single();
-      if(!r.error) settings=r.data;
-      else if(!String(r.error.message||"").toLowerCase().includes("discovery_config")) alert(r.error.message);
-    }
-    toast("Discovery-parametrar sparade ✓");
-  };
-  window.openDiscoverySettings = function openDiscoverySettings(){gotoView("settings");setTimeout(()=>document.getElementById("disc-settings")?.scrollIntoView({behavior:"smooth",block:"start"}),80);};
-
-  renderSettings = function renderSettings(){
-    if(!settings)return;
-    const cfg=storedDiscoveryConfig();
-    document.getElementById("settings-content").innerHTML=`<div style="max-width:880px">
-      <p class="sec-title">Konto</p>
-      <div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div>
-      <p class="sec-title">Rapporter</p>
-      <div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div></div></div>
-      <p class="sec-title" id="disc-settings">Lead Discovery-parametrar</p>
-      <div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p class="privacy-note">De här parametrarna används av Platsbanken/JobTech när sökrutan lämnas tom. Skriver du ett tillfälligt ord kan du välja om filtren också ska användas där.</p><div class="discovery-param-grid"><div class="fl"><label>Sökord, ett per rad</label><textarea id="disc-search-terms">${e(cfg.search_terms.join("\n"))}</textarea></div><div class="fl"><label>Inkluderingsord</label><textarea id="disc-include-words" placeholder="Ex: finance\ncontroller\nERP">${e(cfg.include_words.join("\n"))}</textarea></div><div class="fl"><label>Stoppord</label><textarea id="disc-stop-words" placeholder="Ex: praktik\nstudent">${e(cfg.stop_words.join("\n"))}</textarea></div><div class="fl"><label>Orter</label><textarea id="disc-cities" placeholder="Tomt = alla orter">${e(cfg.cities.join("\n"))}</textarea></div><div class="fl"><label>Max ålder, dagar</label><input id="disc-max-age" type="number" value="${cfg.max_age_days}"></div><div class="fl"><label>Limit per sökord</label><input id="disc-limit-term" type="number" value="${cfg.limit_per_term}"></div><div class="fl"><label>Max import per körning</label><input id="disc-max-import" type="number" value="${cfg.max_import}"></div><div class="fl fl-row" style="padding-top:22px"><input type="checkbox" id="disc-auto-create" ${cfg.auto_create_companies?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400" for="disc-auto-create">Skapa bolag automatiskt</label></div><div class="fl fl-row full"><input type="checkbox" id="disc-apply-manual" ${cfg.apply_filters_to_manual_search?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400" for="disc-apply-manual">Använd samma filter även när jag skriver ett tillfälligt sökord</label></div></div></div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="saveSettings()">Spara allt</button><button class="btn btn-outline" onclick="saveDiscoverySettings()">Spara discovery-parametrar</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div>
-    </div>`;
-  };
-  saveSettings = async function saveSettings(){
-    const cfg=readDiscoverySettingsForm();localStorage.setItem(DISCOVERY_STORAGE_KEY,JSON.stringify(cfg));
-    const base={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};
-    let r=await sb.from("user_settings").update({...base,discovery_config:cfg}).eq("user_id",me.id).select("*").single();
-    if(r.error && String(r.error.message||"").toLowerCase().includes("discovery_config")) r=await sb.from("user_settings").update(base).eq("user_id",me.id).select("*").single();
-    if(r.error)alert(r.error.message);else{settings={...r.data,discovery_config:cfg};toast("Sparat ✓");}
-  };
-
-  // ---------- signal/ad discovery ----------
-  function jobtechSearchValue(){return (document.getElementById("jobtech-q")?.value||"").trim();}
-  callDiscover = async function callDiscover(endpoint,btnId,extra={}){
-    const btn=document.getElementById(btnId);const orig=btn?.textContent;
-    if(btn){btn.disabled=true;btn.textContent=extra.dry?"Testar...":"Hämtar...";}
-    try{
-      const token=await getToken();if(!token){toast("Inte inloggad");return;}
-      const cfg=discoveryConfig();const manual=jobtechSearchValue();
-      const body={...extra,config:cfg,q:manual||undefined,query:manual||undefined,dry_run:!!extra.dry,dry:!!extra.dry};
-      const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(body)});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok){toast(data.error||data.message||"Misslyckades");return;}
-      if(extra.dry) renderJobTechTestResult(data);
-      const parts=[];
-      if(data.message)parts.push(data.message);
-      if(data.total_ads!=null)parts.push(`hämtade ${data.total_ads} annonser`);
-      if(data.relevanta!=null)parts.push(`${data.relevanta} relevanta`);
-      if(data.nya_signaler!=null)parts.push(`${data.nya_signaler} nya signaler`);
-      if(data.insert_fel||data.errors?.length)parts.push(`${data.insert_fel||data.errors.length} sparfel`);
-      toast(parts.join(" · ")||"Klart");
-      if(!extra.dry){await loadAll();gotoView("signals");}
-    }catch(err){toast("Fel: "+err.message);}finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
-  };
-  discoverLeads = function discoverLeads(){callDiscover("/api/discover?source=leads","btn-pb");};
-  window.testJobTechAds = async function testJobTechAds(){
-    const btn=document.getElementById("btn-pb-test");const orig=btn?.textContent;
-    if(btn){btn.disabled=true;btn.textContent="Testar...";}
-    try{
-      const cfg=discoveryConfig();
-      const term=jobtechSearchValue() || cfg.search_terms?.[0] || "sjuksköterska";
-      const url=new URL("https://jobsearch.api.jobtechdev.se/search");
-      url.searchParams.set("q",term);url.searchParams.set("limit",String(Math.min(25,cfg.limit_per_term||10)));url.searchParams.set("offset","0");
-      const r=await fetch(url.toString(),{headers:{accept:"application/json"}});
-      if(!r.ok)throw new Error("JobTech svarade "+r.status);
-      const data=await r.json();const hits=data.hits||[];
-      renderJobTechTestResult({message:`Direkttest mot JobTech, sökord: ${term}`,total_ads:data.total?.value??data.total??hits.length,relevanta:hits.length,nya_signaler:0,ads:hits});
-      toast(`Test JobTech: hämtade ${hits.length} annonser`);
-    }catch(err){toast("JobTech-test misslyckades: "+err.message);}finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
-  };
-  window.renderJobTechTestResult = function renderJobTechTestResult(data={}){
-    const el=document.getElementById("jobtech-test-result");if(!el)return;
-    const ads=data.ads||data.preview||data.examples||data.hits||[];
-    el.innerHTML=`<div class="jobtech-test"><strong>Test JobTech</strong><div class="patch-muted" style="margin-top:3px">${e(data.message||"")} ${data.total_ads!=null?`· Hämtade ${data.total_ads} annonser`:""} ${data.relevanta!=null?`· ${data.relevanta} relevanta`:""} ${data.nya_signaler!=null?`· ${data.nya_signaler} skulle importeras`:""}</div>${ads.length?`<div class="tw" style="margin-top:10px;overflow-x:auto"><table><thead><tr><th>Annons</th><th>Bolag</th><th>Ort</th><th>Datum</th></tr></thead><tbody>${ads.slice(0,10).map(a=>`<tr><td>${e(a.headline||a.rubrik||a.title||"")}</td><td>${e(a.company||a.companyName||a.employer?.name||a.bolag||"")}</td><td>${e(a.city||a.ort||a.workplace_address?.municipality||"")}</td><td>${e((a.publication_date||a.datum||a.date||"").slice(0,10))}</td></tr>`).join("")}</tbody></table></div>`:""}</div>`;
-  };
-  window.openSignalUrl = function openSignalUrl(id){
-    const s=signals.find(x=>x.id===id);if(!s?.kalla_url){toast("Ingen länk sparad");return;}window.open(s.kalla_url,"_blank","noopener");
-  };
-  window.focusSignal = function focusSignal(id){gotoView("signals");setTimeout(()=>{const row=document.querySelector(`[data-signal-id="${id}"]`);if(row){row.scrollIntoView({behavior:"smooth",block:"center"});row.style.outline="2px solid var(--warm)";setTimeout(()=>row.style.outline="",1800);}},120);};
-
-  renderSignals = function renderSignals(){
-    ensureMissingFunctionControls();
-    const srcs=[
-      {icon:"🇸🇪",title:"Platsbanken",desc:"Annonser via JobTech. Tom sökning använder sparade parametrar.",id:"btn-pb",fn:"discoverLeads()",group:"reaktiv",platsbanken:true},
-      {icon:"📰",title:"Google News",desc:"Marknadsnyheter om svenska bolag",id:"btn-news",fn:"discoverNews()",group:"reaktiv"},
-      {icon:"🇸🇪",title:"Finansinspektionen",desc:"Årsredovisningar & börsinfo",id:"btn-fi",fn:"discoverFI()",group:"reaktiv"},
-      {icon:"📈",title:"Nasdaq Nordic",desc:"Importera börsnoterade bolag",id:"btn-nasdaq",fn:"discoverNasdaq()",group:"reaktiv"},
-      {icon:"🇳🇴",title:"Norge",desc:"Brønnøysundregisteret",id:"btn-no",fn:"discoverNorway()",group:"reaktiv"},
-      {icon:"🇩🇰",title:"Danmark",desc:"CVR-registret",id:"btn-dk",fn:"discoverDenmark()",group:"reaktiv"},
-      {icon:"🇫🇮",title:"Finland",desc:"YTJ/PRH",id:"btn-fi2",fn:"discoverFinland()",group:"reaktiv"},
-      {icon:"🤖",title:"AI-analys",desc:"Analysera årsredovisning med AI",id:"btn-ai",fn:"openAnalyze()",group:"reaktiv"},
-      {icon:"🏛️",title:"Nyregistrerade AB",desc:"Nya aktiebolag – behov av ekonomifunktion från dag 1",id:"btn-bv-new",fn:"discoverBolagsverketNew()",group:"proaktiv"},
-      {icon:"🔄",title:"VD/styrelsebyten",desc:"Bolagsverket ändringsregister – ny ledning = ny genomgång",id:"btn-bv-chg",fn:"discoverBolagsverketChanges()",group:"proaktiv"},
-      {icon:"📋",title:"Upphandlingar",desc:"Vunna offentliga kontrakt = snabb tillväxt = ekonomibehov",id:"btn-upp",fn:"discoverUpphandling()",group:"proaktiv"},
-      {icon:"📣",title:"Pressreleaser",desc:"Mynewsdesk – VD/CFO-byten publiceras veckor före annons",id:"btn-pr",fn:"discoverMynewsdesk()",group:"proaktiv"},
-      {icon:"📊",title:"Börsmeddelanden",desc:"Nasdaq OMX – förvärv, vinstvarningar, ledningsförändringar",id:"btn-nrss",fn:"discoverNasdaqRSS()",group:"proaktiv"}
-    ];
-    const renderSrcCard=s=>s.platsbanken?`<div class="sig-src"><h4>${s.icon} ${s.title}</h4><p>${s.desc}</p><input id="jobtech-q" placeholder="Tillfälligt sökord, t.ex. sjuksköterska eller controller" style="height:32px"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-warm btn-sm" id="${s.id}" onclick="${s.fn}">Hämta</button><button class="btn btn-outline btn-sm" id="btn-pb-test" onclick="testJobTechAds()">Testa utan import</button><button class="btn btn-outline btn-sm" onclick="openDiscoverySettings()">Parametrar</button></div></div>`:`<div class="sig-src"><h4>${s.icon} ${s.title}</h4><p>${s.desc}</p><button class="btn btn-warm btn-sm" id="${s.id}" onclick="${s.fn}">${s.icon==="🤖"?"Analysera":"Hämta"}</button></div>`;
-    const reaktiva=srcs.filter(s=>s.group==="reaktiv"),proaktiva=srcs.filter(s=>s.group==="proaktiv");
-    const sourceBox=document.getElementById("sig-sources");
-    if(sourceBox)sourceBox.innerHTML=`<div style="grid-column:1/-1;margin-bottom:4px"><p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#888">🔵 Reaktiva källor – bolag söker redan aktivt</p></div>${reaktiva.map(renderSrcCard).join("")}<div style="grid-column:1/-1" id="jobtech-test-result"></div><div style="grid-column:1/-1;margin:8px 0 4px"><p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--green)">🟢 Proaktiva källor – innan annons läggs ut</p></div>${proaktiva.map(renderSrcCard).join("")}`;
-    const status=v("sig-status-f"),type=v("sig-type-f"),land=v("sig-land-f"),q=(v("sig-search-f")||"").toLowerCase(),src=(v("sig-source-f")||"").toLowerCase();
-    const list=signals.filter(s=>{
-      const hay=[s.rubrik,s.beskrivning,s.kalla,s.signal_typ,s.companies?.namn,s.companies?.land].join(" ").toLowerCase();
-      return (!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!q||hay.includes(q))&&(!src||String(s.kalla||"").toLowerCase().includes(src));
-    });
-    const cont=document.getElementById("signals-content");if(!cont)return;
-    cont.innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr data-signal-id="${s.id}"><td><strong>${e(s.rubrik)}</strong><br><span style="font-size:11px;color:#888">${e(s.kalla||"")}</span></td><td>${e(s.companies?.namn||"")}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">${s.kalla_url?`<button class="btn-icon" title="Öppna annons" onclick="openSignalUrl('${s.id}')">🔗</button>`:""}<button class="btn-icon" onclick="openCompanyCard('${s.company_id}')">↗</button><button class="btn-icon" onclick="setSigStatus('${s.id}','granskad')">✓</button><button class="btn-icon" onclick="setSigStatus('${s.id}','ignorerad')">×</button></td></tr>`).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>';
-  };
-
-  // ---------- global search incl signals and archived companies ----------
-  doSearch = async function doSearch(){
-    const q=v("gsearch");const box=document.getElementById("search-drop");if(!box)return;
-    if(q.length<2){box.classList.remove("open");return;}
-    const qq=q.toLowerCase();let data=[];
-    try{const r=await sb.rpc("search_crm",{p_user_id:me.id,p_query:q});data=r.data||[];}catch{}
-    const localCompanies=allCompanies().filter(c=>[c.namn,c.orgnr,c.bransch,c.stad,c.pipeline_status].join(" ").toLowerCase().includes(qq)).slice(0,6).map(c=>({typ:"bolag",id:c.id,titel:c.namn,undertitel:[c.stad,c.land].filter(Boolean).join(" · "),extra:companyIsArchived(c)?"Arkiverad":c.pipeline_status}));
-    const localContacts=contacts.filter(c=>[c.fornamn,c.efternamn,c.foretag,c.roll,c.epost].join(" ").toLowerCase().includes(qq)).slice(0,6).map(c=>({typ:"kontakt",id:c.id,titel:`${c.fornamn||""} ${c.efternamn||""}`.trim(),undertitel:c.foretag||"",extra:c.status||""}));
-    const sigs=signals.filter(s=>[s.rubrik,s.beskrivning,s.kalla,s.signal_typ,s.companies?.namn].join(" ").toLowerCase().includes(qq)).slice(0,6).map(s=>({typ:"signal",id:s.id,titel:s.rubrik,undertitel:s.companies?.namn||s.kalla||"",extra:sigLabel(s.signal_typ)}));
-    const tm=tasks.filter(t=>[t.title,t.description,t.owner].join(" ").toLowerCase().includes(qq)).slice(0,4).map(t=>{const p=projects.find(x=>x.id===t.project_id);return{typ:"task",id:t.id,titel:t.title,undertitel:p?.namn||"",extra:t.status};});
-    const pr=projects.filter(p=>[p.namn,p.uppdragstyp,p.status].join(" ").toLowerCase().includes(qq)).slice(0,4).map(p=>({typ:"uppdrag",id:p.id,titel:p.namn,undertitel:projCompany(p)?.namn||"",extra:p.status}));
-    const all=[...data,...localCompanies,...localContacts,...sigs,...tm,...pr].filter((x,i,a)=>x&&x.id&&a.findIndex(y=>y.typ===x.typ&&y.id===x.id)===i).slice(0,18);
-    box.innerHTML=all.length?all.map(x=>`<div class="search-item" onclick="openSearchResult('${x.typ}','${x.id}')"><div class="search-item-type">${e(x.typ)}</div><strong>${e(x.titel)}</strong><div style="font-size:12px;color:#888">${e(x.undertitel||"")}${x.extra?" · "+e(x.extra):""}</div></div>`).join(""):'<div class="search-item"><span style="color:#aaa">Inga träffar</span></div>';
-    box.classList.add("open");
-  };
-  openSearchResult = function openSearchResult(type,id){
-    document.getElementById("search-drop")?.classList.remove("open");const gs=document.getElementById("gsearch");if(gs)gs.value="";
-    if(type==="kontakt") {gotoView("contacts");openCard(id);} else if(type==="bolag") {gotoView("companies");openCompanyCard(id);} else if(type==="task") {gotoView("tasks");setTimeout(()=>document.querySelector(`[data-task-id="${id}"]`)?.scrollIntoView({behavior:"smooth",block:"center"}),100);} else if(type==="signal") {focusSignal(id);} else if(type==="uppdrag") {gotoView("projects");openProjectCard(id);} else if(type==="underkonsult") {gotoView("subconsultants");}
-  };
-
-  // ---------- diary/activity logging ----------
-  window.diaryParticipants = function diaryParticipants(d){
-    const raw=d?.deltagare||d?.participants||d?.contact_ids||[];
-    let ids=[];
-    if(Array.isArray(raw)) ids=raw; else if(typeof raw==="string"){try{const j=JSON.parse(raw);ids=Array.isArray(j)?j:raw.split(",");}catch{ids=raw.split(",");}}
-    return ids.map(id=>contacts.find(c=>c.id===String(id).trim())).filter(Boolean).map(c=>`${c.fornamn||""} ${c.efternamn||""}`.trim()).join(", ");
-  };
-  window.createRelationLogsForActivity = async function createRelationLogsForActivity({type,datum,desc,nextStep,place,contactIds}){
-    const logType=logTypeForActivity(type);
-    for(const cid of (contactIds||[])){
-      const c=contacts.find(x=>x.id===cid);
-      await sb.from("activity_log").insert({user_id:me.id,contact_id:cid,kontakt_namn:c?`${c.fornamn||""} ${c.efternamn||""}`.trim():"",foretag:c?.foretag||"",typ:logType,interaktionstyp:type,datum,anteckning:desc,nasta_steg:nextStep||null,plats:place||null,aktivitet_typ:type});
-      const nd=calcNextDate(logType,datum);if(nd)await sb.from("contacts").update({senast_kontakt:datum,senast_typ:logType,nasta_foljup:nd}).eq("id",cid);else await sb.from("contacts").update({senast_kontakt:datum,senast_typ:logType}).eq("id",cid);
-    }
-  };
-  const __oldOpenNewDiaryEntry = typeof openNewDiaryEntry === "function" ? openNewDiaryEntry : null;
-  openNewDiaryEntry = function openNewDiaryEntry(){
-    if(__oldOpenNewDiaryEntry)__oldOpenNewDiaryEntry();
-    fillActivityTypeSelects();
-    const dco=document.getElementById("de-contacts");if(dco)dco.innerHTML=contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" · "+e(c.foretag):""}</option>`).join("");
-  };
-  window.openNewDiaryEntryForDate = function openNewDiaryEntryForDate(datum=today()){
-    openNewDiaryEntry();setTimeout(()=>{const el=document.getElementById("de-datum");if(el)el.value=datum;},30);
-  };
-  window.openNewDiaryEntryForProjectDate = function openNewDiaryEntryForProjectDate(pid,tid,datum){
-    openNewDiaryEntryForProject(pid);setTimeout(()=>{const de=document.getElementById("de-datum");if(de)de.value=datum||today();const dt=document.getElementById("de-task");if(dt&&tid)dt.value=tid;},120);
-  };
-  const __oldOpenEditDiaryEntry = typeof openEditDiaryEntry === "function" ? openEditDiaryEntry : null;
-  openEditDiaryEntry = function openEditDiaryEntry(id){
-    if(__oldOpenEditDiaryEntry)__oldOpenEditDiaryEntry(id);
-    fillActivityTypeSelects();
-  };
-  selectDiaryType = function selectDiaryType(typ,btn){
-    curDiaryType=typ;const hidden=document.getElementById("de-typ");if(hidden)hidden.value=typ;
-    document.querySelectorAll(".act-type-btn").forEach(b=>b.classList.toggle("selected",b.dataset.typ===typ));
-    if(btn)btn.classList.add("selected");
-    const isUppdrag=typ==="uppdrag";
-    const uf=document.getElementById("de-uppdrag-fields");if(uf)uf.style.display=isUppdrag?"":"none";
-    const sf=document.getElementById("de-social-fields");if(sf)sf.style.display=isUppdrag?"none":"block";
-    const bill=document.getElementById("de-bill")?.closest(".fl");if(bill)bill.style.display=isUppdrag?"":"none";
-  };
-  saveDiaryEntry = async function saveDiaryEntry(){
-    const typ=document.getElementById("de-typ")?.value||"uppdrag";
-    const datum=document.getElementById("de-datum")?.value||today();
-    const hours=parseFloat(document.getElementById("de-hours")?.value||"");
-    const desc=v("de-desc");
-    if(!isFinite(hours)||hours<=0){toast("Ange timmar > 0");return;}
-    if(!desc){toast("Beskrivning krävs");return;}
-    const isUppdrag=typ==="uppdrag";
-    const pid=isUppdrag?v("de-proj")||null:null;
-    const tid=isUppdrag?v("de-task")||null:null;
-    if(isUppdrag&&!pid){toast("Välj projekt");return;}
-    const data={user_id:me.id,project_id:pid,task_id:tid,datum,hours,billable:isUppdrag?document.getElementById("de-bill")?.checked!==false:false,work_category:v("de-cat")||"Löpande arbete",description:desc,invoice_note:v("de-invnote")||desc,next_step:v("de-nextstep")||null,aktivitet_typ:typ,plats:v("de-plats")||null};
-    const r=editDid?await sb.from("project_diary_entries").update(data).eq("id",editDid):await sb.from("project_diary_entries").insert(data);
-    if(r.error){alert(r.error.message);return;}
-    if(!isUppdrag){const selected=Array.from(document.getElementById("de-contacts")?.selectedOptions||[]).map(o=>o.value);await createRelationLogsForActivity({type:typ,datum,desc,nextStep:v("de-nextstep")||null,place:v("de-plats")||null,contactIds:selected});}
-    closeM("m-diary-entry");toast("Aktivitet sparad ✓");editDid=null;await loadAll();
-  };
-  renderDagbok = function renderDagbok(){
-    ensureMissingFunctionControls();
-    const dateFilter=v("db-date-filter"),typeFilter=v("db-type-filter"),projFilter=v("db-proj-filter");
-    let entries=[...diary];
-    if(dateFilter)entries=entries.filter(d=>d.datum===dateFilter);
-    if(typeFilter)entries=entries.filter(d=>(d.aktivitet_typ||"uppdrag")===typeFilter);
-    if(projFilter)entries=entries.filter(d=>d.project_id===projFilter);
-    entries=entries.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
-    const cont=document.getElementById("dagbok-content");if(!cont)return;
-    if(!entries.length){cont.innerHTML='<div class="empty"><div class="empty-icon">📓</div><p>Inga loggade aktiviteter. Klicka "+ Ny logg" för att börja.</p></div>';return;}
-    const byDate={};entries.forEach(d=>{const dt=d.datum||"Okänt datum";if(!byDate[dt])byDate[dt]=[];byDate[dt].push(d);});
-    cont.innerHTML=Object.entries(byDate).map(([datum,ents])=>{const totH=ents.reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-sec" style="margin-bottom:12px"><div class="week-sec-hdr"><h3>${datum}</h3><span style="font-size:12px;color:#888">${totH.toFixed(1)}h · ${ents.length} aktiviteter</span></div><div style="padding:10px 12px">${ents.map(d=>{const typ=d.aktivitet_typ||"uppdrag";const p=projects.find(x=>x.id===d.project_id);const t=tasks.find(x=>x.id===d.task_id);const co=p?projCompany(p):null;const participants=diaryParticipants(d);return`<div class="diary-entry"><div class="diary-entry-hdr"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="diary-entry-type ${actClass(typ)}">${actLabel(typ)}</span>${p?`<span style="font-size:12px;font-weight:600">${e(co?.namn||"")} → ${e(p.namn)}${t?" → "+e(t.title):""}</span>`:""}${participants?`<span class="patch-muted">👥 ${e(participants)}</span>`:""}</div><div style="display:flex;align-items:center;gap:6px"><strong style="font-size:14px">${Number(d.hours||0).toFixed(1)}h</strong>${d.billable===false?'<span style="font-size:10px;color:#888">ej fakt.</span>':""}<button class="btn-icon" onclick="openEditDiaryEntry('${d.id}')">✎</button><button class="btn-icon" onclick="deleteDiaryEntry('${d.id}')">🗑</button></div></div><div style="font-size:13px;line-height:1.5;margin-bottom:4px">${e(d.description||"")}</div>${d.invoice_note&&d.invoice_note!==d.description?`<div style="font-size:12px;color:var(--accent);padding:4px 7px;background:#f0f4f8;border-radius:4px;margin-top:4px">📄 ${e(d.invoice_note)}</div>`:""}</div>`;}).join("")}</div></div>`;}).join("");
-  };
-  window.exportDagbokCSV = function exportDagbokCSV(){
-    const rows=diary.slice().sort((a,b)=>String(a.datum).localeCompare(String(b.datum))).map(d=>{const p=projects.find(x=>x.id===d.project_id);const co=p?projCompany(p):null;const t=tasks.find(x=>x.id===d.task_id);return [d.datum,actLabel(d.aktivitet_typ||"uppdrag"),co?.namn||"",p?.namn||"",t?.title||"",d.hours||0,d.billable===false?"Nej":"Ja",d.work_category||"",d.description||"",d.invoice_note||""];});
-    const csv=[["Datum","Typ","Kund","Projekt","Uppgift","Timmar","Fakturerbar","Kategori","Beskrivning","Fakturatext"],...rows].map(r=>r.map(csvCell).join(";")).join("\n");
-    downloadFile(csv,"dagbok.csv","text/csv;charset=utf-8");
-  };
-
-  // ---------- time report edit/delete ----------
-  function filteredTimeRows(){
-    const month=document.getElementById("tr-month")?.value||curMonth();
-    const kundFilter=v("tr-kund-filter"),projFilter=v("tr-proj-filter"),typeFilter=v("tr-type-filter");
-    let rows=diary.filter(d=>String(d.datum||"").startsWith(month));
-    if(typeFilter)rows=rows.filter(d=>(d.aktivitet_typ||"uppdrag")===typeFilter);
-    if(projFilter)rows=rows.filter(d=>d.project_id===projFilter);
-    if(kundFilter)rows=rows.filter(d=>{const p=projects.find(x=>x.id===d.project_id);return p?.company_id===kundFilter;});
-    return rows;
-  }
-  renderTidrapport = function renderTidrapport(){
-    ensureMissingFunctionControls();
-    const month=document.getElementById("tr-month")?.value||curMonth();if(!document.getElementById("tr-month")?.value)document.getElementById("tr-month").value=month;
-    const rows=filteredTimeRows();
-    const bill=rows.filter(d=>d.billable!==false&&(d.aktivitet_typ||"uppdrag")==="uppdrag").reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
-    const nonBill=rows.filter(d=>d.billable===false&&(d.aktivitet_typ||"uppdrag")==="uppdrag").reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
-    const other=rows.filter(d=>(d.aktivitet_typ||"uppdrag")!=="uppdrag").reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
-    const total=rows.reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
-    const cont=document.getElementById("tidrapport-content");if(!cont)return;
-    cont.innerHTML=`<div class="kpi-grid" style="margin-bottom:18px"><div class="kpi c-green"><div class="kpi-n">${bill.toFixed(1)}</div><div class="kpi-l">Fakturerbara timmar</div></div><div class="kpi c-blue"><div class="kpi-n">${nonBill.toFixed(1)}</div><div class="kpi-l">Ej fakturerbara</div></div><div class="kpi c-warm"><div class="kpi-n">${other.toFixed(1)}</div><div class="kpi-l">Kontakt/övrigt</div></div><div class="kpi c-gold"><div class="kpi-n">${total.toFixed(1)}</div><div class="kpi-l">Totalt</div></div></div>${rows.length?`<div class="tw" style="overflow-x:auto"><table><thead><tr><th>Datum</th><th>Typ</th><th>Kund</th><th>Projekt</th><th>Uppgift</th><th>Timmar</th><th>Kategori</th><th>Text</th><th></th></tr></thead><tbody>${rows.sort((a,b)=>String(a.datum).localeCompare(String(b.datum))).map(d=>{const p=projects.find(x=>x.id===d.project_id);const co=p?projCompany(p):null;const t=tasks.find(x=>x.id===d.task_id);const typ=d.aktivitet_typ||"uppdrag";return`<tr><td>${e(d.datum)}</td><td><span class="diary-entry-type ${actClass(typ)}" style="padding:1px 6px;font-size:10px">${actLabel(typ)}</span></td><td>${e(co?.namn||"")}</td><td>${e(p?.namn||"")}</td><td>${e(t?.title||"")}</td><td>${Number(d.hours||0).toFixed(1)}${d.billable===false?" *":""}</td><td>${e(d.work_category||"")}</td><td>${e(d.invoice_note||d.description||"")}</td><td style="white-space:nowrap"><button class="btn-icon" onclick="openEditDiaryEntry('${d.id}')">✎</button><button class="btn-icon" onclick="deleteDiaryEntry('${d.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">📊</div><p>Inga tidsrader för vald period</p></div>'}`;
-  };
-  exportTidrapportCSV = function exportTidrapportCSV(){
-    const rows=filteredTimeRows().sort((a,b)=>String(a.datum).localeCompare(String(b.datum))).map(d=>{const p=projects.find(x=>x.id===d.project_id);const co=p?projCompany(p):null;const t=tasks.find(x=>x.id===d.task_id);return [d.datum,actLabel(d.aktivitet_typ||"uppdrag"),co?.namn||"",p?.namn||"",t?.title||"",d.hours||0,d.billable===false?"Nej":"Ja",d.work_category||"",d.invoice_note||d.description||""];});
-    const csv=[["Datum","Typ","Kund","Projekt","Uppgift","Timmar","Fakturerbar","Kategori","Text"],...rows].map(r=>r.map(csvCell).join(";")).join("\n");
-    downloadFile(csv,"tidrapport.csv","text/csv;charset=utf-8");
-  };
-
-  // ---------- week plan as activity log with 40h summary ----------
-  function weekDatesFromInput(){
-    const wpw=document.getElementById("vp-week")?.value||`${new Date().getFullYear()}-W${String(getWeekNumber(new Date())).padStart(2,"0")}`;
-    if(!document.getElementById("vp-week")?.value)document.getElementById("vp-week").value=wpw;
-    const [year,week]=wpw.split("-W").map(Number);const jan4=new Date(year,0,4);const start=new Date(jan4);start.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(week-1)*7);const dates=[];for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);dates.push(d.toISOString().split("T")[0]);}return dates;
-  }
-  renderVeckoplan = function renderVeckoplan(){
-    const weekDates=weekDatesFromInput();const dayNames=["Mån","Tis","Ons","Tor","Fre","Lör","Sön"];
-    const weekDiary=diary.filter(d=>weekDates.includes(d.datum));
-    const dayTotals=weekDates.map(dt=>weekDiary.filter(d=>d.datum===dt).reduce((s,d)=>s+(parseFloat(d.hours)||0),0));
-    const weekTotal=dayTotals.reduce((s,n)=>s+n,0);const target=40;
-    const activeProjects=projects.filter(p=>p.status==="Aktiv"||weekDiary.some(d=>d.project_id===p.id));
-    const otherRows=weekDiary.filter(d=>!d.project_id);
-    const dayClass=(hours,i)=>i<5?(hours>=8?"week-day-ok":hours>=6?"week-day-warn":"week-day-bad"):"";
-    const cont=document.getElementById("veckoplan-content");if(!cont)return;
-    cont.innerHTML=`<div class="kpi-grid" style="margin-bottom:16px"><div class="kpi ${weekTotal>=target?"c-green":"c-warm"}"><div class="kpi-n">${weekTotal.toFixed(1)}</div><div class="kpi-l">Loggade timmar denna vecka</div></div><div class="kpi c-blue"><div class="kpi-n">40.0</div><div class="kpi-l">Veckomål</div></div><div class="kpi ${weekTotal>=target?"c-green":"c-red"}"><div class="kpi-n">${Math.round((weekTotal/target)*100)}%</div><div class="kpi-l">Mot 40h</div></div></div><div style="margin-bottom:16px">${progressBar(weekTotal,target,320)}</div><div class="week-grid"><div class="week-grid-hdr">Projekt / Uppgift</div>${dayNames.map((d,i)=>`<div class="week-grid-hdr">${d}<br><span style="font-size:10px;opacity:.75">${weekDates[i].slice(5)}</span><div class="week-day-sum ${dayClass(dayTotals[i],i)}">${dayTotals[i].toFixed(1)}h${i<5?" / 8h":""}</div></div>`).join("")}${activeProjects.map(p=>{const pt=tasks.filter(t=>t.project_id===p.id&&t.status!=="Klar");const projectLogged=weekDiary.filter(d=>d.project_id===p.id&&!d.task_id);const projectHeader=`<div class="week-grid-label" style="background:var(--accent);color:#fff;font-size:12px">${e(p.namn)}</div>${weekDates.map(datum=>{const logged=projectLogged.filter(d=>d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openNewDiaryEntryForProjectDate('${p.id}','', '${datum}')" style="cursor:pointer;text-align:center">${logged>0?`<span class="week-hour-chip social">${logged.toFixed(1)}h</span>`:""}</div>`;}).join("")}`;const taskRows=(pt.length?pt:[]).map(t=>`<div class="week-grid-label" style="padding-left:24px;font-weight:400;font-size:11px">${e(t.title)}</div>${weekDates.map(datum=>{const logged=weekDiary.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openNewDiaryEntryForProjectDate('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${logged>0?`<span class="week-hour-chip social" title="Loggat">${logged.toFixed(1)}h</span>`:""}</div>`;}).join("")}`).join("");return projectHeader+(taskRows||`<div class="week-grid-label" style="padding-left:24px;font-weight:400;color:#aaa">Klicka dag för att logga</div>${weekDates.map(datum=>`<div class="week-grid-cell" onclick="openNewDiaryEntryForProjectDate('${p.id}','','${datum}')" style="cursor:pointer"></div>`).join("")}`);}).join("")}<div class="week-grid-label" style="background:var(--green);color:#fff;font-size:12px">Övriga aktiviteter</div>${weekDates.map(datum=>{const entries=otherRows.filter(d=>d.datum===datum);const sum=entries.reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openNewDiaryEntryForDate('${datum}')" style="cursor:pointer;text-align:center">${sum>0?`<span class="week-hour-chip social">${sum.toFixed(1)}h</span><div style="font-size:10px;color:#888;margin-top:3px">${entries.map(d=>actLabel(d.aktivitet_typ||"ovrigt")).join("<br>")}</div>`:""}</div>`;}).join("")}</div>`;
-  };
-  openVpEntry = function openVpEntry(pid,tid,datum){openNewDiaryEntryForProjectDate(pid,tid,datum);};
-  openNewVeckoplanEntry = function openNewVeckoplanEntry(){openNewDiaryEntryForDate(today());};
-
-  // ---------- task row layout ----------
-  window.renderTaskRow = function renderTaskRow(t,showProject=false){
-    const today2=new Date();today2.setHours(0,0,0,0);const od=t.due_date&&new Date(t.due_date)<today2&&t.status!=="Klar";const done=t.status==="Klar";const sb2={"Ej startad":"ts-ej","Pågår":"ts-pagar","Väntar":"ts-vantar","Klar":"ts-klar"}[t.status]||"ts-ej";const pc={"Hög":"ph","Medium":"pm","Låg":"pl"}[t.priority]||"";const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const p=projects.find(x=>x.id===t.project_id);
-    return `<div class="task-row" data-task-id="${t.id}" style="${done?"opacity:.55":""}"><div class="cb ${done?"done":""}" onclick="toggleTask('${t.id}','${t.status}')">✓</div><div class="task-main"><div class="task-title ${pc}" style="${done?"text-decoration:line-through":""}">${e(t.title)}</div><div class="task-sub">${showProject&&p?e(p.namn)+" · ":""}${t.due_date?`<span class="${od?"overdue":""}">${e(t.due_date)}</span> · `:""}${tl.toFixed(1)}h${te?" / "+te+"h est":""}</div></div>${te?`<div class="task-progress">${progressBar(tl,te,160)}</div>`:""}<div class="task-actions"><span class="ts ${sb2}">${e(t.status)}</span><button class="btn-icon" onclick="openEditTask('${t.id}')">✎</button><button class="btn-icon" onclick="deleteTask('${t.id}')">🗑</button></div></div>`;
-  };
-  renderTaskList = function renderTaskList(pid){const arr=tasks.filter(t=>t.project_id===pid);return arr.length?arr.map(t=>renderTaskRow(t,false)).join(""):'<p style="color:#aaa;font-size:13px">Inga uppgifter.</p>';};
-  renderTasks = function renderTasks(){
-    const q=(v("tk-filter")||"").toLowerCase(),status=v("tk-status-f"),prio=v("tk-prio-f"),proj=v("tk-proj-f");const today2=new Date();today2.setHours(0,0,0,0);
-    let list=tasks.filter(t=>{const p=projects.find(x=>x.id===t.project_id);const hay=[t.title,t.description,t.owner,p?.namn].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!status||t.status===status)&&(!prio||t.priority===prio)&&(!proj||t.project_id===proj);}).sort((a,b)=>{const od=d=>!d?9999:Math.round((new Date(d)-today2)/86400000);return od(a.due_date)-od(b.due_date);});
-    const cont=document.getElementById("tasks-content");if(!cont)return;
-    if(!list.length){cont.innerHTML='<div class="empty"><div class="empty-icon">✓</div><p>Inga tasks</p></div>';return;}
-    const groups={};list.forEach(t=>{const p=projects.find(x=>x.id===t.project_id);const key=p?.namn||"Okänt projekt";if(!groups[key])groups[key]=[];groups[key].push(t);});
-    cont.innerHTML=Object.entries(groups).map(([pName,tlist])=>`<div class="week-sec" style="margin-bottom:12px"><div class="week-sec-hdr"><h3>${e(pName)}</h3><span style="font-size:12px;color:#888">${tlist.length} uppgifter</span></div><div style="padding:10px 12px">${tlist.map(t=>renderTaskRow(t,false)).join("")}</div></div>`).join("");
-  };
-
-  // ---------- timer social types ----------
-  const __oldUpdateTimerType = typeof updateTimerType === "function" ? updateTimerType : null;
-  updateTimerType = function updateTimerType(){fillActivityTypeSelects();if(__oldUpdateTimerType)__oldUpdateTimerType();};
-  const __oldFillTimerSelects = typeof fillTimerSelects === "function" ? fillTimerSelects : null;
-  fillTimerSelects = function fillTimerSelects(){if(__oldFillTimerSelects)__oldFillTimerSelects();fillActivityTypeSelects();};
-  saveTimerEntry = async function saveTimerEntry(hours){
-    const typ=v("t-typ"),desc=v("t-desc");if(!desc){toast("Beskriv vad du gjort");return;}
-    const isUppdrag=typ==="uppdrag",pid=isUppdrag?v("t-proj")||null:null;if(isUppdrag&&!pid){toast("Välj projekt");return;}
-    const data={user_id:me.id,project_id:pid,task_id:isUppdrag?v("t-task")||null:null,datum:today(),hours,billable:isUppdrag,work_category:v("t-cat")||"Löpande arbete",description:desc,invoice_note:desc,aktivitet_typ:typ,plats:v("t-plats")||null};
-    const r=await sb.from("project_diary_entries").insert(data);if(r.error){alert(r.error.message);return;}
-    if(!isUppdrag){const selected=Array.from(document.getElementById("t-contacts")?.selectedOptions||[]).map(o=>o.value);await createRelationLogsForActivity({type:typ,datum:today(),desc,nextStep:null,place:v("t-plats")||null,contactIds:selected});}
-    document.getElementById("t-desc").value="";document.getElementById("t-direct-hours").value="";document.getElementById("t-startlbl").textContent="";
-    toast(`✓ Loggat ${hours.toFixed(2)}h`);closeTimerPanel();await loadAll();
-  };
-
-  // ---------- nav/topbar override ----------
-  gotoView = function gotoView(name){
-    curView=name;
-    document.querySelectorAll(".view").forEach(v2=>v2.classList.remove("active"));
-    document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
-    document.getElementById("view-"+name)?.classList.add("active");
-    document.querySelector(`.nav-item[data-v="${name}"]`)?.classList.add("active");
-    const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
-    document.getElementById("topbar-title").textContent=name==="weekly"?days[new Date().getDay()]:VIEW_TITLE[name];
-    const tr=document.getElementById("topbar-right");tr.innerHTML="";
-    if(name==="contacts")tr.innerHTML='<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button>';
-    else if(name==="projects")tr.innerHTML='<button class="btn btn-primary" onclick="openNewProject()">+ Nytt projekt</button>';
-    else if(name==="companies")tr.innerHTML='<button class="btn btn-primary" onclick="openNewCompany()">+ Nytt bolag</button>';
-    else if(name==="signals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSignal()">+ Manuell signal</button>';
-    else if(name==="tasks")tr.innerHTML='<button class="btn btn-primary" onclick="openNewTaskGlobal()">+ Ny uppgift</button>';
-    else if(name==="subconsultants")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSub()">+ Ny underkonsult</button>';
-    else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
-    else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button><button class="btn btn-green" onclick="exportDagbokCSV()">Exportera CSV</button>';
-    else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntryForDate(today())">+ Ny aktivitet</button>';
-    ensureMissingFunctionControls();
-    const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings};
-    renders[name]?.();
-  };
-  renderCurrent = function renderCurrent(){gotoView(curView);};
-
-  // Run once when script is loaded.
-  ensureMissingFunctionControls();
-})();
+// ══ VECKOPLAN: edit existing entry on click ═══════════════════
+function openVeckoplanCellEdit(pid, tid, datum){
+  const existing=diary.find(d=>d.project_id===pid&&(d.task_id||"")===(tid||"")&&d.datum===datum);
+  if(existing){openEditDiaryEntry(existing.id);}
+  else{openNewDiaryEntryForProjectDate(pid,tid,datum);}
+}
 
 checkSession();
 </script>
