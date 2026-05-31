@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 // SIGNAL DETECTION (delad logik)
 // ============================================================
 const SIGNAL_RULES = [
-  { typ: 'finance_hiring', styrka: 3, ord: ['cfo','chief financial officer','ekonomichef','finanschef','finance manager','business controller','financial controller','redovisningschef','head of finance','koncernredovisning','interim cfo','interim finance','interim ekonomi'] },
+  { typ: 'finance_hiring', styrka: 3, ord: ['cfo','chief financial officer','ekonomichef','finanschef','finance manager','business controller','financial controller','controller','redovisningschef','redovisningsekonom','accountant','accounting manager','ekonomiassistent','ekonomiansvarig','head of finance','koncernredovisning','group accounting','fp&a','payroll','lönespecialist','interim cfo','interim finance','interim ekonomi'] },
   { typ: 'management_change', styrka: 3, ord: ['ny vd','ny ceo','new ceo','ny cfo','new cfo','tillträder','avgår','ny ledning','ledningsgrupp','rekryterar ny','utser','appoints'] },
   { typ: 'growth', styrka: 2, ord: ['tillväxt','växer','expanderar','kraftig tillväxt','rekordomsättning','ökar omsättningen','growth','rapid growth','scaling','scale-up','växer snabbt'] },
   { typ: 'expansion', styrka: 2, ord: ['expansion','etablerar','ny marknad','internationell expansion','öppnar kontor','ny fabrik','nytt lager','expand into','new market','new office'] },
@@ -37,7 +37,7 @@ function detectSignalType(text) {
 }
 
 function sigLabel(type) {
-  return { finance_hiring:'Finance hiring', system_change:'Systemförändring', growth:'Tillväxt', expansion:'Expansion', restructuring:'Omstrukturering', layoffs:'Varsel/uppsägning', management_change:'Ledningsförändring', jobbannons:'Jobbannons', acquisition:'Förvärv', funding:'Finansiering', ownership_change:'Ägarförändring', annual_report:'Årsredovisning', financial_pressure:'Finansiell press', audit_remark:'Revisionsanm.' }[type] || 'Signal';
+  return { finance_hiring:'Finance hiring', system_change:'Systemförändring', growth:'Tillväxt', expansion:'Expansion', restructuring:'Omstrukturering', layoffs:'Varsel/uppsägning', management_change:'Ledningsförändring', jobbannons:'Jobbannons', new_hires:'Nyanställningar', acquisition:'Förvärv', funding:'Finansiering', ownership_change:'Ägarförändring', annual_report:'Årsredovisning', arsredovisning_publicerad:'Årsredovisning publicerad', financial_pressure:'Finansiell press', balance_sheet_change:'Balansförändring', profitability_change:'Lönsamhetsförändring', audit_remark:'Revisionsanm.' }[type] || 'Signal';
 }
 
 // ============================================================
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
   const source = req.query.source || '';
 
   switch (source) {
-    case 'leads':    return discoverLeads(supabase, userId, res);
+    case 'leads':    return discoverLeads(supabase, userId, res, req);
     case 'news':     return discoverNews(supabase, userId, res);
     case 'fi':       return discoverFI(supabase, userId, res);
     case 'nasdaq':   return discoverNasdaq(supabase, userId, res);
@@ -71,54 +71,118 @@ export default async function handler(req, res) {
 // ============================================================
 // LEADS – Platsbanken / JobTech
 // ============================================================
-async function discoverLeads(supabase, userId, res) {
-  const SEARCH_TERMS = [
-    'CFO','ekonomichef','finanschef','finance manager','controller','business controller',
-    'financial controller','redovisningschef','Head of Finance','interim finance','interim ekonomi',
-    'omstrukturering ekonomi','förändringsledning ekonomi','transformation finance','ERP ekonomi',
-    'Dynamics 365 ekonomi','SAP finance','systembyte ekonomi','digitalisering ekonomi',
-    'tillväxt ekonomi','scaleup finance','expansion controller','ny organisation ekonomi'
+async function discoverLeads(supabase, userId, res, req) {
+  const DEFAULT_SEARCH_TERMS = [
+    'CFO', 'ekonomichef', 'finanschef', 'ekonomiansvarig', 'head of finance',
+    'finance manager', 'business controller', 'financial controller', 'controller',
+    'redovisningschef', 'redovisningsekonom', 'koncernredovisning', 'group accountant',
+    'accounting manager', 'accountant', 'fp&a', 'lönespecialist', 'payroll',
+    'interim CFO', 'interim finance', 'interim ekonomi',
+    'ERP ekonomi', 'affärssystem ekonomi', 'Dynamics 365 ekonomi', 'SAP finance',
+    'systembyte ekonomi', 'digitalisering ekonomi', 'finance transformation',
+    'förändringsledning ekonomi', 'omstrukturering ekonomi',
+    'scaleup finance', 'tillväxt ekonomi', 'expansion controller',
+    'ny organisation ekonomi', 'budget forecast', 'bokslut rapportering'
   ];
-  const AF_API = 'https://jobsearch.api.jobtechdev.se/search';
-  let nyaSignaler = 0, nyaBolag = 0;
-  const errors = [];
 
-  for (const term of SEARCH_TERMS) {
+  const body = getRequestBody(req);
+  const customQuery = String(req?.query?.q || body.query || '').trim();
+  const rawTerms = Array.isArray(body.terms) && body.terms.length ? body.terms : (customQuery ? [customQuery] : DEFAULT_SEARCH_TERMS);
+  const searchTerms = [...new Set(rawTerms.map(t => String(t || '').trim()).filter(Boolean))];
+  const perQueryLimit = Math.max(1, Math.min(Number(req?.query?.limit || body.limit || process.env.JOBTECH_LIMIT_PER_QUERY || 40), 100));
+  const maxSignals = Math.max(1, Math.min(Number(req?.query?.max || body.max || process.env.JOBTECH_MAX_SIGNALS || 150), 300));
+  const AF_API = 'https://jobsearch.api.jobtechdev.se/search';
+
+  let nyaSignaler = 0, nyaBolag = 0, hamtadeAnnonser = 0, relevantaAnnonser = 0, dubbletter = 0, saknarBolag = 0;
+  const errors = [];
+  const searched = [];
+  const seenAds = new Set();
+
+  for (const term of searchTerms) {
+    if (nyaSignaler >= maxSignals) break;
     try {
       const url = new URL(AF_API);
       url.searchParams.set('q', term);
-      url.searchParams.set('limit', '25');
+      url.searchParams.set('limit', String(perQueryLimit));
       url.searchParams.set('offset', '0');
-      const response = await fetch(url.toString(), { headers: { accept: 'application/json' } });
-      if (!response.ok) { errors.push(`JobTech failed for "${term}": ${response.status}`); continue; }
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'CRM-NIS/1.1 lead-discovery'
+        }
+      });
+      if (!response.ok) {
+        errors.push(`JobTech failed for "${term}": ${response.status}`);
+        searched.push({ term, hits: 0, error: response.status });
+        continue;
+      }
+
       const data = await response.json();
-      const ads = data?.hits || [];
+      const ads = Array.isArray(data?.hits) ? data.hits : [];
+      searched.push({ term, hits: ads.length });
+      hamtadeAnnonser += ads.length;
 
       for (const ad of ads) {
-        const companyName = ad.employer?.name?.trim();
-        const orgnr = ad.employer?.organization_number?.replace(/\D/g, '') || null;
-        if (!companyName) continue;
-        const text = [ad.headline, ad.description?.text, ad.occupation?.label, term].filter(Boolean).join(' ');
-        const detected = detectSignalType(text) || { typ: 'jobbannons', styrka: 1 };
-        const companyId = await findOrCreateCompany(supabase, userId, { namn: companyName, orgnr, stad: ad.workplace_address?.municipality || null, land: 'Sverige' });
-        if (!companyId.id) { errors.push(`Could not create: ${companyName}`); continue; }
-        if (companyId.created) nyaBolag++;
-        const sourceUrl = ad.webpage_url || ad.id || `${companyName}-${ad.headline}`;
-        if (await signalExists(supabase, companyId.id, sourceUrl)) continue;
-        const { error: se } = await supabase.from('company_signals').insert({
-          user_id: userId, company_id: companyId.id, signal_typ: detected.typ,
-          rubrik: `${sigLabel(detected.typ)}: ${ad.headline || term}`,
-          beskrivning: (ad.description?.text || '').slice(0, 700),
-          kalla: 'Platsbanken / JobTech', kalla_url: ad.webpage_url || null,
-          signal_datum: ad.publication_date?.split('T')[0] || new Date().toISOString().split('T')[0],
-          signal_styrka: detected.styrka, status: 'ny'
+        if (nyaSignaler >= maxSignals) break;
+        const jobAd = normalizeJobTechAd(ad, term);
+        const dedupeKey = jobAd.sourceKey || `${jobAd.companyName}|${jobAd.headline}|${jobAd.publicationDate}`;
+        if (seenAds.has(dedupeKey)) continue;
+        seenAds.add(dedupeKey);
+
+        if (!jobAd.companyName || isBadName(jobAd.companyName)) { saknarBolag++; continue; }
+        // Custom searches should be allowed through. Default broad searches are filtered to finance/change/ERP wording.
+        if (!customQuery && !isRelevantJobAd(jobAd.text)) continue;
+        relevantaAnnonser++;
+
+        const detected = detectSignalType(jobAd.text) || { typ: 'jobbannons', styrka: 1 };
+        const companyResult = await findOrCreateCompany(supabase, userId, {
+          namn: jobAd.companyName,
+          orgnr: jobAd.orgnr,
+          stad: jobAd.city,
+          land: 'Sverige'
         });
-        if (se) errors.push(se.message); else nyaSignaler++;
+        if (!companyResult.id) { errors.push(companyResult.error || `Could not create: ${jobAd.companyName}`); continue; }
+        if (companyResult.created) { nyaBolag++; }
+
+        if (await signalExists(supabase, companyResult.id, jobAd.sourceUrl, userId)) { dubbletter++; continue; }
+
+        const { error: insertError } = await supabase.from('company_signals').insert({
+          user_id: userId,
+          company_id: companyResult.id,
+          signal_typ: detected.typ,
+          rubrik: `${sigLabel(detected.typ)}: ${jobAd.headline || term}`,
+          beskrivning: makeJobAdDescription(jobAd, term),
+          kalla: 'Platsbanken / JobTech',
+          kalla_url: jobAd.sourceUrl,
+          signal_datum: jobAd.publicationDate || new Date().toISOString().split('T')[0],
+          signal_styrka: detected.styrka,
+          status: 'ny'
+        });
+        if (insertError) errors.push(insertError.message); else nyaSignaler++;
       }
-      await sleep(250);
-    } catch (err) { errors.push(`${term}: ${err.message}`); }
+      await sleep(175);
+    } catch (err) {
+      errors.push(`${term}: ${err.message}`);
+      searched.push({ term, hits: 0, error: err.message });
+    }
   }
-  return res.status(200).json({ message: `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`, nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors });
+
+  const msg = nyaSignaler > 0
+    ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler från ${relevantaAnnonser} relevanta annonser`
+    : `Platsbanken: 0 nya signaler. Hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} var relevanta, ${dubbletter} var redan importerade.`;
+
+  return res.status(200).json({
+    message: msg,
+    nya_bolag: nyaBolag,
+    nya_signaler: nyaSignaler,
+    hamtade_annonser: hamtadeAnnonser,
+    relevanta_annonser: relevantaAnnonser,
+    dubbletter,
+    saknar_bolag: saknarBolag,
+    sokningar: searched,
+    errors
+  });
 }
 
 // ============================================================
@@ -354,6 +418,74 @@ async function discoverFinland(supabase, userId, res) {
 // ============================================================
 // HELPERS
 // ============================================================
+
+function getRequestBody(req) {
+  if (!req?.body) return {};
+  if (typeof req.body === 'object') return req.body;
+  try { return JSON.parse(req.body); } catch { return {}; }
+}
+
+function normalizeJobTechAd(ad, term) {
+  const employer = ad?.employer || {};
+  const address = ad?.workplace_address || {};
+  const headline = stripTags(ad?.headline || ad?.title || '');
+  const rawDescription = ad?.description?.text || ad?.description?.text_formatted || ad?.description || '';
+  const description = stripTags(rawDescription).slice(0, 1600);
+  const occupation = [ad?.occupation?.label, ad?.occupation?.concept_label, ad?.occupation_group?.label, ad?.occupation_field?.label].filter(Boolean).join(' ');
+  const skills = [
+    ...(ad?.must_have?.skills || []),
+    ...(ad?.nice_to_have?.skills || [])
+  ].map(s => s?.label || s?.concept_label || s).filter(Boolean).join(' ');
+  const companyName = normalizeImportedCompanyName(employer.name || employer.workplace || employer.legal_name || address.name || '');
+  const orgnr = String(employer.organization_number || employer.organisation_number || employer.organizationNumber || '').replace(/\D/g, '') || null;
+  const city = address.municipality || address.city || address.region || null;
+  const sourceUrl = normalizeJobTechUrl(ad);
+  const publicationDate = normalizeISODate(ad?.publication_date || ad?.publicationDate || ad?.published || ad?.created_at);
+  const text = [headline, description, occupation, skills, employer.name, term].filter(Boolean).join(' ');
+  return { companyName, orgnr, city, headline, description, occupation, skills, sourceUrl, sourceKey: String(ad?.id || sourceUrl || `${companyName}|${headline}`), publicationDate, text };
+}
+
+function normalizeJobTechUrl(ad) {
+  const raw = ad?.webpage_url || ad?.webpage?.url || ad?.url || '';
+  if (raw) return String(raw).trim();
+  if (ad?.id) return `jobtech:${ad.id}`;
+  return null;
+}
+
+function normalizeISODate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().split('T')[0];
+}
+
+function makeJobAdDescription(jobAd, term) {
+  const parts = [];
+  if (jobAd.occupation) parts.push(`Yrke: ${jobAd.occupation}`);
+  if (jobAd.city) parts.push(`Ort: ${jobAd.city}`);
+  parts.push(`Sökord: ${term}`);
+  if (jobAd.description) parts.push(jobAd.description);
+  return parts.join('\n\n').slice(0, 1200);
+}
+
+function isRelevantJobAd(text) {
+  const t = String(text || '').toLowerCase();
+  const words = [
+    'cfo','chief financial officer','ekonomichef','finanschef','ekonomiansvarig','head of finance',
+    'finance manager','business controller','financial controller','controller','fp&a',
+    'redovisningschef','redovisningsekonom','koncernredovisning','accountant','accounting manager',
+    'ekonomiassistent','lönespecialist','payroll','budget','forecast','bokslut','rapportering',
+    'erp','affärssystem','systembyte','sap','dynamics 365','netsuite','oracle','workday',
+    'finance transformation','digitalisering ekonomi','förändringsledning ekonomi','omstrukturering ekonomi',
+    'scaleup finance','tillväxt ekonomi','expansion controller'
+  ];
+  return words.some(w => t.includes(w));
+}
+
+function normalizeImportedCompanyName(n) {
+  return String(n || '').replace(/["“”]/g, '').replace(/\s+/g, ' ').replace(/\s+\([^)]*\)$/g, '').replace(/[.,:;!?]+$/g, '').trim();
+}
+
 async function findOrCreateCompany(supabase, userId, company) {
   if (company.orgnr) {
     const { data } = await supabase.from('companies').select('id').eq('user_id', userId).eq('orgnr', company.orgnr).maybeSingle();
@@ -371,8 +503,11 @@ async function findOrCreateCompany(supabase, userId, company) {
   return { id: created.id, created: true };
 }
 
-async function signalExists(supabase, companyId, sourceUrl) {
-  const { data } = await supabase.from('company_signals').select('id').eq('company_id', companyId).eq('kalla_url', sourceUrl || '').maybeSingle();
+async function signalExists(supabase, companyId, sourceUrl, userId = null) {
+  if (!sourceUrl) return false;
+  let q = supabase.from('company_signals').select('id').eq('company_id', companyId).eq('kalla_url', sourceUrl).limit(1);
+  if (userId) q = q.eq('user_id', userId);
+  const { data } = await q.maybeSingle();
   return !!data;
 }
 
