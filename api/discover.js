@@ -38,7 +38,7 @@ function detectSignalType(text) {
 }
 
 function sigLabel(type) {
-  return { finance_hiring:'Finance hiring', system_change:'Systemförändring', growth:'Tillväxt', expansion:'Expansion', restructuring:'Omstrukturering', layoffs:'Varsel/uppsägning', management_change:'Ledningsförändring', jobbannons:'Jobbannons', new_hires:'Nyanställningar', acquisition:'Förvärv', funding:'Finansiering', ownership_change:'Ägarförändring', annual_report:'Årsredovisning', arsredovisning_publicerad:'Årsredovisning publicerad', financial_pressure:'Finansiell press', balance_sheet_change:'Balansförändring', profitability_change:'Lönsamhetsförändring', audit_remark:'Revisionsanm.' }[type] || 'Signal';
+  return { finance_hiring:'Finance hiring', system_change:'Systemförändring', growth:'Tillväxt', expansion:'Expansion', restructuring:'Omstrukturering', layoffs:'Varsel/uppsägning', management_change:'Ledningsförändring', jobbannons:'Jobbannons', new_hires:'Nyanställningar', acquisition:'Förvärv', funding:'Finansiering', ownership_change:'Ägarförändring', annual_report:'Årsredovisning', arsredovisning_publicerad:'Årsredovisning publicerad', financial_pressure:'Finansiell press', balance_sheet_change:'Balansförändring', profitability_change:'Lönsamhetsförändring', audit_remark:'Revisionsanm.', nyhet:'Nyhet', ny_ledning:'Ny ledning', forvärv:'Förvärv', varsel:'Varsel', arsredovisning:'Årsredovisning', manuell:'Manuell' }[type] || 'Signal';
 }
 
 // ============================================================
@@ -88,15 +88,18 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
   ];
 
   const body = getRequestBody(req);
+  const storedDiscoveryConfig = await getDiscoveryConfig(supabase, userId, DEFAULT_SEARCH_TERMS);
+  const discoveryConfig = normalizeDiscoveryConfig(body.discovery_config || body.config || {}, storedDiscoveryConfig, DEFAULT_SEARCH_TERMS);
   const dryRun = options.dryRun || ['1','true','yes'].includes(String(req?.query?.dry || body.dry || '').toLowerCase());
   const customQuery = String(options.forcedQuery || req?.query?.q || body.q || body.query || '').trim();
-  const rawTerms = Array.isArray(body.terms) && body.terms.length ? body.terms : (customQuery ? [customQuery] : DEFAULT_SEARCH_TERMS);
+  const rawTerms = Array.isArray(body.terms) && body.terms.length ? body.terms : (customQuery ? [customQuery] : discoveryConfig.search_terms);
   const searchTerms = [...new Set(rawTerms.map(t => String(t || '').trim()).filter(Boolean))];
-  const perQueryLimit = Math.max(1, Math.min(Number(req?.query?.limit || body.limit || process.env.JOBTECH_LIMIT_PER_QUERY || 40), 100));
-  const maxSignals = Math.max(1, Math.min(Number(req?.query?.max || body.max || process.env.JOBTECH_MAX_SIGNALS || 150), 300));
+  const perQueryLimit = Math.max(1, Math.min(Number(req?.query?.limit || body.limit || discoveryConfig.limit_per_query || process.env.JOBTECH_LIMIT_PER_QUERY || 40), 100));
+  const maxSignals = Math.max(1, Math.min(Number(req?.query?.max || body.max || discoveryConfig.max_import || process.env.JOBTECH_MAX_SIGNALS || 150), 300));
+  const filterByConfig = !customQuery || discoveryConfig.apply_filters_to_manual_search;
   const AF_API = 'https://jobsearch.api.jobtechdev.se/search';
 
-  let nyaSignaler = 0, nyaBolag = 0, hamtadeAnnonser = 0, relevantaAnnonser = 0, dubbletter = 0, saknarBolag = 0;
+  let nyaSignaler = 0, nyaBolag = 0, hamtadeAnnonser = 0, relevantaAnnonser = 0, dubbletter = 0, saknarBolag = 0, insertFel = 0, typFallbacks = 0;
   const errors = [];
   const sampleAds = [];
   const searched = [];
@@ -135,11 +138,14 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
         seenAds.add(dedupeKey);
 
         if (!jobAd.companyName || isBadName(jobAd.companyName)) { saknarBolag++; continue; }
-        // Custom/test searches are allowed through. Default broad searches are filtered to finance/change/ERP wording.
-        if (!customQuery && !isRelevantJobAd(jobAd.text)) continue;
+        // Saved parameters decide what is relevant. Manual q can either bypass these filters or use them.
+        if (filterByConfig && !jobAdMatchesDiscoveryConfig(jobAd, discoveryConfig)) continue;
         relevantaAnnonser++;
 
-        const detected = detectSignalType(jobAd.text) || { typ: 'jobbannons', styrka: 1 };
+        // If a test word such as "sjuksköterska" has no finance/change match,
+        // store it as a general recruitment signal instead of the newer "jobbannons" type.
+        // Some existing databases have older CHECK constraints and reject "jobbannons".
+        const detected = detectSignalType(jobAd.text) || { typ: 'new_hires', styrka: 1 };
         if (dryRun) {
           if (sampleAds.length < 8) {
             sampleAds.push({ company: jobAd.companyName, headline: jobAd.headline, city: jobAd.city, url: jobAd.sourceUrl, detected: detected.typ });
@@ -147,22 +153,26 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
           continue;
         }
 
-        const companyResult = await findOrCreateCompany(supabase, userId, {
-          namn: jobAd.companyName,
-          orgnr: jobAd.orgnr,
-          stad: jobAd.city,
-          land: 'Sverige'
-        });
-        if (!companyResult.id) { errors.push(companyResult.error || `Could not create: ${jobAd.companyName}`); continue; }
+        const companyResult = discoveryConfig.auto_create_companies === false
+          ? await findCompanyOnly(supabase, userId, { namn: jobAd.companyName, orgnr: jobAd.orgnr })
+          : await findOrCreateCompany(supabase, userId, {
+              namn: jobAd.companyName,
+              orgnr: jobAd.orgnr,
+              stad: jobAd.city,
+              land: 'Sverige'
+            });
+        if (!companyResult.id) {
+          if (errors.length < 30) errors.push(companyResult.error || (discoveryConfig.auto_create_companies === false ? `Bolag finns inte och autoskapande är av: ${jobAd.companyName}` : `Could not create: ${jobAd.companyName}`));
+          continue;
+        }
         if (companyResult.created) { nyaBolag++; }
 
         if (await signalExists(supabase, companyResult.id, jobAd.sourceUrl, userId)) { dubbletter++; continue; }
 
-        const { error: insertError } = await supabase.from('company_signals').insert({
+        const payload = {
           user_id: userId,
           company_id: companyResult.id,
-          // Keep Platsbanken imports schema-safe even if the database still has the old signal_typ CHECK constraint.
-          signal_typ: 'jobbannons',
+          signal_typ: detected.typ,
           rubrik: `Jobbannons: ${jobAd.headline || term}`,
           beskrivning: makeJobAdDescription(jobAd, term, detected),
           kalla: 'Platsbanken / JobTech',
@@ -170,8 +180,17 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
           signal_datum: jobAd.publicationDate || new Date().toISOString().split('T')[0],
           signal_styrka: detected.styrka,
           status: 'ny'
-        });
-        if (insertError) errors.push(insertError.message); else nyaSignaler++;
+        };
+        const inserted = await insertCompanySignalWithFallback(supabase, payload);
+        if (!inserted.ok) {
+          insertFel++;
+          if (errors.length < 30) errors.push(`${jobAd.companyName}: ${inserted.error}`);
+          if (sampleAds.length < 8) sampleAds.push({ company: jobAd.companyName, headline: jobAd.headline, city: jobAd.city, url: jobAd.sourceUrl, detected: detected.typ, error: inserted.error });
+        } else {
+          nyaSignaler++;
+          if (inserted.usedFallback) typFallbacks++;
+          if (sampleAds.length < 8) sampleAds.push({ company: jobAd.companyName, headline: jobAd.headline, city: jobAd.city, url: jobAd.sourceUrl, detected: inserted.signal_typ, saved: true });
+        }
       }
       await sleep(175);
     } catch (err) {
@@ -180,11 +199,14 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
     }
   }
 
+  const cfgLabel = customQuery ? `tillfälligt sökord: ${customQuery}` : `${searchTerms.length} sparade sökord`;
   const msg = dryRun
-    ? `Test JobTech: hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} skulle kunna importeras med sökord ${searchTerms.join(', ')}.`
+    ? `Test JobTech: hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} skulle kunna importeras med ${cfgLabel}.`
     : (nyaSignaler > 0
-      ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler från ${relevantaAnnonser} relevanta annonser`
-      : `Platsbanken: 0 nya signaler. Hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} var relevanta, ${dubbletter} var redan importerade.`);
+      ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler från ${relevantaAnnonser} relevanta annonser (${cfgLabel})`
+      : (insertFel > 0
+        ? `Platsbanken: hittade ${relevantaAnnonser} relevanta annonser men kunde inte spara signalerna. Se felrutan.`
+        : `Platsbanken: 0 nya signaler. Hämtade ${hamtadeAnnonser} annonser, ${relevantaAnnonser} var relevanta, ${dubbletter} var redan importerade (${cfgLabel}).`));
 
   return res.status(200).json({
     message: msg,
@@ -195,8 +217,23 @@ async function discoverLeads(supabase, userId, res, req, options = {}) {
     relevanta_annonser: relevantaAnnonser,
     dubbletter,
     saknar_bolag: saknarBolag,
+    insert_fel: insertFel,
+    typ_fallbacks: typFallbacks,
     sokningar: searched,
     sample_ads: sampleAds,
+    config_used: {
+      source: customQuery ? 'manual_query' : 'saved_parameters',
+      search_terms: searchTerms,
+      include_keywords: discoveryConfig.include_keywords,
+      exclude_keywords: discoveryConfig.exclude_keywords,
+      locations: discoveryConfig.locations,
+      limit_per_query: perQueryLimit,
+      max_import: maxSignals,
+      published_since_days: discoveryConfig.published_since_days,
+      require_include_match: discoveryConfig.require_include_match,
+      auto_create_companies: discoveryConfig.auto_create_companies,
+      apply_filters_to_manual_search: discoveryConfig.apply_filters_to_manual_search
+    },
     errors
   });
 }
@@ -431,16 +468,118 @@ async function discoverFinland(supabase, userId, res) {
   return res.status(200).json({ message: `Finland: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`, nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors });
 }
 
+
+function defaultDiscoveryConfig(defaultTerms = []) {
+  return {
+    search_terms: defaultTerms,
+    include_keywords: [
+      'cfo','ekonomichef','finanschef','controller','business controller','financial controller',
+      'redovisning','redovisningschef','bokslut','budget','forecast','rapportering',
+      'erp','affärssystem','systembyte','sap','dynamics','finance','ekonomi',
+      'lönespecialist','payroll','interim','transformation','omstrukturering'
+    ],
+    exclude_keywords: ['sjuksköterska','undersköterska','lärare','kock','butikssäljare','chaufför'],
+    locations: [],
+    limit_per_query: 40,
+    max_import: 150,
+    published_since_days: 45,
+    require_include_match: true,
+    auto_create_companies: true,
+    apply_filters_to_manual_search: false
+  };
+}
+
+async function getDiscoveryConfig(supabase, userId, defaultTerms = []) {
+  const defaults = defaultDiscoveryConfig(defaultTerms);
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('discovery_config')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error || !data?.discovery_config) return defaults;
+    return normalizeDiscoveryConfig(data.discovery_config, defaults, defaultTerms);
+  } catch {
+    return defaults;
+  }
+}
+
+function normalizeDiscoveryConfig(raw, base = {}, defaultTerms = []) {
+  const defaults = { ...defaultDiscoveryConfig(defaultTerms), ...(base || {}) };
+  let r = raw;
+  if (typeof r === 'string') {
+    try { r = JSON.parse(r); } catch { r = {}; }
+  }
+  if (!r || typeof r !== 'object') r = {};
+  const cfg = {
+    search_terms: toCleanList(r.search_terms ?? defaults.search_terms),
+    include_keywords: toCleanList(r.include_keywords ?? defaults.include_keywords).map(x => x.toLowerCase()),
+    exclude_keywords: toCleanList(r.exclude_keywords ?? defaults.exclude_keywords).map(x => x.toLowerCase()),
+    locations: toCleanList(r.locations ?? defaults.locations).map(x => x.toLowerCase()),
+    limit_per_query: clampInt(r.limit_per_query ?? defaults.limit_per_query, 1, 100, 40),
+    max_import: clampInt(r.max_import ?? defaults.max_import, 1, 300, 150),
+    published_since_days: clampInt(r.published_since_days ?? defaults.published_since_days, 0, 365, 45),
+    require_include_match: r.require_include_match !== undefined ? !!r.require_include_match : defaults.require_include_match !== false,
+    auto_create_companies: r.auto_create_companies !== undefined ? !!r.auto_create_companies : defaults.auto_create_companies !== false,
+    apply_filters_to_manual_search: r.apply_filters_to_manual_search !== undefined ? !!r.apply_filters_to_manual_search : !!defaults.apply_filters_to_manual_search
+  };
+  if (!cfg.search_terms.length) cfg.search_terms = defaultTerms.length ? defaultTerms : defaults.search_terms;
+  return cfg;
+}
+
+function toCleanList(value) {
+  if (Array.isArray(value)) return [...new Set(value.map(x => String(x || '').trim()).filter(Boolean))];
+  return [...new Set(String(value || '').split(/[\n,;]+/).map(x => x.trim()).filter(Boolean))];
+}
+
+function clampInt(value, min, max, fallback) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(n, max));
+}
+
+function jobAdMatchesDiscoveryConfig(jobAd, cfg) {
+  const text = String(jobAd?.text || '').toLowerCase();
+  const city = String(jobAd?.city || '').toLowerCase();
+  if (cfg.exclude_keywords?.some(w => w && text.includes(w))) return false;
+  if (cfg.locations?.length && !cfg.locations.some(loc => city.includes(loc) || text.includes(loc))) return false;
+  if (cfg.published_since_days > 0 && jobAd?.publicationDate) {
+    const adTime = Date.parse(jobAd.publicationDate);
+    if (Number.isFinite(adTime)) {
+      const cutoff = Date.now() - cfg.published_since_days * 86400000;
+      if (adTime < cutoff) return false;
+    }
+  }
+  if (cfg.require_include_match && cfg.include_keywords?.length) {
+    return cfg.include_keywords.some(w => w && text.includes(w));
+  }
+  return true;
+}
+
+async function findCompanyOnly(supabase, userId, company) {
+  if (company.orgnr) {
+    const { data } = await supabase.from('companies').select('id').eq('user_id', userId).eq('orgnr', company.orgnr).maybeSingle();
+    if (data?.id) return { id: data.id, created: false };
+  }
+  if (company.namn) {
+    const normalized = normalizeImportedCompanyName(company.namn);
+    const { data } = await supabase.from('companies').select('id').eq('user_id', userId).ilike('namn', normalized).maybeSingle();
+    if (data?.id) return { id: data.id, created: false };
+  }
+  return { id: null, created: false, error: `Bolaget finns inte: ${company.namn || company.orgnr || 'okänt'}` };
+}
+
 // Legacy-safe mapping for databases that still have the original company_signals.signal_typ CHECK constraint.
 function dbSignalType(type) {
   const map = {
-    finance_hiring: 'jobbannons',
+    finance_hiring: 'nyhet',
     management_change: 'ny_ledning',
     growth: 'nyhet',
     expansion: 'nyhet',
     restructuring: 'varsel',
     layoffs: 'varsel',
     new_hires: 'nyhet',
+    jobbannons: 'nyhet',
     acquisition: 'forvärv',
     funding: 'nyhet',
     ownership_change: 'nyhet',
@@ -453,6 +592,35 @@ function dbSignalType(type) {
     audit_remark: 'nyhet'
   };
   return map[type] || type || 'nyhet';
+}
+
+function signalTypeCandidates(type) {
+  return [...new Set([
+    type,
+    dbSignalType(type),
+    'new_hires',
+    'finance_hiring',
+    'nyhet',
+    'jobbannons',
+    'manuell'
+  ].filter(Boolean))];
+}
+
+async function insertCompanySignalWithFallback(supabase, payload) {
+  const candidates = signalTypeCandidates(payload.signal_typ);
+  let lastError = null;
+  for (const typ of candidates) {
+    const { data, error } = await supabase
+      .from('company_signals')
+      .insert({ ...payload, signal_typ: typ })
+      .select('id, signal_typ')
+      .single();
+    if (!error) {
+      return { ok: true, id: data?.id || null, signal_typ: data?.signal_typ || typ, usedFallback: typ !== payload.signal_typ };
+    }
+    lastError = error;
+  }
+  return { ok: false, error: `${lastError?.message || 'Unknown insert error'} (testade signal_typ: ${candidates.join(', ')})` };
 }
 
 // ============================================================
