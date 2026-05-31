@@ -6,17 +6,160 @@ import { createClient } from '@supabase/supabase-js';
 
 // ─── SIGNAL DETECTION ─────────────────────────────────────────
 const SIGNAL_RULES = [
-  { typ: 'finance_hiring', styrka: 3, ord: ['cfo','chief financial officer','ekonomichef','finanschef','finance manager','business controller','financial controller','controller','redovisningschef','redovisningsekonom','accountant','accounting manager','ekonomiassistent','ekonomiansvarig','head of finance','koncernredovisning','group accounting','fp&a','payroll','lönespecialist','interim cfo','interim finance','interim ekonomi','ekonomidirektör'] },
-  { typ: 'management_change', styrka: 3, ord: ['ny vd','ny ceo','new ceo','ny cfo','new cfo','tillträder','avgår','ny ledning','rekryterar ny','utser','appoints','vd-byte','styrelseordförande','ny styrelse','tillträdde','utnämns','utsedd till'] },
-  { typ: 'acquisition', styrka: 3, ord: ['förvärvar','förvärv','acquisition','förvärvat','köper bolag','merger','fusion','fusionerar','sammanslagning','ingår avtal om förvärv'] },
-  { typ: 'funding', styrka: 2, ord: ['tar in kapital','nyemission','emission','finansieringsrunda','investerar','funding round','raises capital','venture capital','private equity','riskkapital','serie a','serie b','seed-runda','kapitalanskaffning'] },
-  { typ: 'restructuring', styrka: 3, ord: ['omstrukturering','omorganisation','reorganisation','restructuring','sparpaket','kostnadsprogram','effektiviseringsprogram','turnaround','förändringsprogram'] },
-  { typ: 'layoffs', styrka: 3, ord: ['varsel','varslar','uppsägningar','säger upp','neddragningar','personalminskning','layoffs','redundancies'] },
-  { typ: 'growth', styrka: 2, ord: ['tillväxt','växer','expanderar','rekordomsättning','omsättningstillväxt','kraftig tillväxt','rekordresultat','vinner upphandling','tecknar avtal','ramavtal','order'] },
-  { typ: 'financial_pressure', styrka: 3, ord: ['förlust','negativt resultat','likviditetsproblem','kassaflödesproblem','vinstvarning','going concern','konkursansökan','rekonstruktion'] },
-  { typ: 'system_change', styrka: 2, ord: ['erp','affärssystem','systembyte','sap','dynamics 365','netsuite','oracle','workday','digital transformation','implementerar nytt'] },
-  { typ: 'annual_report', styrka: 1, ord: ['årsredovisning','annual report','bokslut','delårsrapport','kvartalsrapport','q1','q2','q3','q4','helårsrapport'] },
-  { typ: 'ownership_change', styrka: 3, ord: ['ny ägare','ägarskifte','majoritetsägare','köps av','säljs till','ägarförändring'] },
+  {
+    typ: 'finance_hiring',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'cfo','ekonomichef','finanschef','finance manager','business controller','financial controller','controller','redovisningschef','redovisningsekonom','ekonomiassistent','ekonomiansvarig','head of finance','koncernredovisning','lönespecialist','interim cfo','interim finance','interim ekonomi','ekonomidirektör',
+      // English
+      'chief financial officer','finance director','finance lead','finance team','accounting manager','accountant','group accounting','fp&a','payroll manager','head of accounting','financial reporting','finance transformation','hiring finance','recruits finance','recruiting finance','appoints cfo','new cfo',
+      // Norwegian / Danish
+      'økonomisjef','finansdirektør','regnskapssjef','regnskapsfører','økonomidirektør','økonomichef','regnskabschef','finanschef',
+      // Finnish
+      'talousjohtaja','talouspäällikkö','kirjanpitäjä','controlleri','taloushallinto'
+    ]
+  },
+  {
+    typ: 'management_change',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'ny vd','ny ceo','ny cfo','tillträder','avgår','ny ledning','rekryterar ny','utser','vd-byte','styrelseordförande','ny styrelse','tillträdde','utnämns','utsedd till','ny koncernchef','ledningsförändring',
+      // English
+      'new ceo','new cfo','appoints','appointed','appointment of','joins as ceo','joins as cfo','resigns','steps down','leaves the company','management change','executive management','board of directors','chairman of the board','new chairman','new board member','chief executive officer','chief financial officer',
+      // Norwegian / Danish
+      'ny administrerende direktør','ny daglig leder','ny økonomisjef','ny finansdirektør','fratræder','tiltræder','udpeger','utnevner',
+      // Finnish
+      'uusi toimitusjohtaja','uusi talousjohtaja','nimittää','nimitetty','johtoryhmä'
+    ]
+  },
+  {
+    typ: 'acquisition',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'förvärvar','förvärv','förvärvat','köper bolag','fusion','fusionerar','sammanslagning','ingår avtal om förvärv','avyttrar','säljer verksamhet',
+      // English
+      'acquisition','acquires','acquired','merger','merges with','purchase agreement','asset purchase','business combination','divestment','divests','sells business','takeover','m&a','strategic acquisition',
+      // Norwegian / Danish
+      'oppkjøp','overtar','køber','opkøb','fusionerer','sammenlægning',
+      // Finnish
+      'yritysosto','hankkii','ostaa','fuusio','sulautuminen'
+    ]
+  },
+  {
+    typ: 'funding',
+    styrka: 2,
+    ord: [
+      // Swedish
+      'tar in kapital','nyemission','emission','finansieringsrunda','investerar','riskkapital','serie a','serie b','seed-runda','kapitalanskaffning','riktad emission',
+      // English
+      'funding round','raises capital','raises funding','capital raise','venture capital','private equity','series a','series b','seed round','investment round','secures funding','equity financing','directed share issue','rights issue','share issue',
+      // Norwegian / Danish
+      'henter kapital','kapitalinnhenting','kapitalforhøjelse','investering','emission',
+      // Finnish
+      'rahoituskierros','kerää rahoitusta','pääomasijoitus','osakeanti'
+    ]
+  },
+  {
+    typ: 'restructuring',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'omstrukturering','omorganisation','sparpaket','kostnadsprogram','effektiviseringsprogram','turnaround','förändringsprogram',
+      // English
+      'restructuring','reorganisation','reorganization','cost saving program','cost reduction','efficiency program','turnaround plan','transformation program','strategic review','operational review',
+      // Norwegian / Danish
+      'omstrukturering','omorganisering','spareprogram','effektiviseringsprogram',
+      // Finnish
+      'uudelleenjärjestely','säästöohjelma','tehostamisohjelma'
+    ]
+  },
+  {
+    typ: 'layoffs',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'varsel','varslar','uppsägningar','säger upp','neddragningar','personalminskning',
+      // English
+      'layoffs','lay-offs','redundancies','workforce reduction','staff reduction','job cuts','cuts jobs','reduces workforce',
+      // Norwegian / Danish
+      'nedbemanning','permittering','afskedigelser','fyringer','reducerer medarbejdere',
+      // Finnish
+      'irtisanominen','irtisanomiset','henkilöstövähennys','yt-neuvottelut'
+    ]
+  },
+  {
+    typ: 'growth',
+    styrka: 2,
+    ord: [
+      // Swedish
+      'tillväxt','växer','expanderar','rekordomsättning','omsättningstillväxt','kraftig tillväxt','rekordresultat','vinner upphandling','tecknar avtal','ramavtal','erhåller order','erhåller kontrakt','ny marknad','öppnar kontor',
+      // English
+      'growth','growing','expands','expansion','record revenue','revenue growth','strong growth','record result','wins contract','awarded contract','framework agreement','new agreement','new order','large order','enters new market','opens office','scales up','commercial launch',
+      // Norwegian / Danish
+      'vekst','vækst','ekspanderer','ny kontrakt','rammeavtale','rammeaftale','åpner kontor','åbner kontor',
+      // Finnish
+      'kasvu','laajenee','uusi sopimus','puitesopimus','avaa toimiston'
+    ]
+  },
+  {
+    typ: 'financial_pressure',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'förlust','negativt resultat','likviditetsproblem','kassaflödesproblem','vinstvarning','konkursansökan','rekonstruktion','revisionsanmärkning','nedskrivning',
+      // English
+      'loss','negative result','liquidity problem','cash flow problem','profit warning','going concern','bankruptcy filing','reconstruction','impairment','write-down','breach of covenant','financial difficulties','weak result',
+      // Norwegian / Danish
+      'underskudd','likviditetsproblemer','resultatvarsel','konkursbegæring','rekonstruktion',
+      // Finnish
+      'tappio','maksuvalmiusongelma','konkurssi','yrityssaneeraus'
+    ]
+  },
+  {
+    typ: 'system_change',
+    styrka: 2,
+    ord: [
+      // Swedish
+      'erp','affärssystem','systembyte','sap','dynamics 365','netsuite','oracle','workday','digital transformation','implementerar nytt','nytt ekonomisystem',
+      // English
+      'erp implementation','new erp','business system','system implementation','finance system','accounting system','digital transformation','implements sap','implements dynamics','implements netsuite','implements oracle','implements workday',
+      // Norwegian / Danish
+      'forretningssystem','økonomisystem','regnskapssystem','nyt økonomisystem',
+      // Finnish
+      'toiminnanohjausjärjestelmä','talousjärjestelmä','järjestelmäuudistus'
+    ]
+  },
+  {
+    typ: 'annual_report',
+    styrka: 1,
+    ord: [
+      'årsredovisning','annual report','bokslut','delårsrapport','kvartalsrapport','helårsrapport','q1','q2','q3','q4','interim report','quarterly report','year-end report','financial statement','årsrapport','årsregnskab','tilinpäätös','osavuosikatsaus'
+    ]
+  },
+  {
+    typ: 'ownership_change',
+    styrka: 3,
+    ord: [
+      // Swedish
+      'ny ägare','ägarskifte','majoritetsägare','köps av','säljs till','ägarförändring',
+      // English
+      'new owner','change of ownership','majority owner','majority shareholder','sold to','acquired by','ownership change','strategic owner',
+      // Norwegian / Danish / Finnish
+      'ny eier','nyt ejerskab','ny ejer','uusi omistaja','omistajanvaihdos'
+    ]
+  },
+  {
+    typ: 'business_signal',
+    styrka: 1,
+    ord: [
+      // Broad catch-all business signals. Lower strength, but useful when strict rules miss too much.
+      'press release','regulatory release','company announcement','market announcement','investor news','financial report','order','contract','agreement','partnership','collaboration','launch','strategy','strategic','organisation','organization','board','management','revenue','profit','ebitda','cash flow','financing','investment','acquisition','growth','expansion',
+      'pressmeddelande','börsmeddelande','bolagsmeddelande','investerarnyhet','rapport','order','kontrakt','avtal','partnerskap','samarbete','lansering','strategi','styrelse','ledning','omsättning','resultat','kassaflöde','finansiering','investering','förvärv','tillväxt','expansion'
+    ]
+  }
 ];
 
 function detectSignal(text) {
