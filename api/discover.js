@@ -95,185 +95,31 @@ export default async function handler(req, res) {
 }
 
 // ============================================================
-// FAS 1: BOLAGSVERKET – Nyregistrerade AB
+// FAS 1: PROAKTIVA KÄLLOR – alla via Google News RSS
+// Verifierat fungerande. Delade i 5 fokuserade hinkar:
+//   bolagsverket_new     → nyregistrerade / scale-ups / funding
+//   bolagsverket_changes → VD/CFO/styrelsebyten
+//   upphandling          → vunna kontrakt / tillväxt
+//   mynewsdesk           → förvärv / kapital / expansion
+//   nasdaq_rss           → finansiell press / omstrukturering
 // ============================================================
-async function discoverBolagsverketNew(supabase, userId, res) {
-  // Bolagsverkets öppna data: nyregistrerade aktiebolag senaste 30 dagarna
-  // API: https://data.bolagsverket.se/
-  // Vi använder deras öppna sök-API för nregistreringar
-  const MIN_CAPITAL = 25000; // Fokusera på bolag med aktiekapital >= 25k
-  const BRANSCH_FILTER = [
-    '64', '65', '66', // Finans & försäkring
-    '69', '70', '71', '72', '73', '74', // Konsulttjänster
-    '46', '47', // Handel
-    '41', '42', '43', // Bygg
-    '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', // Tillverkning
-  ];
 
+async function proaktivGoogleNews(supabase, userId, res, { queries, kalla, tip, fallbackTyp = 'management_change' }) {
   let nyaBolag = 0, nyaSignaler = 0;
-  const errors = [];
+  const errors = [], seenUrls = new Set();
 
-  try {
-    // Bolagsverkets öppna sök-API för nyregistrerade bolag
-    const fromDate = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const url = `https://data.bolagsverket.se/api/v1/foretagsinformation/search?registreringsdatumFran=${fromDate}&bolagsform=AB&size=50&page=0`;
-
-    const r = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'CRM-NIS/1.0 lead-discovery'
-      }
-    });
-
-    if (!r.ok) {
-      // Fallback: använd SCB:s öppna API för nystartade företag
-      return discoverBolagsverketNewFallback(supabase, userId, res, errors);
-    }
-
-    const data = await r.json();
-    const bolag = data?.content || data?.items || data?.hits || data?.data || [];
-
-    for (const b of bolag) {
-      const namn = b.foretagsnamn || b.namn || b.company_name;
-      const orgnr = String(b.organisationsnummer || b.orgnr || '').replace(/\D/g, '');
-      const stad = b.postort || b.stad || b.adress?.postort || null;
-      const branschkod = String(b.branschkod || b.sni || '').slice(0, 2);
-
-      if (!namn || !orgnr) continue;
-      if (isBadName(namn)) continue;
-
-      const result = await findOrCreateCompany(supabase, userId, {
-        namn, orgnr, stad, land: 'Sverige',
-        bransch: b.branschtext || b.bransch || null
-      });
-      if (result.error) { errors.push(result.error); continue; }
-      if (result.created) nyaBolag++;
-
-      // Kontrollera om signal redan finns
-      const { data: ex } = await supabase.from('company_signals').select('id')
-        .eq('company_id', result.id).eq('kalla', 'Bolagsverket – Nyregistrering').maybeSingle();
-      if (ex) continue;
-
-      const beskrivning = [
-        `Nyregistrerat aktiebolag i Sverige.`,
-        orgnr ? `Org.nr: ${orgnr}` : null,
-        stad ? `Stad: ${stad}` : null,
-        b.aktiekapital ? `Aktiekapital: ${Number(b.aktiekapital).toLocaleString('sv-SE')} kr` : null,
-        b.branschtext ? `Bransch: ${b.branschtext}` : null,
-        `Registreringsdatum: ${b.registreringsdatum || fromDate}`
-      ].filter(Boolean).join('\n');
-
-      const ins = await insertCompanySignalWithFallback(supabase, {
-        user_id: userId,
-        company_id: result.id,
-        signal_typ: 'new_hires',
-        rubrik: `Nyregistrerat bolag: ${namn}`,
-        beskrivning,
-        kalla: 'Bolagsverket – Nyregistrering',
-        kalla_url: orgnr ? `https://www.allabolag.se/${orgnr}` : null,
-        signal_datum: b.registreringsdatum || new Date().toISOString().split('T')[0],
-        signal_styrka: 2,
-        status: 'ny'
-      });
-      if (ins.ok) nyaSignaler++;
-      else errors.push(ins.error);
-    }
-  } catch (err) {
-    errors.push(`Bolagsverket: ${err.message}`);
-    return discoverBolagsverketNewFallback(supabase, userId, res, errors);
-  }
-
-  return res.status(200).json({
-    message: `Bolagsverket (nyregistrerade): ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors
-  });
-}
-
-// Fallback via Allabolag RSS (publik)
-async function discoverBolagsverketNewFallback(supabase, userId, res, errors = []) {
-  let nyaBolag = 0, nyaSignaler = 0;
-
-  try {
-    // Allabolag.se RSS för nyregistrerade bolag (publik feed)
-    const feeds = [
-      'https://www.allabolag.se/rss/nya-bolag',
-      'https://data.bolagsverket.se/feeds/nyheter.rss'
-    ];
-
-    for (const feedUrl of feeds) {
-      try {
-        const items = await fetchRSS(feedUrl);
-        for (const item of items.slice(0, 30)) {
-          if (!item.titel || !item.url) continue;
-          const companyName = extractCompanyFromRegistration(item.titel);
-          if (!companyName || isBadName(companyName)) continue;
-
-          const result = await findOrCreateCompany(supabase, userId, { namn: companyName, land: 'Sverige' });
-          if (result.error) { errors.push(result.error); continue; }
-          if (result.created) nyaBolag++;
-
-          if (await signalExists(supabase, result.id, item.url, userId)) continue;
-
-          const ins = await insertCompanySignalWithFallback(supabase, {
-            user_id: userId, company_id: result.id, signal_typ: 'new_hires',
-            rubrik: `Nyregistrerat bolag: ${companyName}`,
-            beskrivning: item.beskrivning || `Nyregistrerat bolag. Källa: ${feedUrl}`,
-            kalla: 'Bolagsverket – Nyregistrering', kalla_url: item.url,
-            signal_datum: item.datum, signal_styrka: 2, status: 'ny'
-          });
-          if (ins.ok) nyaSignaler++;
-          else errors.push(ins.error);
-        }
-      } catch (feedErr) { errors.push(`RSS ${feedUrl}: ${feedErr.message}`); }
-    }
-  } catch (err) { errors.push(`Fallback: ${err.message}`); }
-
-  return res.status(200).json({
-    message: `Bolagsverket (nyregistrerade, fallback): ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors
-  });
-}
-
-// ============================================================
-// FAS 1: BOLAGSVERKET – Styrelseförändringar / VD-byten
-// ============================================================
-async function discoverBolagsverketChanges(supabase, userId, res) {
-  // Bolagsverkets ändringsregistrering – VD-byten, styrelseförändringar, ägarskiften
-  // Publika RSS-flöden och öppet API
-  let nyaBolag = 0, nyaSignaler = 0;
-  const errors = [];
-
-  const CHANGE_FEEDS = [
-    // Bolagsverkets egna nyhetsflöden
-    'https://data.bolagsverket.se/feeds/foretagsandringar.rss',
-    'https://www.bolagsverket.se/feeds/nyheter.rss',
-    // Kompletterande: allabolag.se VD-byten
-    'https://www.allabolag.se/rss/styrelseandringar',
-    'https://www.allabolag.se/rss/vd-byten',
-    // DI / Realtid bevakar VD-byten
-    'https://www.di.se/rss/nyheter/?query=vd+byte+tillträder',
-    'https://www.realtid.se/rss?query=ny+vd+tillträder'
-  ];
-
-  const seenUrls = new Set();
-  const HIGH_VALUE_SIGNALS = [
-    'ny vd', 'ny cfo', 'ny ekonomichef', 'ny finanschef', 'ny styrelseordförande',
-    'ny styrelse', 'ny ägare', 'ägarskifte', 'vd avgår', 'vd tillträder',
-    'förvärvas', 'fusioneras', 'ny ledningsgrupp', 'ny ledning'
-  ];
-
-  for (const feedUrl of CHANGE_FEEDS) {
+  for (const { q, forcedTyp, forcedStyrka } of queries) {
     try {
-      const items = await fetchRSS(feedUrl);
-      for (const item of items.slice(0, 20)) {
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=sv&gl=SE&ceid=SE:sv`;
+      const items = await fetchRSS(rssUrl);
+
+      for (const item of items.slice(0, 10)) {
         if (!item.url || seenUrls.has(item.url)) continue;
         seenUrls.add(item.url);
 
-        const text = `${item.titel} ${item.beskrivning}`.toLowerCase();
-        const isHighValue = HIGH_VALUE_SIGNALS.some(s => text.includes(s));
-        if (!isHighValue) continue;
+        const text = `${item.titel} ${item.beskrivning}`;
+        const detected = detectSignalType(text) || { typ: forcedTyp || fallbackTyp, styrka: forcedStyrka || 2 };
 
-        const detected = detectSignalType(text) || { typ: 'management_change', styrka: 3 };
         const companyName = extractCompanyName(item.titel, item.beskrivning);
         if (!companyName || isBadName(companyName)) continue;
 
@@ -283,296 +129,107 @@ async function discoverBolagsverketChanges(supabase, userId, res) {
         if (await signalExists(supabase, result.id, item.url, userId)) continue;
 
         const ins = await insertCompanySignalWithFallback(supabase, {
-          user_id: userId, company_id: result.id, signal_typ: detected.typ,
+          user_id: userId,
+          company_id: result.id,
+          signal_typ: detected.typ,
           rubrik: item.titel,
-          beskrivning: `${item.beskrivning}\n\nKälla: ${feedUrl}`,
-          kalla: 'Bolagsverket – Förändringar', kalla_url: item.url,
-          signal_datum: item.datum, signal_styrka: detected.styrka, status: 'ny'
-        });
-        if (ins.ok) nyaSignaler++;
-        else errors.push(ins.error);
-      }
-      await sleep(300);
-    } catch (err) { errors.push(`${feedUrl}: ${err.message}`); }
-  }
-
-  return res.status(200).json({
-    message: `Bolagsverket (förändringar): ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler, errors
-  });
-}
-
-// ============================================================
-// FAS 1: UPPHANDLINGSMYNDIGHETEN – Vunna kontrakt
-// ============================================================
-async function discoverUpphandling(supabase, userId, res) {
-  // Bolag som vinner stora offentliga kontrakt = snabb tillväxt = behov av ekonomifunktion
-  // API: https://www.upphandlingsmyndigheten.se/om-webbplatsen/oppna-data/
-  // TED (Tenders Electronic Daily) och Visma Opic har öppna API:er
-  let nyaBolag = 0, nyaSignaler = 0;
-  const errors = [];
-
-  // Minsta kontraktsvärde att bevaka (SEK)
-  const MIN_VALUE_SEK = 500000;
-
-  const UPPHANDLING_FEEDS = [
-    // Upphandlingsmyndighetens öppna data RSS
-    'https://www.upphandlingsmyndigheten.se/rss/upphandlingar/',
-    // Opic.com – vunna upphandlingar (publik RSS)
-    'https://opic.com/rss/awarded/',
-    // DIN Upphandling RSS
-    'https://www.dinupphandling.se/rss/vunna-kontrakt',
-    // TED Sverige
-    'https://ted.europa.eu/api/v3.0/notices/search?q=award+notice+Sverige&fields=title,winners,value,publicationDate&pageSize=20&scope=2'
-  ];
-
-  const seenUrls = new Set();
-
-  for (const feedUrl of UPPHANDLING_FEEDS) {
-    try {
-      if (feedUrl.includes('ted.europa.eu')) {
-        // TED API returnerar JSON
-        const r = await fetch(feedUrl, { headers: { 'Accept': 'application/json', 'User-Agent': 'CRM-NIS/1.0' } });
-        if (!r.ok) continue;
-        const data = await r.json();
-        const notices = data?.notices || data?.results || [];
-
-        for (const notice of notices) {
-          const winners = notice.winners || notice.award?.winners || [];
-          for (const winner of Array.isArray(winners) ? winners : [winners]) {
-            const companyName = normalizeImportedCompanyName(winner.name || winner.officialName || '');
-            if (!companyName || isBadName(companyName)) continue;
-            const value = parseFloat(winner.value?.amount || notice.award?.value?.amount || 0);
-            if (value && value < MIN_VALUE_SEK) continue;
-
-            const url = `https://ted.europa.eu/en/notice/${notice.id || notice.noticeNumber || ''}`;
-            if (seenUrls.has(url)) continue;
-            seenUrls.add(url);
-
-            const result = await findOrCreateCompany(supabase, userId, { namn: companyName, land: 'Sverige' });
-            if (result.error) { errors.push(result.error); continue; }
-            if (result.created) nyaBolag++;
-            if (await signalExists(supabase, result.id, url, userId)) continue;
-
-            const ins = await insertCompanySignalWithFallback(supabase, {
-              user_id: userId, company_id: result.id, signal_typ: 'growth',
-              rubrik: `Vann offentlig upphandling: ${notice.title || 'Offentlig upphandling'}`,
-              beskrivning: [
-                `${companyName} har vunnit en offentlig upphandling.`,
-                value ? `Kontraktsvärde: ${Math.round(value).toLocaleString('sv-SE')} SEK` : null,
-                notice.title ? `Upphandling: ${notice.title}` : null,
-                `Källa: TED Europa`
-              ].filter(Boolean).join('\n'),
-              kalla: 'Upphandlingsmyndigheten / TED', kalla_url: url,
-              signal_datum: normalizeISODate(notice.publicationDate) || new Date().toISOString().split('T')[0],
-              signal_styrka: value >= 5000000 ? 3 : value >= 1000000 ? 2 : 1,
-              status: 'ny'
-            });
-            if (ins.ok) nyaSignaler++;
-            else errors.push(ins.error);
-          }
-        }
-      } else {
-        // RSS-flöden
-        const items = await fetchRSS(feedUrl);
-        for (const item of items.slice(0, 25)) {
-          if (!item.url || seenUrls.has(item.url)) continue;
-          seenUrls.add(item.url);
-
-          // Försök extrahera leverantörsnamn från texten
-          const companyName = extractWinnerFromContract(item.titel, item.beskrivning);
-          if (!companyName || isBadName(companyName)) continue;
-
-          const result = await findOrCreateCompany(supabase, userId, { namn: companyName, land: 'Sverige' });
-          if (result.error) { errors.push(result.error); continue; }
-          if (result.created) nyaBolag++;
-          if (await signalExists(supabase, result.id, item.url, userId)) continue;
-
-          const ins = await insertCompanySignalWithFallback(supabase, {
-            user_id: userId, company_id: result.id, signal_typ: 'growth',
-            rubrik: `Vann upphandling: ${item.titel}`,
-            beskrivning: `${item.beskrivning}\n\nBolag som vinner offentliga kontrakt behöver ofta stärkt ekonomifunktion för att hantera snabb tillväxt och krav på rapportering.`,
-            kalla: 'Upphandlingsmyndigheten', kalla_url: item.url,
-            signal_datum: item.datum, signal_styrka: 2, status: 'ny'
-          });
-          if (ins.ok) nyaSignaler++;
-          else errors.push(ins.error);
-        }
-      }
-      await sleep(300);
-    } catch (err) { errors.push(`Upphandling ${feedUrl}: ${err.message}`); }
-  }
-
-  return res.status(200).json({
-    message: `Upphandlingsmyndigheten: ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler,
-    tip: 'Bolag som vinner stora offentliga kontrakt behöver ofta interim CFO/controller för snabb tillväxt.',
-    errors
-  });
-}
-
-// ============================================================
-// FAS 1: MYNEWSDESK – Pressreleaser
-// ============================================================
-async function discoverMynewsdesk(supabase, userId, res) {
-  // Mynewsdesk är Sveriges ledande PR-kanal
-  // Bolag kommunicerar förändringar via pressreleaser INNAN annons läggs ut
-  let nyaBolag = 0, nyaSignaler = 0;
-  const errors = [];
-
-  // Mynewsdesk RSS-flöden för relevanta ämnen
-  const MYNEWSDESK_FEEDS = [
-    // Ekonomi & finans
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=ny+ekonomichef',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=ny+CFO',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=ny+finanschef',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=ny+VD+tillträder',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=förvärvar',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=nyemission+kapital',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=ERP+systembyte',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=omstrukturering',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=tillväxt+expansion',
-    'https://www.mynewsdesk.com/se/search/pressreleases.rss?query=private+equity+förvärv',
-    // Cision (komplement)
-    'https://news.cision.com/se/r/latest,c9999993',
-  ];
-
-  const seenUrls = new Set();
-
-  for (const feedUrl of MYNEWSDESK_FEEDS) {
-    try {
-      const items = await fetchRSS(feedUrl);
-      for (const item of items.slice(0, 10)) {
-        if (!item.url || seenUrls.has(item.url)) continue;
-        seenUrls.add(item.url);
-
-        const detected = detectSignalType(`${item.titel} ${item.beskrivning}`);
-        if (!detected) continue;
-
-        // Extrahera bolagsnamn från pressrelease
-        const companyName = extractCompanyFromPressRelease(item.titel, item.beskrivning);
-        if (!companyName || isBadName(companyName)) continue;
-
-        const result = await findOrCreateCompany(supabase, userId, { namn: companyName, land: 'Sverige' });
-        if (result.error) { errors.push(result.error); continue; }
-        if (result.created) nyaBolag++;
-        if (await signalExists(supabase, result.id, item.url, userId)) continue;
-
-        const ins = await insertCompanySignalWithFallback(supabase, {
-          user_id: userId, company_id: result.id, signal_typ: detected.typ,
-          rubrik: item.titel,
-          beskrivning: `${item.beskrivning}\n\nKälla: Mynewsdesk pressrelease`,
-          kalla: 'Mynewsdesk – Pressreleaser', kalla_url: item.url,
-          signal_datum: item.datum, signal_styrka: detected.styrka + 1, // +1 eftersom PR är proaktiv
+          beskrivning: item.beskrivning,
+          kalla,
+          kalla_url: item.url,
+          signal_datum: item.datum,
+          signal_styrka: Math.min(3, detected.styrka + 1),
           status: 'ny'
         });
         if (ins.ok) nyaSignaler++;
         else errors.push(ins.error);
       }
       await sleep(400);
-    } catch (err) { errors.push(`Mynewsdesk ${feedUrl}: ${err.message}`); }
+    } catch (err) { errors.push(`${q}: ${err.message}`); }
   }
 
   return res.status(200).json({
-    message: `Mynewsdesk (pressreleaser): ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler,
-    tip: 'Pressreleaser om VD-byten/förvärv publiceras ofta veckor innan rekryteringsannons läggs ut.',
-    errors
+    message: `${kalla}: ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
+    nya_bolag: nyaBolag, nya_signaler: nyaSignaler, tip, errors
   });
 }
 
-// ============================================================
-// FAS 1: NASDAQ OMX RSS – Börsmeddelanden
-// ============================================================
+// 1. Nyregistrerade / scale-ups / funding
+async function discoverBolagsverketNew(supabase, userId, res) {
+  return proaktivGoogleNews(supabase, userId, res, {
+    kalla: 'Proaktiv – Nyregistrerade & scale-ups',
+    tip: 'Nyregistrerade bolag och scale-ups behöver ekonomifunktion tidigt – bokföring, löner, rapportering.',
+    fallbackTyp: 'new_hires',
+    queries: [
+      { q: 'nytt bolag grundat Sverige finansiering 2025', forcedTyp: 'funding', forcedStyrka: 2 },
+      { q: 'scale-up Sverige tillväxt rekryterar expanderar', forcedTyp: 'growth', forcedStyrka: 2 },
+      { q: 'venture capital investerar Sverige startup 2025', forcedTyp: 'funding', forcedStyrka: 3 },
+      { q: 'seed round Sverige bolag investering miljon', forcedTyp: 'funding', forcedStyrka: 3 },
+      { q: 'private equity förvärvar Sverige medelstort bolag', forcedTyp: 'ownership_change', forcedStyrka: 3 },
+    ]
+  });
+}
+
+// 2. VD/CFO/styrelsebyten – högsta prioritet
+async function discoverBolagsverketChanges(supabase, userId, res) {
+  return proaktivGoogleNews(supabase, userId, res, {
+    kalla: 'Proaktiv – VD/CFO-byten',
+    tip: 'Ny VD eller CFO gör nästan alltid en genomgång av ekonomifunktionen inom 6 månader.',
+    fallbackTyp: 'management_change',
+    queries: [
+      { q: 'ny VD tillträder Sverige bolag 2025', forcedTyp: 'management_change', forcedStyrka: 3 },
+      { q: 'ny CFO ekonomichef utsedd Sverige bolag', forcedTyp: 'finance_hiring', forcedStyrka: 3 },
+      { q: 'VD avgår Sverige bolag rekryterar ny ledning', forcedTyp: 'management_change', forcedStyrka: 3 },
+      { q: 'ny styrelseordförande Sverige bolag utses 2025', forcedTyp: 'management_change', forcedStyrka: 2 },
+      { q: 'ny ledningsgrupp Sverige bolag omorganisation', forcedTyp: 'restructuring', forcedStyrka: 3 },
+    ]
+  });
+}
+
+// 3. Vunna upphandlingar / kontrakt / tillväxt
+async function discoverUpphandling(supabase, userId, res) {
+  return proaktivGoogleNews(supabase, userId, res, {
+    kalla: 'Proaktiv – Upphandlingar & kontrakt',
+    tip: 'Bolag som vinner stora kontrakt behöver ofta stärkt ekonomifunktion för snabb tillväxt och rapportering.',
+    fallbackTyp: 'growth',
+    queries: [
+      { q: 'vinner upphandling kontrakt Sverige miljon 2025', forcedTyp: 'growth', forcedStyrka: 2 },
+      { q: 'tecknar avtal ramavtal Sverige offentlig sektor', forcedTyp: 'growth', forcedStyrka: 2 },
+      { q: 'erhåller order kontrakt Sverige tillväxt', forcedTyp: 'growth', forcedStyrka: 2 },
+      { q: 'bolag expanderar Sverige öppnar nya kontor anställer', forcedTyp: 'expansion', forcedStyrka: 2 },
+      { q: 'rekordomsättning tillväxt Sverige bolag rapport', forcedTyp: 'growth', forcedStyrka: 2 },
+    ]
+  });
+}
+
+// 4. Förvärv / kapitalresningar / expansion
+async function discoverMynewsdesk(supabase, userId, res) {
+  return proaktivGoogleNews(supabase, userId, res, {
+    kalla: 'Proaktiv – Förvärv & kapital',
+    tip: 'Förvärv och kapitalresningar skapar omedelbart behov av CFO/controller för integration och rapportering.',
+    fallbackTyp: 'acquisition',
+    queries: [
+      { q: 'förvärvar bolag Sverige 2025 affär miljon', forcedTyp: 'acquisition', forcedStyrka: 3 },
+      { q: 'nyemission Sverige bolag kapital anskaffar', forcedTyp: 'funding', forcedStyrka: 3 },
+      { q: 'fusionerar slås samman Sverige bolag integration', forcedTyp: 'acquisition', forcedStyrka: 3 },
+      { q: 'private equity köper Sverige bolag ägarskifte', forcedTyp: 'ownership_change', forcedStyrka: 3 },
+      { q: 'internationell expansion Sverige bolag etablerar marknad', forcedTyp: 'expansion', forcedStyrka: 2 },
+    ]
+  });
+}
+
+// 5. Finansiell press / omstrukturering / kris
 async function discoverNasdaqRSS(supabase, userId, res) {
-  // Börsnoterade bolag måste kommunicera ledningsförändringar, förvärv,
-  // vinstvarningar etc via börsen – perfekt proaktiv källa
-  let nyaBolag = 0, nyaSignaler = 0;
-  const errors = [];
-
-  const NASDAQ_RSS_FEEDS = [
-    // Nasdaq OMX Stockholm officiella nyhetsflöden
-    'https://www.nasdaqomxnordic.com/news/feed?market=SE&type=1',
-    'https://www.nasdaqomxnordic.com/news/feed?market=SE&type=2',
-    // MFN (Modular Finance News) – obligatoriska börsmeddelanden
-    'https://mfn.se/feed/all',
-    'https://mfn.se/feed/regulatory',
-    // Cision börsmeddelanden
-    'https://news.cision.com/se/r/regulatory-news,c9999994',
-    // Aktiespararna bevakar börsmeddelanden
-    'https://www.aktiespararna.se/rss/nyheter',
-    // Placera.nu
-    'https://www.placera.nu/rss/nyheter.rss',
-  ];
-
-  const HIGH_PRIORITY = [
-    'ny vd', 'ny cfo', 'ny ekonomichef', 'förvärvar', 'vinstvarning',
-    'emitterar', 'nyemission', 'fusionerar', 'säljer verksamhet',
-    'ny styrelseordförande', 'avgår', 'tillträder', 'omstrukturering',
-    'private equity', 'ägarskifte', 'kapitalanskaffning'
-  ];
-
-  const seenUrls = new Set();
-
-  for (const feedUrl of NASDAQ_RSS_FEEDS) {
-    try {
-      const items = await fetchRSS(feedUrl);
-      for (const item of items.slice(0, 15)) {
-        if (!item.url || seenUrls.has(item.url)) continue;
-        seenUrls.add(item.url);
-
-        const text = `${item.titel} ${item.beskrivning}`.toLowerCase();
-        const isHighPriority = HIGH_PRIORITY.some(s => text.includes(s));
-        const detected = detectSignalType(text);
-
-        // Kräv antingen hög-prioritets-nyckelord eller tydlig signal
-        if (!isHighPriority && !detected) continue;
-
-        const companyName = extractCompanyFromBorsMessage(item.titel, item.beskrivning);
-        if (!companyName || isBadName(companyName)) continue;
-
-        // Matcha mot befintliga bolag (börsnoterade bolag finns ofta redan)
-        const { data: existing } = await supabase.from('companies')
-          .select('id').eq('user_id', userId).ilike('namn', companyName).maybeSingle();
-
-        let companyId;
-        if (existing?.id) {
-          companyId = existing.id;
-        } else {
-          // Skapa nytt börsnoterat bolag
-          const result = await findOrCreateCompany(supabase, userId, {
-            namn: companyName, land: 'Sverige', borsnoterad: true
-          });
-          if (result.error) { errors.push(result.error); continue; }
-          if (result.created) nyaBolag++;
-          companyId = result.id;
-        }
-
-        if (await signalExists(supabase, companyId, item.url, userId)) continue;
-
-        const finalDetected = detected || { typ: 'management_change', styrka: 2 };
-
-        const ins = await insertCompanySignalWithFallback(supabase, {
-          user_id: userId, company_id: companyId, signal_typ: finalDetected.typ,
-          rubrik: item.titel,
-          beskrivning: `${item.beskrivning}\n\nKälla: Nasdaq OMX börsmeddelande`,
-          kalla: 'Nasdaq OMX – Börsmeddelanden', kalla_url: item.url,
-          signal_datum: item.datum,
-          signal_styrka: Math.min(3, finalDetected.styrka + (isHighPriority ? 1 : 0)),
-          status: 'ny'
-        });
-        if (ins.ok) nyaSignaler++;
-        else errors.push(ins.error);
-      }
-      await sleep(350);
-    } catch (err) { errors.push(`Nasdaq RSS ${feedUrl}: ${err.message}`); }
-  }
-
-  return res.status(200).json({
-    message: `Nasdaq OMX (börsmeddelanden): ${nyaBolag} nya bolag, ${nyaSignaler} proaktiva signaler`,
-    nya_bolag: nyaBolag, nya_signaler: nyaSignaler,
-    tip: 'Börsmeddelanden om VD-byten/förvärv publiceras dagar-veckor före rekryteringsannons.',
-    errors
+  return proaktivGoogleNews(supabase, userId, res, {
+    kalla: 'Proaktiv – Finansiell press & omstrukturering',
+    tip: 'Bolag under press behöver extern ekonomiexpertis – likviditetsproblem, varsel och omstrukturering öppnar dörrar.',
+    fallbackTyp: 'financial_pressure',
+    queries: [
+      { q: 'vinstvarning förlust Sverige bolag resultat 2025', forcedTyp: 'financial_pressure', forcedStyrka: 3 },
+      { q: 'varsel varslar Sverige bolag omstrukturering', forcedTyp: 'layoffs', forcedStyrka: 3 },
+      { q: 'likviditetsproblem kassaflöde Sverige bolag kris', forcedTyp: 'financial_pressure', forcedStyrka: 3 },
+      { q: 'ERP systembyte affärssystem Sverige bolag implementerar', forcedTyp: 'system_change', forcedStyrka: 2 },
+      { q: 'omorganisation kostnadsbesparingar Sverige bolag effektivisering', forcedTyp: 'restructuring', forcedStyrka: 3 },
+    ]
   });
 }
 
