@@ -919,13 +919,13 @@ async function callDiscover(endpoint,btnId,label){
   }catch(err){toast("Fel: "+err.message);}
   finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
 }
-function discoverLeads(){callDiscover("/api/discover-leads","btn-pb");}
-function discoverNews(){callDiscover("/api/discover-news","btn-news");}
-function discoverFI(){callDiscover("/api/discover-fi","btn-fi");}
-function discoverNasdaq(){callDiscover("/api/discover-nasdaq","btn-nasdaq");}
-function discoverNorway(){callDiscover("/api/discover-norway","btn-no");}
-function discoverDenmark(){callDiscover("/api/discover-denmark","btn-dk");}
-function discoverFinland(){callDiscover("/api/discover-finland","btn-fi2");}
+function discoverLeads(){callDiscover("/api/discover?source=leads","btn-pb");}
+function discoverNews(){callDiscover("/api/discover?source=news","btn-news");}
+function discoverFI(){callDiscover("/api/discover?source=fi","btn-fi");}
+function discoverNasdaq(){callDiscover("/api/discover?source=nasdaq","btn-nasdaq");}
+function discoverNorway(){callDiscover("/api/discover?source=norway","btn-no");}
+function discoverDenmark(){callDiscover("/api/discover?source=denmark","btn-dk");}
+function discoverFinland(){callDiscover("/api/discover?source=finland","btn-fi2");}
 
 // Analyze report
 function openAnalyze(){fillSelects();document.getElementById("ar-coid").value="";document.getElementById("ar-url").value="";document.getElementById("ar-text").value="";openM("m-analyze");}
