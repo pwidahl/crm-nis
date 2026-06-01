@@ -781,10 +781,10 @@ textarea{resize:vertical;min-height:68px}
           🌐 Normalt läge – visa allt
         </button>
         <div style="border:1px solid var(--cream);border-radius:var(--r);padding:14px">
-          <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">🔒 Fokusläge – välj projekt</p>
-          <p style="font-size:12px;color:#888;margin-bottom:10px">Bara det valda projektets bolag och kontakter syns.</p>
-          <select id="focus-proj-sel" style="width:100%;margin-bottom:10px"><option value="">– Välj projekt –</option></select>
-          <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('project')">Aktivera fokusläge</button>
+          <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">🔒 Fokusläge – välj bolag</p>
+          <p style="font-size:12px;color:#888;margin-bottom:10px">Bara det valda bolagets projekt, kontakter och data syns.</p>
+          <select id="focus-co-sel" style="width:100%;margin-bottom:10px"><option value="">– Välj bolag –</option></select>
+          <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('company')">Aktivera fokusläge</button>
         </div>
       </div>
     </div>
@@ -1061,6 +1061,16 @@ function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0
 
 // UPPDRAG – kundkort
 function renderProjects(){
+  // Focus mode: only show focus company's projects
+  if(focusMode==='company'&&focusCompanyId){
+    const co=companies.find(x=>x.id===focusCompanyId);
+    const coProjs=projects.filter(p=>p.company_id===focusCompanyId);
+    const month=curMonth();
+    document.getElementById("projects-content").innerHTML=coProjs.length
+      ?coProjs.map(p=>renderProjektItem(p,month)).join("")
+      :`<div class="empty"><div class="empty-icon">💼</div><p>Inga projekt för ${e(co?.namn||"")}</p></div>`;
+    return;
+  }
   const today2=new Date();today2.setHours(0,0,0,0);
   // Gruppera projekt per kund
   const kundMap={};projects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
@@ -1548,10 +1558,9 @@ function renderContacts(){
     if(typeof va==="number")return contactSortDir*(va-vb);
     return contactSortDir*String(va).localeCompare(String(vb),"sv");
   });
-  // Focus mode: only show contacts linked to focus project's company
-  if(focusMode==='project'&&focusProjectId){
-    const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
-    list=list.filter(c=>c.company_id===focusCoId||projPeople.some(p=>p.project_id===focusProjectId&&p.contact_id===c.id));
+  // Focus mode: only show contacts for focus company
+  if(focusMode==='company'&&focusCompanyId){
+    list=list.filter(c=>c.company_id===focusCompanyId);
   }
   if(!list.length){document.getElementById("contacts-tbody").innerHTML='<tr><td colspan="8"><div class="empty"><p>Inga kontakter</p></div></td></tr>';return;}
   document.getElementById("contacts-tbody").innerHTML=list.map(c=>{
@@ -2354,44 +2363,36 @@ function movePipeline(coId){
 // ══ FOKUSLÄGE ═════════════════════════════════════════════════
 let focusMode='all';
 let focusProjectId=null;
+let focusCompanyId=null;
 
 function openFocusModal(){
-  const sel=document.getElementById('focus-proj-sel');
-  if(sel)sel.innerHTML='<option value="">– Välj projekt –</option>'+projects.map(p=>`<option value="${p.id}"${p.id===focusProjectId?' selected':''}>${e(p.namn)}</option>`).join('');
+  const sel=document.getElementById('focus-co-sel');
+  if(sel)sel.innerHTML='<option value="">– Välj bolag –</option>'+companies.map(c=>`<option value="${c.id}"${c.id===focusCompanyId?' selected':''}>${e(c.namn)}</option>`).join('');
   openM('m-focus');
 }
 
 function setFocusMode(mode){
-  if(mode==='project'){
-    const sel=document.getElementById('focus-proj-sel');
-    const pid=sel?.value;
-    if(!pid){toast('Välj ett projekt');return;}
-    focusProjectId=pid;
-    focusMode='project';
-    const p=projects.find(x=>x.id===pid);
+  if(mode==='company'){
+    const sel=document.getElementById('focus-co-sel');
+    const cid=sel?.value;
+    if(!cid){toast('Välj ett bolag');return;}
+    focusCompanyId=cid;
+    focusMode='company';
+    const co=companies.find(x=>x.id===cid);
     const banner=document.getElementById('focus-banner');
-    if(banner){banner.textContent='🔒 Fokusläge: '+e(p?.namn||'')+'  –  Klicka för att byta läge';banner.style.display='block';}
-    document.getElementById('focus-nav-label').textContent='🔒 '+e(p?.namn||'Fokus');
-    toast('Fokusläge aktiverat: '+(p?.namn||''));
+    if(banner){banner.textContent='🔒 Fokusläge: '+e(co?.namn||'')+' – övriga bolag och kontakter är dolda. Klicka för att byta.';banner.style.display='block';}
+    document.getElementById('focus-nav-label').textContent='🔒 '+e(co?.namn||'Fokus');
+    toast('Fokusläge: '+(co?.namn||''));
   } else {
     focusMode='all';
-    focusProjectId=null;
+    focusCompanyId=null;
     const banner=document.getElementById('focus-banner');
     if(banner)banner.style.display='none';
     document.getElementById('focus-nav-label').textContent='Fokusläge';
-    toast('Normalt läge aktiverat');
+    toast('Normalt läge');
   }
   closeM('m-focus');
   renderCurrent();
-}
-
-function focusFilter(list, getCoId){
-  if(focusMode!=='project'||!focusProjectId)return list;
-  const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
-  return list.filter(item=>{
-    const coId=getCoId(item);
-    return coId&&coId===focusCoId;
-  });
 }
 
 checkSession();
