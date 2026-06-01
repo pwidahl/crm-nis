@@ -77,6 +77,7 @@ async function discoverNews(sb, userId, res) {
         const detected = detectSignal(text) || { typ: 'nyhet', styrka: 1 };
 
         const companyName = extractCompanyName(item.titel);
+        console.log('TITLE:', item.titel, '| COMPANY:', companyName || 'NULL');
         if (!companyName) { filtrerade++; continue; }
 
         const result = await findOrCreate(sb, userId, { namn: companyName, land: 'Sverige' });
