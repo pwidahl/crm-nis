@@ -761,6 +761,13 @@ textarea{resize:vertical;min-height:68px}
   </div>
 </div>
 
+<div class="overlay" id="m-lead">
+  <div class="modal" style="width:720px">
+    <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
+    <div id="lead-modal-content"></div>
+  </div>
+</div>
+
 <div class="overlay" id="m-confirm"><div class="modal" style="width:380px"><div class="mhdr"><h2>Bekräfta</h2><button class="mclose" onclick="closeM('m-confirm')">×</button></div><div class="mbody"><p id="confirm-txt" style="font-size:14px;line-height:1.6"></p></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-confirm')">Avbryt</button><button class="btn btn-danger" id="confirm-ok">Bekräfta</button></div></div></div>
 
 <div class="overlay" id="m-export-contacts">
@@ -1394,7 +1401,7 @@ function renderSignals(){
     const hay=[s.rubrik,s.beskrivning,s.kalla,s.companies?.namn].join(" ").toLowerCase();
     return(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!coFilter||s.company_id===coFilter)&&(!q||hay.includes(q));
   });
-  document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr><td>
+  document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
       <strong>${e(s.rubrik)}</strong>
       ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:340px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,120))}${(s.beskrivning||"").length>120?"…":""}</div>`:""}
       <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
@@ -1952,6 +1959,131 @@ function selectACCompany(id, namn){
 function hideAC(){
   const box=document.getElementById("co-autocomplete");
   if(box)box.style.display="none";
+}
+
+// ══ LEAD MODAL ════════════════════════════════════════════════
+function openLead(sigId){
+  const s=signals.find(x=>x.id===sigId);
+  if(!s)return;
+  const co=companies.find(x=>x.id===s.company_id);
+  const coContacts=contacts.filter(c=>c.company_id===s.company_id);
+  const coSignals=signals.filter(x=>x.company_id===s.company_id).slice(0,5);
+  const coLogs=actLog.filter(l=>coContacts.some(c=>c.id===l.contact_id)).slice(0,5);
+
+  document.getElementById("lead-modal-title").textContent=co?.namn||s.companies?.namn||"Lead";
+
+  document.getElementById("lead-modal-content").innerHTML=`
+    <div style="background:var(--accent);color:#fff;padding:16px 22px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1">
+          <h3 style="font-family:'DM Serif Display',serif;font-size:18px">${e(co?.namn||s.companies?.namn||"")}</h3>
+          <p style="opacity:.7;font-size:13px;margin-top:3px">${e([co?.bransch,co?.stad,co?.land].filter(Boolean).join(" · "))}</p>
+        </div>
+        <span class="badge" style="background:rgba(255,255,255,.2);color:#fff">${sigLabel(s.signal_typ)}</span>
+        ${"★".repeat(s.signal_styrka||1)}
+      </div>
+    </div>
+
+    <div style="padding:16px 22px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- SIGNAL INFO -->
+      <div style="grid-column:1/-1;background:var(--paper);border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Signal</div>
+        <strong style="font-size:14px">${e(s.rubrik)}</strong>
+        ${s.beskrivning?`<p style="font-size:13px;color:#555;margin-top:6px;line-height:1.6;white-space:pre-line">${e(s.beskrivning)}</p>`:""}
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;color:#888">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</span>
+          ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">🔗 Öppna källa</a>`:""}
+        </div>
+      </div>
+
+      <!-- BOLAGSINFO -->
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Bolagsinformation</div>
+        ${co?`
+          <div style="font-size:13px;line-height:1.8">
+            ${co.orgnr?`<div><span style="color:#888">Org.nr:</span> ${e(co.orgnr)}</div>`:""}
+            ${co.bransch?`<div><span style="color:#888">Bransch:</span> ${e(co.bransch)}</div>`:""}
+            ${co.stad?`<div><span style="color:#888">Stad:</span> ${e(co.stad)}</div>`:""}
+            ${co.hemsida?`<div><span style="color:#888">Webb:</span> <a href="${e(co.hemsida)}" target="_blank">${e(co.hemsida.replace(/^https?:\/\//i,""))}</a></div>`:""}
+            <div><span style="color:#888">Pipeline:</span> ${pipeLabel(co.pipeline_status||"")}</div>
+            ${co.anteckningar?`<div style="margin-top:8px;font-size:12px;color:#666;white-space:pre-line">${e(co.anteckningar)}</div>`:""}
+          </div>
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="closeM('m-lead');openCompanyCard('${co.id}')">Öppna bolagskort</button>
+            <button class="btn btn-primary btn-sm" onclick="movePipeline('${co.id}')">Flytta i pipeline</button>
+          </div>
+        `:`<p style="color:#aaa;font-size:13px">Bolag ej kopplat</p><button class="btn btn-primary btn-sm" onclick="closeM('m-lead');openNewCompany('${e(s.companies?.namn||"")}')">+ Skapa bolag</button>`}
+      </div>
+
+      <!-- KONTAKTER -->
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kontakter (${coContacts.length})</div>
+        ${coContacts.length?coContacts.slice(0,4).map(c=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600">${e(c.fornamn)} ${e(c.efternamn)}</div>
+              <div style="font-size:11px;color:#888">${e(c.roll||"")}</div>
+            </div>
+            <button class="btn btn-warm btn-xs" onclick="closeM('m-lead');openLogModal('${c.id}')">Logga</button>
+            <button class="btn btn-outline btn-xs" onclick="closeM('m-lead');openCard('${c.id}')">↗</button>
+          </div>`).join("")
+        :`<p style="color:#aaa;font-size:13px">Inga kontakter kopplade</p>`}
+        <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="closeM('m-lead');openNewContact();setTimeout(()=>{const el=document.getElementById('f-co');if(el)el.value='${e(co?.namn||s.companies?.namn||"")}';},100)">+ Lägg till kontakt</button>
+      </div>
+
+      <!-- TIDIGARE SIGNALER -->
+      ${coSignals.length>1?`
+      <div style="grid-column:1/-1">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tidigare signaler för detta bolag</div>
+        ${coSignals.filter(x=>x.id!==s.id).slice(0,4).map(x=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--cream);font-size:12px">
+            <span class="badge ${x.status==="ny"?"b-ny":"b-granskad"}">${sigLabel(x.signal_typ)}</span>
+            <span style="flex:1">${e(x.rubrik)}</span>
+            <span style="color:#aaa">${e(x.signal_datum||"")}</span>
+          </div>`).join("")}
+      </div>`:""}
+
+      <!-- NOTERINGAR -->
+      <div style="grid-column:1/-1">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Noteringar om detta lead</div>
+        <textarea id="lead-notes-${s.id}" style="width:100%;min-height:80px;font-size:13px" placeholder="Skriv dina tankar, nästa steg, vad du vet om bolaget...">${e(co?.anteckningar||"")}</textarea>
+        <button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveLeadNotes('${s.id}','${co?.id||""}')">Spara notering</button>
+      </div>
+
+    </div>
+
+    <div class="mfoot">
+      <button class="btn btn-outline btn-sm" onclick="setSigStatus('${s.id}','ignorerad');closeM('m-lead')">Ignorera lead</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-outline" onclick="closeM('m-lead')">Stäng</button>
+      <button class="btn btn-warm" onclick="setSigStatus('${s.id}','granskad');closeM('m-lead')">✓ Markera granskad</button>
+    </div>
+  `;
+  openM("m-lead");
+}
+
+async function saveLeadNotes(sigId, coId){
+  const txt=document.getElementById("lead-notes-"+sigId)?.value||"";
+  if(coId){
+    const r=await sb.from("companies").update({anteckningar:txt}).eq("id",coId);
+    if(r.error){toast("Kunde inte spara");return;}
+  }
+  toast("Notering sparad ✓");
+  await loadAll();
+}
+
+function movePipeline(coId){
+  const co=companies.find(x=>x.id===coId);if(!co)return;
+  const steps=["Watchlist","Intressant","Varm","Mojlighet","Mote","Offert","Vunnet"];
+  const cur=steps.indexOf(co.pipeline_status||"Watchlist");
+  const next=steps[cur+1];
+  if(!next){toast("Redan i sista steget");return;}
+  confirm2(`Flytta ${co.namn} till "${pipeLabel(next)}"?`,async()=>{
+    await sb.from("companies").update({pipeline_status:next}).eq("id",coId);
+    toast(`Moved to ${pipeLabel(next)}`);
+    await loadAll();
+  });
 }
 
 checkSession();
