@@ -362,7 +362,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-spacer"></div>
-    <div class="nav-item" id="nav-focus" onclick="openFocusModal()" style="cursor:pointer"><span class="nav-icon">🔒</span><span id="focus-nav-label">Fokusläge</span></div>
+    <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
   </nav>
@@ -1018,6 +1018,10 @@ function openSearchResult(type,id){document.getElementById("search-drop").classL
 
 // DASHBOARD
 function renderDashboard(){
+  if(focusMode==="company"&&focusCompanyId){
+    renderFocusDashboard();
+    return;
+  }
   const today2=new Date();today2.setHours(0,0,0,0);
   const ns=signals.filter(s=>s.status==="ny").length;const ap=projects.filter(p=>p.status==="Aktiv").length;const ot=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;
   document.getElementById("dash-kpi").innerHTML=[["Kontakter",contacts.length,"c-blue"],["Bolag",companies.length,"c-green"],["Nya signaler",ns,"c-gold"],["Försenade uppfölj.",of2,"c-red"],["Aktiva projekt",ap,"c-purple"],["Försenade tasks",ot,"c-warm"]].map(([l,n,c2])=>`<div class="kpi ${c2}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
@@ -1027,6 +1031,41 @@ function renderDashboard(){
 }
 
 // WEEKLY
+function renderFocusDashboard(){
+  const co=companies.find(x=>x.id===focusCompanyId);
+  const coProjs=projects.filter(p=>p.company_id===focusCompanyId);
+  const coContacts=contacts.filter(c=>c.company_id===focusCompanyId);
+  const coSignals=signals.filter(s=>s.company_id===focusCompanyId&&s.status==="ny");
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const month=curMonth();
+  const totalH=coProjs.reduce((s,p)=>s+projBillableHours(p.id,month),0);
+  const openTasks=tasks.filter(t=>coProjs.some(p=>p.id===t.project_id)&&t.status!=="Klar");
+  const overdueTasks=openTasks.filter(t=>t.due_date&&new Date(t.due_date)<today2);
+
+  document.getElementById("dash-kpi").innerHTML=[
+    ["Projekt",coProjs.length,"c-blue"],
+    ["Kontakter",coContacts.length,"c-green"],
+    ["Nya signaler",coSignals.length,"c-gold"],
+    ["Öppna tasks",openTasks.length,"c-warm"],
+    ["Försenade tasks",overdueTasks.length,"c-red"],
+    ["Timmar "+month.slice(5),totalH.toFixed(1),"c-purple"]
+  ].map(([l,n,c2])=>`<div class="kpi ${c2}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+
+  document.getElementById("dash-chain").innerHTML=`
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Aktiva projekt</p>
+      ${coProjs.filter(p=>p.status==="Aktiv").map(p=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream)">
+          <span class="${statusClass(p.status)}">${e(p.status)}</span>
+          <span style="font-weight:600">${e(p.namn)}</span>
+          <span style="font-size:12px;color:#888;margin-left:auto">${projBillableHours(p.id,month).toFixed(1)}h ${month.slice(5)}</span>
+          <button class="btn btn-outline btn-xs" onclick="openProjectCard('${p.id}')">Öppna</button>
+        </div>`).join("")||'<p style="color:#aaa;font-size:13px">Inga aktiva projekt</p>'}
+    </div>`;
+
+  renderFups("dash-fups",8);
+}
+
 function renderWeekly(){
   const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
   const dayName=days[new Date().getDay()];
@@ -1357,6 +1396,12 @@ async function saveVeckoplanEntry(){
 
 // COMPANIES
 function renderCompanies(){
+  if(focusMode==="company"&&focusCompanyId){
+    // Only show the one focused company
+    const list2=[companies.find(x=>x.id===focusCompanyId)].filter(Boolean);
+    document.getElementById("companies-content").innerHTML=`<div class="pipe">${PIPELINE.map(p=>{const arr=list2.filter(c=>c.pipeline_status===p);return`<div class="pipe-col"><div class="pipe-head">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${arr.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";return`<div class="pipe-card"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}</div><div class="pipe-meta">AI: ${c.ai_score??"--"} · ${sig>0?`<span style="color:var(--red);font-weight:600">${sig} nya</span>`:"0 nya"} signaler</div></div><div style="display:flex;gap:3px;margin-top:6px;border-top:1px solid var(--cream);padding-top:5px"><button class="btn-icon" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎ Redigera</button><button class="btn-icon" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑 Radera</button></div></div>`;}).join("")}</div>`;}).join("")}</div>`;
+    return;
+  }
   const q=(v("co-filter")||"").toLowerCase();const pipe=v("co-pipe-filter");const land=v("co-land-filter");const listed=document.getElementById("co-listed-filter")?.checked||false;
   const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad);});
   document.getElementById("companies-content").innerHTML=`<div class="pipe">${PIPELINE.map(p=>{const arr=list.filter(c=>c.pipeline_status===p);return`<div class="pipe-col"><div class="pipe-head">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${arr.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";return`<div class="pipe-card"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:10px;color:var(--gold);margin-left:3px">★</span>':""}</div><div class="pipe-meta">AI: ${c.ai_score??"--"} · ${sig>0?`<span style="color:var(--red);font-weight:600">${sig} nya</span>`:"0 nya"} signaler</div></div><div style="display:flex;gap:3px;margin-top:6px;border-top:1px solid var(--cream);padding-top:5px"><button class="btn-icon" title="Redigera" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎ Redigera</button><button class="btn-icon" title="Radera" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑 Radera</button></div></div>`;}).join("")}</div>`;}).join("")}</div>`;
@@ -1762,7 +1807,16 @@ function renderFups(elId,limit){
 function renderFollowups(){renderFups("followups-list",null);}
 
 // SUBCONSULTANTS
-function renderSubconsultants(){const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);});document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Namn</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Kompetenser</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter</p></div>';}
+function renderSubconsultants(){
+  // In focus mode, hide subconsultants (they are not linked to companies)
+  if(focusMode==="company"&&focusCompanyId){
+    const proj=projects.find(x=>x.company_id===focusCompanyId&&x.subconsultant_id);
+    const focusSubs=proj?subs.filter(s=>s.id===proj.subconsultant_id):[];
+    if(!focusSubs.length){document.getElementById("subconsultants-content").innerHTML='<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter kopplade till detta bolag</p></div>';return;}
+    document.getElementById("subconsultants-content").innerHTML=`<div class="tw"><table><thead><tr><th>Namn</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Kompetenser</th><th></th></tr></thead><tbody>${focusSubs.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button></td></tr>`;}).join("")}</tbody></table></div>`;
+    return;
+  }
+  const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);});document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Namn</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Kompetenser</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter</p></div>';}
 function openNewSub(){editSubId=null;document.getElementById("sub-modal-title").textContent="Ny underkonsult";["sb-fn","sb-en","sb-epost","sb-tel","sb-linkedin","sb-stad","sb-avfrom","sb-pricefrom","sb-priceto","sb-skills","sb-notes"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("sb-av").value="tillganglig";document.getElementById("sb-level").value="";openM("m-sub");}
 function openEditSub(id){const s=subs.find(x=>x.id===id);if(!s)return;editSubId=id;document.getElementById("sub-modal-title").textContent="Redigera";[["sb-fn","fornamn"],["sb-en","efternamn"],["sb-epost","epost"],["sb-tel","telefon"],["sb-linkedin","linkedin"],["sb-stad","stad"],["sb-av","tillganglighet"],["sb-avfrom","tillganglig_fran"],["sb-pricefrom","dagspris_fran"],["sb-priceto","dagspris_till"],["sb-level","arvodesniva"],["sb-notes","anteckningar"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=s[field]||"";});document.getElementById("sb-skills").value=subSkills.filter(k=>k.subconsultant_id===id).map(k=>k.kompetens).join(", ");openM("m-sub");}
 async function saveSub(){const fn=v("sb-fn"),en=v("sb-en");if(!fn||!en){toast("Namn krävs");return;}const data={user_id:me.id,fornamn:fn,efternamn:en,epost:v("sb-epost"),telefon:v("sb-tel"),linkedin:v("sb-linkedin"),stad:v("sb-stad"),tillganglighet:document.getElementById("sb-av").value,tillganglig_fran:document.getElementById("sb-avfrom").value||null,dagspris_fran:numv("sb-pricefrom"),dagspris_till:numv("sb-priceto"),arvodesniva:document.getElementById("sb-level").value||null,anteckningar:v("sb-notes")};let sid=editSubId,r;if(editSubId)r=await sb.from("subconsultants").update(data).eq("id",editSubId).select("id").single();else r=await sb.from("subconsultants").insert(data).select("id").single();if(r.error){alert(r.error.message);return;}sid=r.data.id;await sb.from("subconsultant_skills").delete().eq("subconsultant_id",sid);const sk=v("sb-skills").split(",").map(x=>x.trim()).filter(Boolean);if(sk.length)await sb.from("subconsultant_skills").insert(sk.map(k=>({user_id:me.id,subconsultant_id:sid,kompetens:k,niva:"avancerad"})));closeM("m-sub");toast("Sparad");await loadAll();}
@@ -2375,7 +2429,9 @@ function setFocusMode(mode){
     const co=companies.find(x=>x.id===cid);
     const banner=document.getElementById('focus-banner');
     if(banner){banner.textContent='🔒 Fokusläge: '+e(co?.namn||'')+' – övriga bolag och kontakter är dolda. Klicka för att byta.';banner.style.display='block';}
-    document.getElementById('focus-nav-label').textContent='🔒 '+e(co?.namn||'Fokus');
+    document.getElementById('focus-nav-label').textContent=e(co?.namn||'Fokus');
+    const icon=document.getElementById('focus-nav-icon');if(icon)icon.textContent='🔒';
+    document.getElementById('nav-focus').style.borderLeft='3px solid var(--warm)';
     toast('Fokusläge: '+(co?.namn||''));
   } else {
     focusMode='all';
@@ -2383,6 +2439,8 @@ function setFocusMode(mode){
     const banner=document.getElementById('focus-banner');
     if(banner)banner.style.display='none';
     document.getElementById('focus-nav-label').textContent='Fokusläge';
+    const icon2=document.getElementById('focus-nav-icon');if(icon2)icon2.textContent='○';
+    document.getElementById('nav-focus').style.borderLeft='';
     toast('Normalt läge');
   }
   closeM('m-focus');
