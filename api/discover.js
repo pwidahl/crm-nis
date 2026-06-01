@@ -74,8 +74,7 @@ async function discoverNews(sb, userId, res) {
         seenUrls.add(item.url);
 
         const text = `${item.titel} ${item.beskrivning}`;
-        const detected = detectSignal(text);
-        if (!detected) { filtrerade++; continue; }
+        const detected = detectSignal(text) || { typ: 'nyhet', styrka: 1 };
 
         const companyName = extractCompanyName(item.titel);
         if (!companyName) { filtrerade++; continue; }
