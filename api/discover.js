@@ -219,12 +219,27 @@ async function insertSignal(sb, payload) {
 
 function extractCompanyName(title) {
   const t = String(title || '');
-  // Pattern: "Bolagsnamn AB: rubrik" or "Bolagsnamn AB – rubrik"
-  const m = t.match(/^([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{1,60}?\s*(?:AB|Group|Holding|ASA|Oyj|plc))\s*[:\–\-]/);
-  if (m?.[1]) { const n = normalize(m[1]); if (n && !isBad(n)) return n; }
-  // Fallback: allt före första kolon/dash
-  const m2 = t.match(/^(.{3,60}?)\s*[:\–\-]\s+/);
+
+  // 1. "Bolagsnamn AB: rubrik" eller "Bolagsnamn AB – rubrik"
+  const m1 = t.match(/^([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{1,60}?\s*(?:AB|Group|Holding|ASA|Oyj|Oyj\.?|plc|Inc|Corp|Ltd|GmbH|BV|NV|SA|AG))\s*[:\–\-|]/);
+  if (m1?.[1]) { const n = normalize(m1[1]); if (n && !isBad(n)) return n; }
+
+  // 2. Allt före första kolon, dash eller pipe (upp till 60 tecken)
+  const m2 = t.match(/^(.{3,60}?)\s*[:\–\-|]\s/);
   if (m2?.[1]) { const n = normalize(m2[1]); if (n && !isBad(n)) return n; }
+
+  // 3. Versaler-ord i början (t.ex. "SSAB reports..." eller "Volvo AB announces...")
+  const m3 = t.match(/^([A-ZÅÄÖ][A-Za-zÅÄÖåäö0-9&.\- ]{1,50}?)\s+(?:reports?|announces?|publishes?|releases?|rapporterar|meddelar|offentliggör|publicerar|tillkännager)/i);
+  if (m3?.[1]) { const n = normalize(m3[1]); if (n && !isBad(n)) return n; }
+
+  // 4. Första 1-3 ord om de börjar med versal (sista utväg)
+  const words = t.split(/\s+/).slice(0, 3);
+  const candidate = words.join(' ');
+  if (candidate.length >= 3 && /^[A-ZÅÄÖ]/.test(candidate)) {
+    const n = normalize(candidate);
+    if (n && !isBad(n)) return n;
+  }
+
   return null;
 }
 
