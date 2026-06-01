@@ -1966,6 +1966,76 @@ function linkify(text){
   return String(text||"").replace(/https?:\/\/[^\s<>)"]+/g, url=>`<a href="${e(url)}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${e(url)}</a>`);
 }
 
+function scoreLead(sigId, coId){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  const co=companies.find(x=>x.id===coId);
+  const box=document.getElementById("lq-result-"+sigId);if(!box)return;
+
+  // Collect form values
+  const size=parseInt(document.getElementById("lq-size-"+sigId)?.value||0);
+  const rev=parseInt(document.getElementById("lq-rev-"+sigId)?.value||0);
+  const cfo=parseInt(document.getElementById("lq-cfo-"+sigId)?.value||0);
+  const growth=parseInt(document.getElementById("lq-growth-"+sigId)?.value||0);
+  const owner=parseInt(document.getElementById("lq-owner-"+sigId)?.value||0);
+  const erp=parseInt(document.getElementById("lq-erp-"+sigId)?.value||0);
+  const notes=(document.getElementById("lq-notes-"+sigId)?.value||"").toLowerCase();
+
+  // Signal type base score
+  const sigScore={finance_hiring:25,management_change:20,acquisition:20,funding:18,restructuring:18,financial_pressure:15,ownership_change:20,system_change:15,growth:12,annual_report:5,nyhet:5}[s.signal_typ]||5;
+
+  // Form scores
+  const formScore=size+rev+cfo+growth+owner+erp;
+
+  // Notes keywords
+  let notesBonus=0;
+  ["söker","rekryterar","interim","cfo","controller","ekonomichef","systembyte","förvärv","tillväxt","ny vd","vakant"].forEach(w=>{if(notes.includes(w))notesBonus+=3;});
+
+  // Previous signals bonus
+  const prevSigs=signals.filter(x=>x.company_id===s.company_id).length;
+  const prevBonus=Math.min(15,prevSigs*3);
+
+  const total=Math.min(100,sigScore+formScore+notesBonus+prevBonus);
+
+  // Rating
+  let rating,color,icon;
+  if(total>=70){rating="Hett lead – prioritera nu";color="var(--green)";icon="🔥";}
+  else if(total>=45){rating="Bra lead – följ upp inom en vecka";color="var(--gold)";icon="⭐";}
+  else if(total>=25){rating="Möjligt lead – bevaka";color:"var(--accent)";icon="👀";}
+  else{rating="Svagt lead – låg prioritet";color="#aaa";icon="💤";}
+
+  // Questions to ask
+  const fragor=[];
+  if(!cfo||cfo===0)fragor.push("Hur ser er ekonomifunktion ut idag – har ni en CFO eller controller på plats?");
+  if(!rev||rev===0)fragor.push("Vad är er omsättning och hur ser tillväxten ut de senaste åren?");
+  if(!erp||erp===0)fragor.push("Vilket ekonomisystem använder ni, och är ni nöjda med det?");
+  if(s.signal_typ==="management_change")fragor.push("Hur planerar den nya ledningen att ta tag i ekonomifunktionen?");
+  if(s.signal_typ==="funding")fragor.push("Vilka krav ställer era investerare på ekonomirapportering?");
+  if(s.signal_typ==="acquisition")fragor.push("Hur planerar ni att integrera ekonomifunktionerna i de två bolagen?");
+  if(s.signal_typ==="growth")fragor.push("Hur hänger er ekonomifunktion med i tillväxten – har ni rätt resurser?");
+  if(s.signal_typ==="financial_pressure")fragor.push("Vilka åtgärder planerar ni för att förbättra kassaflödet?");
+  fragor.push("Vad är er största utmaning inom ekonomi och finans just nu?");
+  fragor.push("Har ni använt externa konsulter tidigare – vad fungerade bra/dåligt?");
+
+  box.innerHTML=`
+    <div style="background:#fff;border:2px solid ${color};border-radius:var(--r);padding:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="font-size:32px;font-family:'DM Serif Display',serif;color:${color}">${total}</div>
+        <div>
+          <div style="font-weight:600;font-size:14px">${icon} ${rating}</div>
+          <div style="font-size:12px;color:#888">Lead-score av 100</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:12px;color:#888">
+          Signal: +${sigScore} · Kvalificering: +${formScore} · Noteringar: +${notesBonus} · Historik: +${prevBonus}
+        </div>
+      </div>
+      ${fragor.length?`
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Frågor att ställa</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:18px;color:#444">
+          ${fragor.slice(0,5).map(f=>`<li>${e(f)}</li>`).join("")}
+        </ul>`:""}
+    </div>`;
+}
+
 function analyzeLeadAI(sigId, coId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
@@ -2108,15 +2178,77 @@ function openLead(sigId){
           </div>`).join("")}
       </div>`:""}
 
-      <!-- AI ANALYS -->
+      <!-- LEAD KVALIFICERING -->
       <div style="grid-column:1/-1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">AI-analys av lead</div>
-          <button class="btn btn-warm btn-sm" onclick="analyzeLeadAI('${s.id}','${co?.id||""}')">🔍 Analysera varför detta är ett lead</button>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Lead-kvalificering</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+
+          <div class="fl"><label>Antal anställda</label>
+            <select id="lq-size-${s.id}">
+              <option value="">Okänt</option>
+              <option value="1">1–10</option>
+              <option value="2">11–50</option>
+              <option value="3">51–200</option>
+              <option value="4">201–500</option>
+              <option value="5">500+</option>
+            </select>
+          </div>
+
+          <div class="fl"><label>Omsättning (MSEK)</label>
+            <select id="lq-rev-${s.id}">
+              <option value="">Okänt</option>
+              <option value="1">&lt;10 MSEK</option>
+              <option value="2">10–50 MSEK</option>
+              <option value="3">50–200 MSEK</option>
+              <option value="4">200–500 MSEK</option>
+              <option value="5">500+ MSEK</option>
+            </select>
+          </div>
+
+          <div class="fl"><label>Har de en CFO/ekonomichef idag?</label>
+            <select id="lq-cfo-${s.id}">
+              <option value="">Okänt</option>
+              <option value="0">Ja, tillsatt</option>
+              <option value="2">Vakant/söker</option>
+              <option value="3">Nej – saknar helt</option>
+            </select>
+          </div>
+
+          <div class="fl"><label>Tillväxttakt</label>
+            <select id="lq-growth-${s.id}">
+              <option value="">Okänt</option>
+              <option value="1">Stabil/negativ</option>
+              <option value="2">Måttlig (0–20%)</option>
+              <option value="3">Snabb (20%+)</option>
+            </select>
+          </div>
+
+          <div class="fl"><label>Ägarstruktur</label>
+            <select id="lq-owner-${s.id}">
+              <option value="">Okänt</option>
+              <option value="1">Börsnoterat</option>
+              <option value="2">Familjeägt/grundarlett</option>
+              <option value="3">PE/riskkapital</option>
+              <option value="3">Nytt ägarskifte</option>
+            </select>
+          </div>
+
+          <div class="fl"><label>Ekonomisystem</label>
+            <select id="lq-erp-${s.id}">
+              <option value="">Okänt</option>
+              <option value="1">Modernt (SAP/D365/NetSuite)</option>
+              <option value="2">Gammalt/okänt</option>
+              <option value="3">Byter system just nu</option>
+            </select>
+          </div>
+
+          <div class="fl full"><label>Vad vet du om bolaget? (fritext)</label>
+            <textarea id="lq-notes-${s.id}" rows="2" placeholder="T.ex: Ny VD tillträdde mars, söker controller på LinkedIn..."></textarea>
+          </div>
+
         </div>
-        <div id="lead-ai-${s.id}" style="background:var(--paper);border-radius:var(--r);padding:10px 13px;font-size:13px;line-height:1.6;border:1px solid var(--cream);min-height:40px;color:#555">
-          ${co?.ai_rekommendation?`<strong>Senaste analys:</strong> ${e(co.ai_rekommendation)}`:'<span style="color:#aaa">Klicka för att analysera varför detta bolag är ett potentiellt lead.</span>'}
-        </div>
+        <button class="btn btn-primary" onclick="scoreLead('${s.id}','${co?.id||""}')">📊 Beräkna lead-score</button>
+        <div id="lq-result-${s.id}" style="margin-top:12px"></div>
       </div>
 
       <!-- NOTERINGAR -->
