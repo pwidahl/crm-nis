@@ -1989,7 +1989,7 @@ function linkify(text){
   return String(text||"").replace(/https?:\/\/[^\s<>)"]+/g, url=>`<a href="${e(url)}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${e(url)}</a>`);
 }
 
-function scoreLead(sigId, coId){
+async function scoreLead(sigId, coId){
   const s=signals.find(x=>x.id===sigId);if(!s)return;
   const co=companies.find(x=>x.id===coId);
   const box=document.getElementById("lq-result-"+sigId);if(!box)return;
