@@ -45,6 +45,7 @@ export default async function handler(req, res) {
 
   try {
     switch (source) {
+      case 'leads':  return discoverLeads(sb, userId, res, req);
       case 'news':   return discoverNews(sb, userId, res);
       case 'nasdaq': return discoverNasdaq(sb, userId, res);
       default:
@@ -54,6 +55,80 @@ export default async function handler(req, res) {
     console.error('Discover error:', err);
     return res.status(500).json({ error: err.message || 'Serverfel' });
   }
+}
+
+// ─── PLATSBANKEN / JOBTECH ───────────────────────────────────
+async function discoverLeads(sb, userId, res, req) {
+  const DEFAULT_TERMS = [
+    'CFO','ekonomichef','finanschef','business controller',
+    'financial controller','controller','redovisningschef',
+    'head of finance','interim CFO','interim finance',
+    'finance manager','redovisningsekonom'
+  ];
+
+  const qParam = String(req?.query?.q || '').trim();
+  const terms = qParam ? [qParam] : DEFAULT_TERMS;
+  const limit = 40;
+  const maxSignals = 150;
+
+  let nyaSignaler = 0, nyaBolag = 0, hamtade = 0, dubbletter = 0;
+  const errors = [], seenAds = new Set();
+
+  for (const term of terms) {
+    if (nyaSignaler >= maxSignals) break;
+    try {
+      const url = `https://jobsearch.api.jobtechdev.se/search?q=${encodeURIComponent(term)}&limit=${limit}&offset=0`;
+      const r = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'CRM-NIS/2.0' } });
+      if (!r.ok) { errors.push(`JobTech "${term}": HTTP ${r.status}`); continue; }
+      const data = await r.json();
+      const ads = data.hits || [];
+      hamtade += ads.length;
+
+      for (const ad of ads) {
+        if (nyaSignaler >= maxSignals) break;
+        const employer = ad.employer || {};
+        const companyName = normalize(employer.name || employer.workplace || '');
+        if (!companyName || isBad(companyName)) continue;
+        const adKey = ad.id || `${companyName}|${ad.headline}`;
+        if (seenAds.has(adKey)) continue;
+        seenAds.add(adKey);
+
+        const orgnr = String(employer.organization_number || '').replace(/\D/g, '') || null;
+        const city = ad.workplace_address?.municipality || null;
+        const headline = ad.headline || term;
+        const sourceUrl = ad.webpage_url || (ad.id ? `jobtech:${ad.id}` : null);
+        const datum = safeDate(ad.publication_date);
+        const beskrivning = `Sökord: ${term}\nOrt: ${city || '–'}\n${(ad.description?.text||'').slice(0,300)}`;
+
+        const result = await findOrCreate(sb, userId, { namn: companyName, orgnr, stad: city, land: 'Sverige' });
+        if (!result.id) { errors.push(result.error || companyName); continue; }
+        if (result.created) nyaBolag++;
+        if (sourceUrl && await sigExists(sb, result.id, sourceUrl, userId)) { dubbletter++; continue; }
+
+        const ins = await insertSignal(sb, {
+          user_id: userId, company_id: result.id,
+          signal_typ: 'finance_hiring',
+          rubrik: `Jobbannons: ${headline}`,
+          beskrivning,
+          kalla: 'Platsbanken / JobTech',
+          kalla_url: sourceUrl,
+          signal_datum: datum,
+          signal_styrka: 2,
+          status: 'ny'
+        });
+        if (ins.ok) nyaSignaler++; else errors.push(`${companyName}: ${ins.error}`);
+      }
+      await sleep(150);
+    } catch (err) { errors.push(`${term}: ${err.message}`); }
+  }
+
+  return res.status(200).json({
+    message: nyaSignaler > 0
+      ? `Platsbanken: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler (${hamtade} annonser)`
+      : `Platsbanken: 0 nya. ${hamtade} annonser, ${dubbletter} dubbletter.`,
+    nya_bolag: nyaBolag, nya_signaler: nyaSignaler,
+    hamtade_annonser: hamtade, dubbletter, errors
+  });
 }
 
 // ─── GLOBENEWSWIRE NYHETER ────────────────────────────────────
