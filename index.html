@@ -782,7 +782,7 @@ textarea{resize:vertical;min-height:68px}
         </button>
         <div style="border:1px solid var(--cream);border-radius:var(--r);padding:14px">
           <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">🔒 Fokusläge – välj bolag</p>
-          <p style="font-size:12px;color:#888;margin-bottom:10px">Bara det valda bolagets projekt, kontakter och data syns.</p>
+          <p style="font-size:12px;color:#888;margin-bottom:10px">Allt ser ut som vanligt – men bara data kopplad till valt bolag visas.</p>
           <select id="focus-co-sel" style="width:100%;margin-bottom:10px"><option value="">– Välj bolag –</option></select>
           <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('company')">Aktivera fokusläge</button>
         </div>
@@ -1061,19 +1061,10 @@ function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0
 
 // UPPDRAG – kundkort
 function renderProjects(){
-  // Focus mode: only show focus company's projects
-  if(focusMode==='company'&&focusCompanyId){
-    const co=companies.find(x=>x.id===focusCompanyId);
-    const coProjs=projects.filter(p=>p.company_id===focusCompanyId);
-    const month=curMonth();
-    document.getElementById("projects-content").innerHTML=coProjs.length
-      ?coProjs.map(p=>renderProjektItem(p,month)).join("")
-      :`<div class="empty"><div class="empty-icon">💼</div><p>Inga projekt för ${e(co?.namn||"")}</p></div>`;
-    return;
-  }
   const today2=new Date();today2.setHours(0,0,0,0);
   // Gruppera projekt per kund
-  const kundMap={};projects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
+  const kundMap={};const visibleProjects=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId):projects;
+  visibleProjects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
   const month=curMonth();
   document.getElementById("projects-content").innerHTML=`
     <div class="kpi-grid" style="margin-bottom:16px">
@@ -1138,7 +1129,8 @@ function toggleProjItem(pid){const el=document.getElementById("proj-body-"+pid);
 // DAGBOK
 function renderDagbok(){
   const dateFilter=v("db-date-filter");const typeFilter=v("db-type-filter");const projFilter=v("db-proj-filter");
-  let entries=[...diary];
+  const focusPids=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId).map(p=>p.id):null;
+  let entries=[...diary].filter(d=>!focusPids||focusPids.includes(d.project_id));
   if(dateFilter)entries=entries.filter(d=>d.datum===dateFilter);
   if(typeFilter)entries=entries.filter(d=>(d.aktivitet_typ||"uppdrag")===typeFilter);
   if(projFilter)entries=entries.filter(d=>d.project_id===projFilter);
@@ -1446,6 +1438,7 @@ function renderSignals(){
         coFilter=v("sig-company-f"),q=(v("sig-search-f")||"").toLowerCase();
   const list=signals.filter(s=>{
     const hay=[s.rubrik,s.beskrivning,s.kalla,s.companies?.namn].join(" ").toLowerCase();
+    if(focusMode==="company"&&focusCompanyId&&s.company_id!==focusCompanyId)return false;
     return(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!coFilter||s.company_id===coFilter)&&(!q||hay.includes(q));
   });
   document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
@@ -1509,7 +1502,7 @@ function renderNetwork(){
   const sigF=v("net-signal-f");
   const scoreF=v("net-score-f");
   const grouped={};network.forEach(n=>{if(!grouped[n.company_id])grouped[n.company_id]=[];grouped[n.company_id].push(n);});
-  let entries=Object.entries(grouped);
+  let entries=Object.entries(grouped).filter(([id])=>focusMode!=="company"||!focusCompanyId||id===focusCompanyId);
   if(sigF==="signals")entries=entries.filter(([,arr])=>(arr[0].nya_signaler||0)>0);
   entries=entries.sort((a,b)=>(b[1][0].nya_signaler||0)-(a[1][0].nya_signaler||0));
   const filterPerson=n=>{
@@ -1733,7 +1726,8 @@ async function saveCloseout(pid){const ex=closeouts.find(x=>x.project_id===pid);
 // TASKS
 function renderTasks(){
   const q=(v("tk-filter")||"").toLowerCase(),status=v("tk-status-f"),prio=v("tk-prio-f"),proj=v("tk-proj-f");const today2=new Date();today2.setHours(0,0,0,0);
-  let list=tasks.filter(t=>{const p=projects.find(x=>x.id===t.project_id);const hay=[t.title,t.description,t.owner,p?.namn].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!status||t.status===status)&&(!prio||t.priority===prio)&&(!proj||t.project_id===proj);}).sort((a,b)=>{const od=d=>!d?9999:Math.round((new Date(d)-today2)/86400000);return od(a.due_date)-od(b.due_date);});
+  const visibleTaskProjects=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId).map(p=>p.id):null;
+  let list=tasks.filter(t=>{if(visibleTaskProjects&&!visibleTaskProjects.includes(t.project_id))return false;const p=projects.find(x=>x.id===t.project_id);const hay=[t.title,t.description,t.owner,p?.namn].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!status||t.status===status)&&(!prio||t.priority===prio)&&(!proj||t.project_id===proj);}).sort((a,b)=>{const od=d=>!d?9999:Math.round((new Date(d)-today2)/86400000);return od(a.due_date)-od(b.due_date);});
   if(!list.length){document.getElementById("tasks-content").innerHTML='<div class="empty"><div class="empty-icon">✓</div><p>Inga tasks</p></div>';return;}
   const groups={};list.forEach(t=>{const p=projects.find(x=>x.id===t.project_id);const key=p?.namn||"Okänt projekt";if(!groups[key])groups[key]=[];groups[key].push(t);});
   document.getElementById("tasks-content").innerHTML=Object.entries(groups).map(([pName,tlist])=>`<div class="week-sec" style="margin-bottom:12px"><div class="week-sec-hdr"><h3>${e(pName)}</h3><span style="font-size:12px;color:#888">${tlist.length} uppgifter</span></div><div style="padding:10px 12px">${tlist.map(t=>{const today3=new Date();today3.setHours(0,0,0,0);const od=t.due_date&&new Date(t.due_date)<today3&&t.status!=="Klar";const done=t.status==="Klar";const sb2={"Ej startad":"ts-ej","Pågår":"ts-pagar","Väntar":"ts-vantar","Klar":"ts-klar"}[t.status]||"ts-ej";const pc={"Hög":"ph","Medium":"pm","Låg":"pl"}[t.priority]||"";const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;return`<div class="task-row" style="${done?"opacity:.55":""}"><div class="cb ${done?"done":""}" onclick="toggleTask('${t.id}','${t.status}')">✓</div><div class="task-main"><div class="task-title ${pc}" style="${done?"text-decoration:line-through":""}">${e(t.title)}</div><div class="task-sub">${t.due_date?`<span class="${od?"overdue":""}">${e(t.due_date)}</span> · `:""}${tl.toFixed(1)}h${te?" / "+te+"h est":""}</div></div>${te?progressBar(tl,te,100):""}<span class="ts ${sb2}">${e(t.status)}</span><button class="btn-icon" onclick="openEditTask('${t.id}')">✎</button><button class="btn-icon" onclick="deleteTask('${t.id}')">🗑</button></div>`;}).join("")}</div></div>`).join("");
@@ -1757,7 +1751,7 @@ function deleteTask(id){confirm2("Ta bort uppgiften?",async()=>{await sb.from("p
 // FOLLOWUPS
 function renderFups(elId,limit){
   const today2=new Date();today2.setHours(0,0,0,0);const filter=document.getElementById("fup-filter")?.value||"all";
-  let list=contacts.filter(c=>c.nasta_foljup).sort((a,b)=>new Date(a.nasta_foljup)-new Date(b.nasta_foljup));
+  let list=contacts.filter(c=>c.nasta_foljup&&(focusMode!=="company"||!focusCompanyId||c.company_id===focusCompanyId)).sort((a,b)=>new Date(a.nasta_foljup)-new Date(b.nasta_foljup));
   if(filter==="overdue")list=list.filter(c=>new Date(c.nasta_foljup)<today2);
   else if(filter==="today")list=list.filter(c=>{const d=new Date(c.nasta_foljup);d.setHours(0,0,0,0);return d.getTime()===today2.getTime();});
   else if(filter==="week"){const w=new Date(today2);w.setDate(w.getDate()+7);list=list.filter(c=>new Date(c.nasta_foljup)<=w);}
