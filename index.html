@@ -1356,7 +1356,21 @@ async function openCompanyCard(id){
   document.getElementById("co-card-content").innerHTML=`
     <div class="card-hdr"><h2>${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}</h2><p>${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span></div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">Översikt</div><div class="ctab" onclick="cct('co','ai',this)">AI-score</div><div class="ctab" onclick="cct('co','signals',this)">Signaler (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">Kontakter (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">Projekt (${cp.length})</div></div>
-    <div class="ctpane active" id="cco-overview"><div class="ig"><div class="ii"><label>Org.nr</label><span>${e(c.orgnr||"--")}</span></div><div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div><div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div><div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div><div class="ii"><label>Land</label><span>${e(c.land||"--")}</span></div><div class="ii"><label>Hemsida</label><span>${c.hemsida?`<a href="${e(c.hemsida)}" target="_blank">Öppna ↗</a>`:"--"}</span></div></div>${c.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(c.anteckningar)}</p>`:""}</div>
+    <div class="ctpane active" id="cco-overview">
+      ${c.ai_score?`<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:14px;border:1px solid var(--cream)">
+        <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${c.ai_score>=70?"var(--green)":c.ai_score>=45?"var(--gold)":"#aaa"}">${c.ai_score}</div>
+        <div><div style="font-weight:600;font-size:13px">${e(c.ai_rekommendation||"")}</div><div style="font-size:11px;color:#888">Lead-score</div></div>
+      </div>`:""}
+      <div class="ig">
+        <div class="ii"><label>Org.nr</label><span>${e(c.orgnr||"--")}</span></div>
+        <div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div>
+        <div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div>
+        <div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div>
+        <div class="ii"><label>Land</label><span>${e(c.land||"--")}</span></div>
+        <div class="ii"><label>Hemsida</label><span>${c.hemsida?`<a href="${e(c.hemsida)}" target="_blank">Öppna ↗</a>`:"--"}</span></div>
+      </div>
+      ${c.anteckningar?`<div style="font-size:13px;line-height:1.7;white-space:pre-line;color:#444">${e(c.anteckningar)}</div>`:""}
+    </div>
     <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Klicka för att beräkna")}</p></div></div><button class="btn btn-warm" onclick="calcAIScore('${c.id}')">Beräkna AI-score</button></div>
     <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${e(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
     <div class="ctpane" id="cco-contacts">${nm.length?nm.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openCard('${n.contact_id}')">Öppna</button></div>`).join(""):'<p style="color:#aaa">Inga kopplade kontakter</p>'}</div>
@@ -2015,6 +2029,22 @@ function scoreLead(sigId, coId){
   if(s.signal_typ==="financial_pressure")fragor.push("Vilka åtgärder planerar ni för att förbättra kassaflödet?");
   fragor.push("Vad är er största utmaning inom ekonomi och finans just nu?");
   fragor.push("Har ni använt externa konsulter tidigare – vad fungerade bra/dåligt?");
+
+  // Save to company
+  if(coId){
+    const sizeLabel=["","1-10","11-50","51-200","201-500","500+"][size]||"";
+    const revLabel=["","<10 MSEK","10-50 MSEK","50-200 MSEK","200-500 MSEK","500+ MSEK"][rev]||"";
+    const cfoLabel=[,"Har CFO","Vakant/söker","Saknar CFO"][cfo]||"";
+    const growthLabel=["","Stabil","Måttlig tillväxt","Snabb tillväxt"][growth]||"";
+    const ownerLabel=["","Börsnoterat","Familjeägt","PE/riskkapital","Nytt ägarskifte"][owner]||"";
+    const erpLabel=["","Modernt system","Gammalt system","Byter system"][erp]||"";
+    const notesTxt=document.getElementById("lq-notes-"+sigId)?.value||"";
+    const kvalInfo=[sizeLabel&&`Anställda: ${sizeLabel}`,revLabel&&`Omsättning: ${revLabel}`,cfoLabel&&`CFO: ${cfoLabel}`,growthLabel&&growthLabel,ownerLabel&&ownerLabel,erpLabel&&`Ekonomisystem: ${erpLabel}`].filter(Boolean).join(" · ");
+    const newAnteckningar=[(co?.anteckningar||"").split("\n---\n")[0],kvalInfo&&`Kvalificering: ${kvalInfo}`,notesTxt&&`Noteringar: ${notesTxt}`,`Lead-score: ${total}/100 (${rating})`].filter(Boolean).join("\n---\n");
+    await sb.from("companies").update({ai_score:total,ai_rekommendation:rating,anteckningar:newAnteckningar}).eq("id",coId);
+    await loadCompanies();
+    toast("Lead-score sparad på bolagskortet ✓");
+  }
 
   box.innerHTML=`
     <div style="background:#fff;border:2px solid ${color};border-radius:var(--r);padding:14px">
