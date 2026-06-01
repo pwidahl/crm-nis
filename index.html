@@ -262,6 +262,29 @@ textarea{resize:vertical;min-height:68px}
 
 <!-- TIMER FAB -->
 <div class="timer-fab" id="timer-fab" style="display:flex">
+  <!-- Quick actions menu -->
+  <div id="quick-menu" style="display:none;flex-direction:column;align-items:flex-end;gap:6px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Logga tid</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;box-shadow:0 2px 8px rgba(196,98,45,.3)" onclick="openQuickAction('timer')">⏱</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Ny kontakt</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--accent);box-shadow:0 2px 8px rgba(26,58,92,.3)" onclick="openQuickAction('contact')">👤</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Nytt bolag</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--accent);box-shadow:0 2px 8px rgba(26,58,92,.3)" onclick="openQuickAction('company')">🏢</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Logga aktivitet</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--green);box-shadow:0 2px 8px rgba(45,106,79,.3)" onclick="openQuickAction('log')">✎</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Todo</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--purple);box-shadow:0 2px 8px rgba(123,94,167,.3)" onclick="openQuickAction('todo')">✅</button>
+    </div>
+  </div>
   <div class="timer-panel" id="timer-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
       <strong style="font-size:13px">⏱ Snabblogg</strong>
@@ -335,7 +358,7 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:7px" onclick="saveDirectLog()">💾 Spara direkt</button>
   </div>
-  <button class="timer-fab-btn" id="t-mainbtn" onclick="toggleTimerPanel()" title="Snabblogg">⏱</button>
+  <button class="timer-fab-btn" id="t-mainbtn" onclick="toggleQuickMenu()" title="Snabbmeny" style="font-size:22px">＋</button>
 </div>
 
 <div class="shell">
@@ -371,6 +394,9 @@ textarea{resize:vertical;min-height:68px}
 <div class="main">
   <div class="topbar">
     <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div id="focus-indicator" style="display:none;align-items:center;gap:6px;background:var(--cream);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0" onclick="openFocusModal()">
+      <span>🔒</span><span id="focus-indicator-text"></span><span style="color:#aaa;font-size:10px">· byta</span>
+    </div>
     <div class="topbar-search">
       <span class="search-icon">🔍</span>
       <input id="gsearch" placeholder="Sök kontakter, bolag, tasks..." oninput="debounceSearch()" autocomplete="off">
@@ -379,7 +405,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="topbar-right" id="topbar-right"></div>
   </div>
 
-  <div class="content"><div id="focus-banner" style="display:none;background:var(--warm);color:#fff;text-align:center;padding:7px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:50;cursor:pointer" onclick="openFocusModal()"></div>
+  <div class="content">
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-companies">
@@ -1837,6 +1863,26 @@ function fillTimerSelects(){
 function loadTimerProjects(){const kid=v("t-kund");const ps=document.getElementById("t-proj");if(!ps)return;const list=projects.filter(p=>p.status==="Aktiv"&&(!kid||p.company_id===kid));ps.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadTimerTasks();}
 function loadTimerTasks(){const pid=v("t-proj");const el=document.getElementById("t-task");if(!el)return;el.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
 function updateTimerType(){const typ=v("t-typ");const isUppdrag=typ==="uppdrag";document.getElementById("timer-uppdrag-fields").style.display=isUppdrag?"":"none";document.getElementById("timer-social-fields").style.display=isUppdrag?"":"block";}
+let quickMenuOpen=false;
+function toggleQuickMenu(){
+  quickMenuOpen=!quickMenuOpen;
+  const qm=document.getElementById("quick-menu");
+  const btn=document.getElementById("t-mainbtn");
+  if(qm)qm.style.display=quickMenuOpen?"flex":"none";
+  if(btn)btn.textContent=quickMenuOpen?"✕":"＋";
+}
+function openQuickAction(type){
+  toggleQuickMenu();
+  if(type==="timer"){document.getElementById("timer-panel").classList.add("open");}
+  else if(type==="contact"){openNewContact();}
+  else if(type==="company"){openNewCompany();}
+  else if(type==="log"){
+    // Open log for most recent contact
+    if(contacts[0])openLogModal(contacts[0].id);
+    else{gotoView("contacts");openNewContact();}
+  }
+  else if(type==="todo"){openTodo();}
+}
 function toggleTimerPanel(){document.getElementById("timer-panel").classList.toggle("open");}
 function closeTimerPanel(){document.getElementById("timer-panel").classList.remove("open");}
 function startTimer(){if(timerRunning)return;const typ=v("t-typ");if(typ==="uppdrag"&&!v("t-proj")){toast("Välj projekt");return;}timerRunning=true;timerStart=new Date();document.getElementById("t-mainbtn").classList.add("running");document.getElementById("t-startbtn").style.display="none";document.getElementById("t-stopbtn").style.display="";document.getElementById("t-startlbl").textContent="Startad "+timerStart.toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"});timerInterval=setInterval(updateTimerDisplay,1000);updateTimerDisplay();}
@@ -2427,8 +2473,8 @@ function setFocusMode(mode){
     focusCompanyId=cid;
     focusMode='company';
     const co=companies.find(x=>x.id===cid);
-    const banner=document.getElementById('focus-banner');
-    if(banner){banner.textContent='🔒 Fokusläge: '+e(co?.namn||'')+' – övriga bolag och kontakter är dolda. Klicka för att byta.';banner.style.display='block';}
+    const ind=document.getElementById('focus-indicator');
+    if(ind){ind.style.display='flex';document.getElementById('focus-indicator-text').textContent=e(co?.namn||'');}
     document.getElementById('focus-nav-label').textContent=e(co?.namn||'Fokus');
     const icon=document.getElementById('focus-nav-icon');if(icon)icon.textContent='🔒';
     document.getElementById('nav-focus').style.borderLeft='3px solid var(--warm)';
@@ -2436,8 +2482,8 @@ function setFocusMode(mode){
   } else {
     focusMode='all';
     focusCompanyId=null;
-    const banner=document.getElementById('focus-banner');
-    if(banner)banner.style.display='none';
+    const ind2=document.getElementById('focus-indicator');
+    if(ind2)ind2.style.display='none';
     document.getElementById('focus-nav-label').textContent='Fokusläge';
     const icon2=document.getElementById('focus-nav-icon');if(icon2)icon2.textContent='○';
     document.getElementById('nav-focus').style.borderLeft='';
