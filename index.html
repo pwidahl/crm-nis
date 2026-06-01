@@ -362,6 +362,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-spacer"></div>
+    <div class="nav-item" id="nav-focus" onclick="openFocusModal()" style="cursor:pointer"><span class="nav-icon">🔒</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
   </nav>
@@ -378,7 +379,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="topbar-right" id="topbar-right"></div>
   </div>
 
-  <div class="content">
+  <div class="content"><div id="focus-banner" style="display:none;background:var(--warm);color:#fff;text-align:center;padding:7px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:50;cursor:pointer" onclick="openFocusModal()"></div>
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-companies">
@@ -768,6 +769,25 @@ textarea{resize:vertical;min-height:68px}
   <div class="modal" style="width:720px">
     <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
     <div id="lead-modal-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-focus">
+  <div class="modal" style="width:420px">
+    <div class="mhdr"><h2>Välj arbetsläge</h2><button class="mclose" onclick="closeM('m-focus')">×</button></div>
+    <div class="mbody">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="setFocusMode('all')">
+          🌐 Normalt läge – visa allt
+        </button>
+        <div style="border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+          <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">🔒 Fokusläge – välj projekt</p>
+          <p style="font-size:12px;color:#888;margin-bottom:10px">Bara det valda projektets bolag och kontakter syns.</p>
+          <select id="focus-proj-sel" style="width:100%;margin-bottom:10px"><option value="">– Välj projekt –</option></select>
+          <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('project')">Aktivera fokusläge</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1514,12 +1534,6 @@ function renderContacts(){
     const matchAktiv=!aktivF||
       (aktivF==="aktiv"&&aktiv&&c.status!=="Inaktiv"&&c.status!=="Vilande")||
       (aktivF==="inaktiv"&&(!aktiv||c.status==="Inaktiv"||c.status==="Vilande"));
-    // Focus mode filter
-    if(focusMode==='project'&&focusProjectId){
-      const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
-      const inFocus=c.company_id===focusCoId||projPeople.some(p=>p.project_id===focusProjectId&&p.contact_id===c.id);
-      if(!inFocus)return false;
-    }
     return(!q||hay.includes(q))&&(!status||c.status===status)&&matchAktiv;
   });
   list=[...list].sort((a,b)=>{
@@ -1534,6 +1548,11 @@ function renderContacts(){
     if(typeof va==="number")return contactSortDir*(va-vb);
     return contactSortDir*String(va).localeCompare(String(vb),"sv");
   });
+  // Focus mode: only show contacts linked to focus project's company
+  if(focusMode==='project'&&focusProjectId){
+    const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
+    list=list.filter(c=>c.company_id===focusCoId||projPeople.some(p=>p.project_id===focusProjectId&&p.contact_id===c.id));
+  }
   if(!list.length){document.getElementById("contacts-tbody").innerHTML='<tr><td colspan="8"><div class="empty"><p>Inga kontakter</p></div></td></tr>';return;}
   document.getElementById("contacts-tbody").innerHTML=list.map(c=>{
     const sc=calcScore(c.id).total;
@@ -2413,6 +2432,49 @@ function checkFocusMode(){
   // Show on every login
   if(scr) scr.style.display = 'flex';
   applyFocusMode();
+}
+
+// ══ FOKUSLÄGE ═════════════════════════════════════════════════
+let focusMode='all';
+let focusProjectId=null;
+
+function openFocusModal(){
+  const sel=document.getElementById('focus-proj-sel');
+  if(sel)sel.innerHTML='<option value="">– Välj projekt –</option>'+projects.map(p=>`<option value="${p.id}"${p.id===focusProjectId?' selected':''}>${e(p.namn)}</option>`).join('');
+  openM('m-focus');
+}
+
+function setFocusMode(mode){
+  if(mode==='project'){
+    const sel=document.getElementById('focus-proj-sel');
+    const pid=sel?.value;
+    if(!pid){toast('Välj ett projekt');return;}
+    focusProjectId=pid;
+    focusMode='project';
+    const p=projects.find(x=>x.id===pid);
+    const banner=document.getElementById('focus-banner');
+    if(banner){banner.textContent='🔒 Fokusläge: '+e(p?.namn||'')+'  –  Klicka för att byta läge';banner.style.display='block';}
+    document.getElementById('focus-nav-label').textContent='🔒 '+e(p?.namn||'Fokus');
+    toast('Fokusläge aktiverat: '+(p?.namn||''));
+  } else {
+    focusMode='all';
+    focusProjectId=null;
+    const banner=document.getElementById('focus-banner');
+    if(banner)banner.style.display='none';
+    document.getElementById('focus-nav-label').textContent='Fokusläge';
+    toast('Normalt läge aktiverat');
+  }
+  closeM('m-focus');
+  renderCurrent();
+}
+
+function focusFilter(list, getCoId){
+  if(focusMode!=='project'||!focusProjectId)return list;
+  const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
+  return list.filter(item=>{
+    const coId=getCoId(item);
+    return coId&&coId===focusCoId;
+  });
 }
 
 checkSession();
