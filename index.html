@@ -1966,49 +1966,64 @@ function linkify(text){
   return String(text||"").replace(/https?:\/\/[^\s<>)"]+/g, url=>`<a href="${e(url)}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${e(url)}</a>`);
 }
 
-async function analyzeLeadAI(sigId, coId){
+function analyzeLeadAI(sigId, coId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
   const box=document.getElementById("lead-ai-"+sigId);
-  if(box){box.innerHTML='<span style="color:#888">Analyserar...</span>';}
+  if(!box)return;
 
-  const token=await getToken();if(!token)return;
-
-  // Build context from signal + company info
   const co=companies.find(x=>x.id===coId);
   const coContacts=contacts.filter(c=>c.company_id===coId);
-  const coSignals=signals.filter(x=>x.company_id===coId).map(x=>x.rubrik).join(", ");
+  const coSignals=signals.filter(x=>x.company_id===coId&&x.id!==sigId);
 
-  const prompt=`Du är en erfaren CFO-konsult som letar efter uppdrag. Analysera detta lead och förklara KONKRET varför det kan vara ett potentiellt uppdrag för en interim CFO/controller/ekonomichef.
+  // Rule-based analysis
+  const typ=s.signal_typ;
+  const namn=co?.namn||s.companies?.namn||"Bolaget";
+  const stad=co?.stad?"i "+co.stad:"";
+  const kontakter=coContacts.length;
 
-Bolag: ${co?.namn||s.companies?.namn||""}
-Bransch: ${co?.bransch||""}
-Stad: ${co?.stad||""}
-Signal: ${s.rubrik}
-Signaltyp: ${sigLabel(s.signal_typ)}
-Beskrivning: ${(s.beskrivning||"").slice(0,500)}
-Andra signaler: ${coSignals}
-Antal kopplade kontakter: ${coContacts.length}
+  const behovMap={
+    finance_hiring:`${namn} annonserar efter en ekonomifunktion – ett tydligt tecken på att de saknar rätt kompetens internt. Detta är ett direkt öppet behov av interim CFO, controller eller ekonomichef.`,
+    management_change:`Ny ledning i ${namn} innebär nästan alltid en genomgång av ekonomifunktionen inom 6 månader. Ny VD/CFO vill snabbt förstå siffrorna – perfekt tillfälle att erbjuda extern stöttning.`,
+    acquisition:`${namn} genomför ett förvärv eller fusion. Integrationsprocessen kräver nästan alltid extra ekonomikompetens – konsolidering, due diligence och ny rapporteringsstruktur.`,
+    funding:`${namn} har tagit in nytt kapital. Investerare kräver professionell ekonomirapportering och ofta en CFO – bolaget är på väg att professionalisera sin ekonomifunktion.`,
+    restructuring:`${namn} genomgår en omstrukturering. Dessa processer kräver ofta interim ekonomikompetens för att hantera kostnadsprogram, varsel och ny organisation.`,
+    financial_pressure:`${namn} visar tecken på finansiell press. Bolag i det läget behöver ofta extern hjälp med likviditetshantering, omförhandling med banker och åtgärdsplan.`,
+    growth:`${namn} växer snabbt ${stad}. Snabb tillväxt skapar ofta ett gap i ekonomifunktionen – de behöver skala upp rapportering, budget och controlling.`,
+    system_change:`${namn} byter eller implementerar nytt affärssystem. ERP-projekt kräver nästan alltid en interim projektledare med ekonomibakgrund.`,
+    annual_report:`${namn} har publicerat årsredovisning. Granska siffrorna för att identifiera om det finns tecken på behov – tillväxt, förlust, personalbyte eller systembehov.`,
+    ownership_change:`Ägarskifte i ${namn}. Ny ägare gör alltid en genomgång av ekonomifunktionen och vill ofta ha extern validering eller interim stöd.`,
+    nyhet:`Signal från ${namn}. Följ upp med bolagskortet för mer information.`,
+  };
 
-Svara med 3-4 meningar:
-1. Varför detta bolag troligen behöver extern ekonomikompetens just nu
-2. Vilket specifikt behov signalen indikerar (interim CFO, controller, systembyte etc)
-3. Konkret nästa steg (vem att kontakta, vad att säga)`;
+  const behov=behovMap[typ]||behovMap.nyhet;
 
-  try {
-    const token=await getToken();if(!token)return;
-    const r=await fetch("/api/analyze-lead",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
-      body:JSON.stringify({prompt, company_id:coId})
-    });
-    const data=await r.json();
-    if(!r.ok){if(box)box.innerHTML=`<span style="color:var(--red)">${e(data.error||"Fel")}</span>`;return;}
-    const text=data.text||"Ingen analys tillgänglig";
-    if(box)box.innerHTML=`<div style="white-space:pre-line">${e(text)}</div>`;
-  } catch(err){
-    if(box)box.innerHTML=`<span style="color:var(--red)">Fel: ${e(err.message)}</span>`;
-  }
+  const nastaStegMap={
+    finance_hiring:"Nästa steg: Hitta ansvarig chef/VD på LinkedIn och ta kontakt direkt – de söker aktivt just nu.",
+    management_change:"Nästa steg: Kontakta den nya ledningen inom 2-4 veckor efter tillträde – det är då de är mottagliga för förslag.",
+    acquisition:"Nästa steg: Kontakta CFO eller VD och erbjud hjälp med integrationsprocessen.",
+    funding:"Nästa steg: Kontakta VD eller styrelseordförande och erbjud hjälp med att bygga upp ekonomifunktionen.",
+    restructuring:"Nästa steg: Kontakta VD direkt och erbjud interim ekonomistöd under omstruktureringen.",
+    financial_pressure:"Nästa steg: Kontakta styrelseordförande eller revisor och erbjud akut ekonomistöd.",
+    growth:"Nästa steg: Kontakta VD och erbjud hjälp med att skala upp ekonomifunktionen.",
+    system_change:"Nästa steg: Kontakta IT-chef eller CFO och erbjud projektledning för systembytet.",
+    annual_report:"Nästa steg: Analysera årsredovisningen och identifiera specifika behov innan du tar kontakt.",
+    ownership_change:"Nästa steg: Kontakta den nya ägaren eller styrelsen och erbjud due diligence-stöd.",
+    nyhet:"Nästa steg: Granska signalen och bolaget noggrant innan du tar kontakt.",
+  };
+
+  const nastaSteg=nastaStegMap[typ]||nastaStegMap.nyhet;
+
+  const styrkaText=s.signal_styrka>=3?"⭐⭐⭐ Stark signal":s.signal_styrka>=2?"⭐⭐ Medelsignal":"⭐ Svag signal";
+  const tidText=coSignals.length>0?`${coSignals.length+1} signaler totalt från detta bolag – ökad prioritet.`:"Första signalen från detta bolag.";
+  const kontaktText=kontakter>0?`Du har redan ${kontakter} kontakt${kontakter>1?"er":""} kopplad till bolaget – börja där.`:"Inga kontakter kopplade ännu – leta upp en nyckelperson på LinkedIn.";
+
+  box.innerHTML=`<div style="line-height:1.7">
+    <div style="margin-bottom:8px"><strong>${styrkaText}</strong> · ${e(tidText)}</div>
+    <div style="margin-bottom:8px">${e(behov)}</div>
+    <div style="margin-bottom:8px;color:#555">${e(nastaSteg)}</div>
+    <div style="font-size:12px;color:#888">${e(kontaktText)}</div>
+  </div>`;
 }
 
 function openLead(sigId){
@@ -2097,7 +2112,7 @@ function openLead(sigId){
       <div style="grid-column:1/-1">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">AI-analys av lead</div>
-          <button class="btn btn-warm btn-sm" onclick="analyzeLeadAI('${s.id}','${co?.id||""}')">🤖 Analysera varför detta är ett lead</button>
+          <button class="btn btn-warm btn-sm" onclick="analyzeLeadAI('${s.id}','${co?.id||""}')">🔍 Analysera varför detta är ett lead</button>
         </div>
         <div id="lead-ai-${s.id}" style="background:var(--paper);border-radius:var(--r);padding:10px 13px;font-size:13px;line-height:1.6;border:1px solid var(--cream);min-height:40px;color:#555">
           ${co?.ai_rekommendation?`<strong>Senaste analys:</strong> ${e(co.ai_rekommendation)}`:'<span style="color:#aaa">Klicka för att analysera varför detta bolag är ett potentiellt lead.</span>'}
