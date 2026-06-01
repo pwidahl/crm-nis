@@ -354,6 +354,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-spacer"></div>
+    <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
   </nav>
 </aside>
@@ -731,6 +732,21 @@ textarea{resize:vertical;min-height:68px}
       </div>
     </div>
     <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-snooze')">Avbryt</button><button class="btn btn-primary" onclick="saveSnooze()">Spara nytt datum</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-todo">
+  <div class="modal" style="width:580px">
+    <div class="mhdr"><h2>Todo</h2><button class="mclose" onclick="closeM('m-todo')">×</button></div>
+    <div class="mbody">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="todo-input" placeholder="Ny uppgift..." style="flex:1" onkeydown="if(event.key==='Enter')addTodo()">
+        <select id="todo-prio" style="width:110px"><option value="Hög">🔴 Hög</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Låg</option></select>
+        <button class="btn btn-primary" onclick="addTodo()">+ Lägg till</button>
+      </div>
+      <div id="todo-list"></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
   </div>
 </div>
 
@@ -1348,7 +1364,17 @@ function renderSignals(){
       <button class="btn btn-warm btn-sm" id="btn-nasdaq" onclick="discoverNasdaq()">Importera bolag</button>
     </div>`;
   const status=v("sig-status-f"),type=v("sig-type-f"),land=v("sig-land-f");const list=signals.filter(s=>(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land));
-  document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr><td><strong>${e(s.rubrik)}</strong><br><span style="font-size:11px;color:#888">${e(s.kalla||"")}</span></td><td>${e(s.companies?.namn||"")}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap"><button class="btn-icon" onclick="openCompanyCard('${s.company_id}')">↗</button><button class="btn-icon" onclick="setSigStatus('${s.id}','granskad')">✓</button><button class="btn-icon" onclick="setSigStatus('${s.id}','ignorerad')">×</button><button class="btn-icon" style="color:var(--red)" onclick="deleteSignal('${s.id}')">🗑</button></td></tr>`).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>';
+  document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Signal</th><th>Bolag</th><th>Land</th><th>Typ</th><th>Styrka</th><th>Datum</th><th>Status</th><th></th></tr></thead><tbody>${list.map(s=>`<tr><td>
+      <strong>${e(s.rubrik)}</strong>
+      ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:340px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,120))}${(s.beskrivning||"").length>120?"…":""}</div>`:""}
+      <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
+    </td><td>${e(s.companies?.namn||"")}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
+      ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
+      <button class="btn-icon" title="Öppna bolagskort" onclick="openCompanyCard('${s.company_id}')">↗</button>
+      <button class="btn-icon" title="Markera granskad" onclick="setSigStatus('${s.id}','granskad')">✓</button>
+      <button class="btn-icon" title="Ignorera" onclick="setSigStatus('${s.id}','ignorerad')">×</button>
+      <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
+    </td></tr>`).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>';
 }
 function openNewSignal(){fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});openM("m-signal");}
 async function saveSignal(){const coid=document.getElementById("sig-coid").value,rubrik=v("sig-rubrik");if(!coid||!rubrik){toast("Bolag och rubrik krävs");return;}const r=await sb.from("company_signals").insert({user_id:me.id,company_id:coid,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,status:"ny"});if(r.error){alert(r.error.message);return;}closeM("m-signal");toast("Signal sparad");await loadAll();}
@@ -1797,6 +1823,64 @@ function openVeckoplanChipEdit(entryId){
   // Direkt redigera ett specifikt inlägg från chip
   openEditDiaryEntry(entryId);
 }
+
+// ══ TODO ═════════════════════════════════════════════════════
+let todos = JSON.parse(localStorage.getItem('crm_todos') || '[]');
+
+function saveTodos(){localStorage.setItem('crm_todos', JSON.stringify(todos));updateTodoBadge();}
+
+function updateTodoBadge(){
+  const open = todos.filter(t=>!t.done).length;
+  const b = document.getElementById('badge-todo');
+  if(b){b.textContent=open;b.style.display=open>0?'inline':'none';}
+}
+
+function openTodo(){
+  renderTodoList();
+  openM('m-todo');
+}
+
+function addTodo(){
+  const txt = document.getElementById('todo-input')?.value?.trim();
+  if(!txt) return;
+  todos.unshift({id:Date.now(), text:txt, prio:document.getElementById('todo-prio')?.value||'Medium', done:false, created:today()});
+  document.getElementById('todo-input').value='';
+  saveTodos();
+  renderTodoList();
+}
+
+function toggleTodo(id){
+  const t=todos.find(x=>x.id===id);
+  if(t){t.done=!t.done;}
+  saveTodos();
+  renderTodoList();
+}
+
+function deleteTodo(id){
+  todos=todos.filter(x=>x.id!==id);
+  saveTodos();
+  renderTodoList();
+}
+
+function renderTodoList(){
+  const el=document.getElementById('todo-list');if(!el)return;
+  const open=todos.filter(t=>!t.done);
+  const done=todos.filter(t=>t.done);
+  const prioIcon={Hög:'🔴',Medium:'🟡',Låg:'🟢'};
+  const row=t=>`<div class="task-row" style="${t.done?'opacity:.5':''}">
+    <div class="cb ${t.done?'done':''}" onclick="toggleTodo(${t.id})">✓</div>
+    <div class="task-main">
+      <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prio]||'🟡'} ${e(t.text)}</div>
+      <div class="task-sub">${e(t.created||'')}</div>
+    </div>
+    <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo(${t.id})">🗑</button>
+  </div>`;
+  el.innerHTML=(open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos</p>')
+    +(done.length?`<p style="font-size:11px;color:#aaa;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.5px">Klara</p>${done.map(row).join('')}`:'');
+}
+
+// Init todo badge on load
+updateTodoBadge();
 
 checkSession();
 </script>
