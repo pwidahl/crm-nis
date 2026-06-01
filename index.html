@@ -194,6 +194,11 @@ textarea{resize:vertical;min-height:68px}
 .timer-display{font-family:"DM Serif Display",serif;font-size:34px;text-align:center;margin:9px 0;color:var(--ink)}
 .timer-display.running{color:var(--red)}
 .privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:9px 12px;font-size:12px;line-height:1.4;margin-bottom:12px}
+#co-autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.co-ac-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--cream)}
+.co-ac-item:hover{background:var(--paper)}
+.co-ac-item:last-child{border-bottom:none}
+.co-ac-match{font-weight:600}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .28s;z-index:300;pointer-events:none;max-width:340px;text-align:center}
 #toast.show{opacity:1}
 #login-screen{position:fixed;inset:0;background:var(--paper);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -498,7 +503,11 @@ textarea{resize:vertical;min-height:68px}
       <div class="fg">
         <div class="fl"><label>Förnamn *</label><input id="f-fn"></div>
         <div class="fl"><label>Efternamn *</label><input id="f-en"></div>
-        <div class="fl"><label>Företag</label><input id="f-co"></div>
+        <div class="fl" style="position:relative">
+          <label>Företag</label>
+          <input id="f-co" autocomplete="off" oninput="acCompany(this.value)" onblur="setTimeout(()=>hideAC(),200)" placeholder="Börja skriva bolagsnamn...">
+          <div id="co-autocomplete" style="display:none"></div>
+        </div>
         <div class="fl"><label>Org.nr</label><input id="f-orgnr"></div>
         <div class="fl"><label>Roll</label><input id="f-roll"></div>
         <div class="fl"><label>Bransch</label><input id="f-bransch"></div>
@@ -1907,6 +1916,43 @@ function renderTodoList(){
 
 // Init todo badge on load
 updateTodoBadge();
+
+// ══ COMPANY AUTOCOMPLETE ═════════════════════════════════════
+function acCompany(q){
+  const box=document.getElementById("co-autocomplete");
+  if(!box)return;
+  const ql=(q||"").trim().toLowerCase();
+  if(ql.length<2){box.style.display="none";return;}
+  
+  const matches=companies
+    .filter(c=>c.namn.toLowerCase().includes(ql))
+    .slice(0,8);
+  
+  if(!matches.length){box.style.display="none";return;}
+  
+  box.innerHTML=matches.map(c=>{
+    const hl=e(c.namn).replace(new RegExp(e(q),"gi"),m=>`<span class="co-ac-match">${m}</span>`);
+    return`<div class="co-ac-item" onmousedown="selectACCompany('${c.id}','${e(c.namn).replace(/'/g,"\'")}')">
+      🏢 <span>${hl}</span>
+      ${c.stad?`<span style="font-size:11px;color:#aaa;margin-left:auto">${e(c.stad)}</span>`:""}
+    </div>`;
+  }).join("");
+  box.style.display="block";
+}
+
+function selectACCompany(id, namn){
+  const input=document.getElementById("f-co");
+  if(input)input.value=namn;
+  hideAC();
+  // Pre-fill orgnr if available
+  const c=companies.find(x=>x.id===id);
+  if(c?.orgnr){const o=document.getElementById("f-orgnr");if(o&&!o.value)o.value=c.orgnr;}
+}
+
+function hideAC(){
+  const box=document.getElementById("co-autocomplete");
+  if(box)box.style.display="none";
+}
 
 checkSession();
 </script>
