@@ -1962,6 +1962,55 @@ function hideAC(){
 }
 
 // ══ LEAD MODAL ════════════════════════════════════════════════
+function linkify(text){
+  return String(text||"").replace(/https?:\/\/[^\s<>)"]+/g, url=>`<a href="${e(url)}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${e(url)}</a>`);
+}
+
+async function analyzeLeadAI(sigId, coId){
+  const s=signals.find(x=>x.id===sigId);
+  if(!s)return;
+  const box=document.getElementById("lead-ai-"+sigId);
+  if(box){box.innerHTML='<span style="color:#888">Analyserar...</span>';}
+
+  const token=await getToken();if(!token)return;
+
+  // Build context from signal + company info
+  const co=companies.find(x=>x.id===coId);
+  const coContacts=contacts.filter(c=>c.company_id===coId);
+  const coSignals=signals.filter(x=>x.company_id===coId).map(x=>x.rubrik).join(", ");
+
+  const prompt=`Du är en erfaren CFO-konsult som letar efter uppdrag. Analysera detta lead och förklara KONKRET varför det kan vara ett potentiellt uppdrag för en interim CFO/controller/ekonomichef.
+
+Bolag: ${co?.namn||s.companies?.namn||""}
+Bransch: ${co?.bransch||""}
+Stad: ${co?.stad||""}
+Signal: ${s.rubrik}
+Signaltyp: ${sigLabel(s.signal_typ)}
+Beskrivning: ${(s.beskrivning||"").slice(0,500)}
+Andra signaler: ${coSignals}
+Antal kopplade kontakter: ${coContacts.length}
+
+Svara med 3-4 meningar:
+1. Varför detta bolag troligen behöver extern ekonomikompetens just nu
+2. Vilket specifikt behov signalen indikerar (interim CFO, controller, systembyte etc)
+3. Konkret nästa steg (vem att kontakta, vad att säga)`;
+
+  try {
+    const token=await getToken();if(!token)return;
+    const r=await fetch("/api/analyze-lead",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({prompt, company_id:coId})
+    });
+    const data=await r.json();
+    if(!r.ok){if(box)box.innerHTML=`<span style="color:var(--red)">${e(data.error||"Fel")}</span>`;return;}
+    const text=data.text||"Ingen analys tillgänglig";
+    if(box)box.innerHTML=`<div style="white-space:pre-line">${e(text)}</div>`;
+  } catch(err){
+    if(box)box.innerHTML=`<span style="color:var(--red)">Fel: ${e(err.message)}</span>`;
+  }
+}
+
 function openLead(sigId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
@@ -1990,7 +2039,7 @@ function openLead(sigId){
       <div style="grid-column:1/-1;background:var(--paper);border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Signal</div>
         <strong style="font-size:14px">${e(s.rubrik)}</strong>
-        ${s.beskrivning?`<p style="font-size:13px;color:#555;margin-top:6px;line-height:1.6;white-space:pre-line">${e(s.beskrivning)}</p>`:""}
+        ${s.beskrivning?`<p style="font-size:13px;color:#555;margin-top:6px;line-height:1.6;white-space:pre-line">${linkify(s.beskrivning)}</p>`:""}
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:11px;color:#888">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</span>
           ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">🔗 Öppna källa</a>`:""}
@@ -2043,6 +2092,17 @@ function openLead(sigId){
             <span style="color:#aaa">${e(x.signal_datum||"")}</span>
           </div>`).join("")}
       </div>`:""}
+
+      <!-- AI ANALYS -->
+      <div style="grid-column:1/-1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">AI-analys av lead</div>
+          <button class="btn btn-warm btn-sm" onclick="analyzeLeadAI('${s.id}','${co?.id||""}')">🤖 Analysera varför detta är ett lead</button>
+        </div>
+        <div id="lead-ai-${s.id}" style="background:var(--paper);border-radius:var(--r);padding:10px 13px;font-size:13px;line-height:1.6;border:1px solid var(--cream);min-height:40px;color:#555">
+          ${co?.ai_rekommendation?`<strong>Senaste analys:</strong> ${e(co.ai_rekommendation)}`:'<span style="color:#aaa">Klicka för att analysera varför detta bolag är ett potentiellt lead.</span>'}
+        </div>
+      </div>
 
       <!-- NOTERINGAR -->
       <div style="grid-column:1/-1">
