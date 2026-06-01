@@ -193,6 +193,9 @@ textarea{resize:vertical;min-height:68px}
 .timer-panel.open{display:block}
 .timer-display{font-family:"DM Serif Display",serif;font-size:34px;text-align:center;margin:9px 0;color:var(--ink)}
 .timer-display.running{color:var(--red)}
+.focus-blur{filter:blur(5px);user-select:none;pointer-events:none}
+.focus-hidden{display:none!important}
+.focus-banner{background:var(--warm);color:#fff;text-align:center;padding:6px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:50}
 .privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:9px 12px;font-size:12px;line-height:1.4;margin-bottom:12px}
 #co-autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .co-ac-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--cream)}
@@ -254,6 +257,25 @@ textarea{resize:vertical;min-height:68px}
     <input id="l-pw" type="password" placeholder="Lösenord" autocomplete="current-password">
     <button class="btn btn-primary" onclick="doLogin()">Logga in</button>
     <p id="l-err" class="login-err"></p>
+  </div>
+</div>
+
+<!-- FOKUSLÄGE MODAL -->
+<div id="focus-screen" style="display:none;position:fixed;inset:0;background:var(--paper);z-index:998;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;padding:28px;border-radius:10px;width:420px;max-width:100%;border:1px solid var(--cream);box-shadow:0 10px 32px rgba(0,0,0,.08)">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px">Välj arbetsläge</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:20px">Väljer du fokusläge visas bara det valda projektet – övriga kontakter och bolag döljs.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="setFocusMode('all')">
+        🌐 Normalt läge – visa allt
+      </button>
+      <div style="border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+        <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">Fokusläge – välj projekt</p>
+        <select id="focus-project-select" style="width:100%;margin-bottom:10px"><option value="">– Välj projekt –</option></select>
+        <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('project')">🔒 Starta i fokusläge</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#aaa;text-align:center">Du kan byta läge när som helst via menyn</p>
   </div>
 </div>
 
@@ -359,6 +381,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-spacer"></div>
+    <div class="nav-item" id="focus-mode-btn" onclick="toggleFocusScreen()" style="cursor:pointer"><span class="nav-icon">🔒</span><span id="focus-mode-label">Normalt läge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
   </nav>
@@ -375,7 +398,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="topbar-right" id="topbar-right"></div>
   </div>
 
-  <div class="content">
+  <div class="content"><div id="focus-banner" class="focus-banner" style="display:none"></div>
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-companies">
@@ -888,6 +911,7 @@ async function loadAll(){
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
+  checkFocusMode();
   renderCurrent();
 }
 async function loadContacts(){const r=await sb.from("contacts").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false});contacts=r.data||[];}
@@ -1511,6 +1535,12 @@ function renderContacts(){
     const matchAktiv=!aktivF||
       (aktivF==="aktiv"&&aktiv&&c.status!=="Inaktiv"&&c.status!=="Vilande")||
       (aktivF==="inaktiv"&&(!aktiv||c.status==="Inaktiv"||c.status==="Vilande"));
+    // Focus mode filter
+    if(focusMode==='project'&&focusProjectId){
+      const focusCoId=projects.find(x=>x.id===focusProjectId)?.company_id;
+      const inFocus=c.company_id===focusCoId||projPeople.some(p=>p.project_id===focusProjectId&&p.contact_id===c.id);
+      if(!inFocus)return false;
+    }
     return(!q||hay.includes(q))&&(!status||c.status===status)&&matchAktiv;
   });
   list=[...list].sort((a,b)=>{
@@ -2321,6 +2351,89 @@ function movePipeline(coId){
     toast(`Moved to ${pipeLabel(next)}`);
     await loadAll();
   });
+}
+
+// ══ FOKUSLÄGE ═════════════════════════════════════════════════
+let focusMode = localStorage.getItem('crm_focus_mode') || 'all'; // 'all' or 'project'
+let focusProjectId = localStorage.getItem('crm_focus_project') || null;
+
+function saveFocusMode(){
+  localStorage.setItem('crm_focus_mode', focusMode);
+  localStorage.setItem('crm_focus_project', focusProjectId||'');
+}
+
+function setFocusMode(mode){
+  focusMode = mode;
+  if(mode === 'project'){
+    const sel = document.getElementById('focus-project-select');
+    focusProjectId = sel?.value || null;
+    if(!focusProjectId){ toast("Välj ett projekt"); return; }
+  } else {
+    focusProjectId = null;
+  }
+  saveFocusMode();
+  document.getElementById('focus-screen').style.display = 'none';
+  applyFocusMode();
+  renderCurrent();
+}
+
+function toggleFocusScreen(){
+  const scr = document.getElementById('focus-screen');
+  if(scr.style.display === 'flex'){
+    scr.style.display = 'none';
+  } else {
+    // Fill project select
+    const sel = document.getElementById('focus-project-select');
+    if(sel) sel.innerHTML = '<option value="">– Välj projekt –</option>' + projects.map(p=>`<option value="${p.id}" ${p.id===focusProjectId?'selected':''}>${e(p.namn)}</option>`).join('');
+    scr.style.display = 'flex';
+  }
+}
+
+function applyFocusMode(){
+  const lbl = document.getElementById('focus-mode-label');
+  const banner = document.getElementById('focus-banner');
+
+  if(focusMode === 'project' && focusProjectId){
+    const p = projects.find(x=>x.id===focusProjectId);
+    if(lbl) lbl.textContent = '🔒 ' + (p?.namn||'Fokus');
+    if(banner){
+      banner.textContent = '🔒 Fokusläge: ' + (p?.namn||'') + ' – övriga bolag och kontakter är dolda';
+      banner.style.display = 'block';
+    }
+  } else {
+    if(lbl) lbl.textContent = 'Normalt läge';
+    if(banner) banner.style.display = 'none';
+  }
+}
+
+// Wrap contact name display in focus mode
+function maskName(name, id){
+  if(focusMode !== 'project') return name;
+  // Check if contact belongs to focus project
+  const pp = projPeople.find(x=>x.project_id===focusProjectId&&x.contact_id===id);
+  const c = contacts.find(x=>x.id===id);
+  const coMatch = c?.company_id && projects.find(x=>x.id===focusProjectId)?.company_id === c.company_id;
+  if(pp || coMatch) return name;
+  return '<span class="focus-blur" title="Dolt i fokusläge">●●●●●●</span>';
+}
+
+function maskCompany(name, coId){
+  if(focusMode !== 'project') return name;
+  const focusCoId = projects.find(x=>x.id===focusProjectId)?.company_id;
+  if(coId && coId === focusCoId) return name;
+  return '<span class="focus-blur" title="Dolt i fokusläge">●●● AB</span>';
+}
+
+// Show focus screen after login if not set this session
+function checkFocusMode(){
+  // Fill project select
+  const sel = document.getElementById('focus-project-select');
+  if(sel) sel.innerHTML = '<option value="">– Välj projekt –</option>' + projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join('');
+
+  const scr = document.getElementById('focus-screen');
+  // Show on every login
+  if(scr) scr.style.display = 'flex';
+  applyFocusMode();
 }
 
 checkSession();
