@@ -743,6 +743,13 @@ textarea{resize:vertical;min-height:68px}
     <div class="mhdr"><h2 id="log-modal-title">Logga aktivitet</h2><button class="mclose" onclick="closeM('m-log')">×</button></div>
     <div class="mbody">
       <div class="privacy-note">Logga bara nödvändiga affärsanteckningar.</div>
+      <!-- Kontaktsök -->
+      <div class="fl" style="margin-bottom:12px;position:relative">
+        <label>Kontakt *</label>
+        <input id="lg-contact-search" placeholder="Sök kontakt..." autocomplete="off" oninput="searchLogContact(this.value)" onblur="setTimeout(()=>hideLgAC(),200)">
+        <div id="lg-contact-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-radius:0 0 var(--r) var(--r);z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+        <input type="hidden" id="lg-contact-id">
+      </div>
       <div class="fg">
         <div class="fl"><label>Kontakttyp *</label><select id="lg-typ"><option value="Mote">Möte</option><option value="Telefonsamtal">Telefonsamtal</option><option value="LinkedIn">LinkedIn</option><option value="E-post">E-post</option><option value="Lunch">Lunch</option></select></div>
         <div class="fl"><label>Interaktionstyp</label><select id="lg-itype"><option value="">- Välj -</option><option value="lunch">Lunch</option><option value="samtal">Samtal</option><option value="kaffe">Kaffe</option><option value="mote">Möte</option><option value="svar">De svarade</option><option value="introduktion">Introduktion</option><option value="epost">E-post</option><option value="meddelande">Meddelande</option><option value="grattis">Grattis</option><option value="artikel_skickad">Artikel skickad</option><option value="annat">Annat</option></select></div>
@@ -1720,8 +1727,65 @@ async function openCard(id){
   openM("m-card");
 }
 
-function openLogModal(cid,logId=null){const c=contacts.find(x=>x.id===cid);if(!c)return;logCid=cid;editLogId=logId;const l=logId?actLog.find(x=>x.id===logId):null;document.getElementById("log-modal-title").textContent=(l?"Redigera – ":"Logga – ")+c.fornamn+" "+c.efternamn;document.getElementById("lg-datum").value=l?.datum||today();document.getElementById("lg-note").value=l?.anteckning||"";document.getElementById("lg-next").value=l?.nasta_steg||"";document.getElementById("lg-typ").value=l?.typ||"Mote";document.getElementById("lg-itype").value=l?.interaktionstyp||"";openM("m-log");}
-async function saveLog(){const c=contacts.find(x=>x.id===logCid);if(!c)return;const typ=document.getElementById("lg-typ").value,it=document.getElementById("lg-itype").value||null,datum=document.getElementById("lg-datum").value,note=v("lg-note"),next=v("lg-next");const data={user_id:me.id,contact_id:c.id,kontakt_namn:c.fornamn+" "+c.efternamn,foretag:c.foretag,typ,interaktionstyp:it,datum,anteckning:note,nasta_steg:next};const r=editLogId?await sb.from("activity_log").update(data).eq("id",editLogId):await sb.from("activity_log").insert(data);if(r.error){alert(r.error.message);return;}
+function searchLogContact(q){
+  const box=document.getElementById("lg-contact-ac");
+  if(!box)return;
+  const ql=(q||"").trim().toLowerCase();
+  if(ql.length<1){box.style.display="none";return;}
+  const matches=contacts.filter(c=>[c.fornamn,c.efternamn,c.foretag].join(" ").toLowerCase().includes(ql)).slice(0,7);
+  if(!matches.length){box.style.display="none";return;}
+  box.innerHTML=matches.map(c=>`<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--cream);display:flex;align-items:center;gap:8px" onmousedown="selectLogContact('${c.id}','${e(c.fornamn)} ${e(c.efternamn)}')">
+    <div><strong>${e(c.fornamn)} ${e(c.efternamn)}</strong><span style="color:#aaa;font-size:11px;margin-left:6px">${e(c.foretag||"")}</span></div>
+  </div>`).join("");
+  box.style.display="block";
+}
+
+function selectLogContact(id, namn){
+  const search=document.getElementById("lg-contact-search");
+  const hidden=document.getElementById("lg-contact-id");
+  if(search)search.value=namn;
+  if(hidden)hidden.value=id;
+  logCid=id;
+  hideLgAC();
+  document.getElementById("log-modal-title").textContent="Logga – "+namn;
+}
+
+function hideLgAC(){
+  const box=document.getElementById("lg-contact-ac");
+  if(box)box.style.display="none";
+}
+
+function openLogModal(cid,logId=null){
+  const c=contacts.find(x=>x.id===cid);
+  logCid=cid;editLogId=logId;
+  const l=logId?actLog.find(x=>x.id===logId):null;
+
+  // Set contact search field
+  const search=document.getElementById("lg-contact-search");
+  const hiddenId=document.getElementById("lg-contact-id");
+  if(search&&c){search.value=c.fornamn+" "+c.efternamn;}
+  else if(search){
+    // No contact pre-selected – suggest top followup
+    const today2=new Date();today2.setHours(0,0,0,0);
+    const top=contacts.filter(c2=>c2.nasta_foljup).sort((a,b)=>new Date(a.nasta_foljup)-new Date(b.nasta_foljup))[0];
+    search.value="";
+    search.placeholder=top?`Förslag: ${top.fornamn} ${top.efternamn}`:"Sök kontakt...";
+  }
+  if(hiddenId)hiddenId.value=cid||"";
+
+  document.getElementById("log-modal-title").textContent=c?(l?"Redigera – ":"Logga – ")+c.fornamn+" "+c.efternamn:"Logga aktivitet";
+  document.getElementById("lg-datum").value=l?.datum||today();
+  document.getElementById("lg-note").value=l?.anteckning||"";
+  document.getElementById("lg-next").value=l?.nasta_steg||"";
+  document.getElementById("lg-typ").value=l?.typ||"Mote";
+  document.getElementById("lg-itype").value=l?.interaktionstyp||"";
+  openM("m-log");
+}
+async function saveLog(){
+  // Use hidden field if set, else logCid
+  const selectedId=document.getElementById("lg-contact-id")?.value||logCid;
+  logCid=selectedId||logCid;
+  const c=contacts.find(x=>x.id===logCid);if(!c){toast("Välj en kontakt");return;}const typ=document.getElementById("lg-typ").value,it=document.getElementById("lg-itype").value||null,datum=document.getElementById("lg-datum").value,note=v("lg-note"),next=v("lg-next");const data={user_id:me.id,contact_id:c.id,kontakt_namn:c.fornamn+" "+c.efternamn,foretag:c.foretag,typ,interaktionstyp:it,datum,anteckning:note,nasta_steg:next};const r=editLogId?await sb.from("activity_log").update(data).eq("id",editLogId):await sb.from("activity_log").insert(data);if(r.error){alert(r.error.message);return;}
 const isAktiv=c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande";
 if(isAktiv){const nd=calcNextDate(typ,datum);if(nd)await sb.from("contacts").update({nasta_foljup:nd,senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);else await sb.from("contacts").update({senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);}
 else{await sb.from("contacts").update({senast_kontakt:datum,senast_typ:typ}).eq("id",c.id);}
@@ -1877,9 +1941,7 @@ function openQuickAction(type){
   else if(type==="contact"){openNewContact();}
   else if(type==="company"){openNewCompany();}
   else if(type==="log"){
-    // Open log for most recent contact
-    if(contacts[0])openLogModal(contacts[0].id);
-    else{gotoView("contacts");openNewContact();}
+    openLogModal(null);
   }
   else if(type==="todo"){openTodo();}
 }
