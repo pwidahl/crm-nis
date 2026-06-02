@@ -1187,6 +1187,1312 @@ function renderProjectPlan(p){
   return html;
 }
 
+async function moveTask(tid, dir, pid){
+  const pt=tasks.filter(t=>t.project_id===pid).slice().sort((a,b)=>(a.sort_order??999)-(b.sort_order??999));
+  const idx=pt.findIndex(t=>t.id===tid);
+  if(idx<0)return;
+  const swapIdx=dir==="up"?idx-1:idx+1;
+  if(swapIdx<0||swapIdx>=pt.length)return;
+
+  // Assign sort_order values
+  pt.forEach((t,i)=>{t.sort_order=i*10;});
+  const a=pt[idx],b=pt[swapIdx];
+  const tmp=a.sort_order;a.sort_order=b.sort_order;b.sort_order=tmp;
+
+  // Save both
+  await Promise.all([
+    sb.from("project_tasks").update({sort_order:a.sort_order}).eq("id",a.id),
+    sb.from("project_tasks").update({sort_order:b.sort_order}).eq("id",b.id)
+  ]);
+  await loadProjects();
+  renderProjects();
+  // Re-open the projekt item
+  setTimeout(()=>{const el=document.getElementById("proj-body-"+pid);if(el&&!el.classList.contains("open"))el.classList.add("open");},50);
+}
+
+function showTaskTime(tid){
+  const t=tasks.find(x=>x.id===tid);if(!t)return;
+  const entries=diary.filter(d=>d.task_id===tid);
+  const total=entries.reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
+  const byDate={};entries.forEach(d=>{if(!byDate[d.datum])byDate[d.datum]=0;byDate[d.datum]+=parseFloat(d.hours)||0;});
+  const rows=Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,h])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--cream);font-size:13px"><span>${e(d)}</span><span>${h.toFixed(1)}h</span></div>`).join("");
+  confirm2(
+    `Tid på "${t.title}": ${total.toFixed(1)}h totalt`,
+    ()=>{}
+  );
+  // Override confirm text with full breakdown
+  document.getElementById("confirm-txt").innerHTML=`
+    <strong>${e(t.title)}</strong>
+    <div style="font-size:22px;font-family:'DM Serif Display',serif;margin:8px 0">${total.toFixed(1)}h totalt</div>
+    ${rows||'<p style="color:#aaa">Inga loggade timmar</p>'}
+  `;
+  document.getElementById("confirm-ok").style.display="none";
+}
+
+function renderProjects(){
+  const today2=new Date();today2.setHours(0,0,0,0);
+  // Gruppera projekt per kund
+  const kundMap={};const visibleProjects=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId):projects;
+  visibleProjects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
+  const month=curMonth();
+  document.getElementById("projects-content").innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi c-blue"><div class="kpi-n">${projects.length}</div><div class="kpi-l">Totalt projekt</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${projects.filter(p=>p.status==="Aktiv").length}</div><div class="kpi-l">Aktiva</div></div>
+      <div class="kpi c-warm"><div class="kpi-n">${projects.reduce((s,p)=>s+projBillableHours(p.id,month),0).toFixed(1)}</div><div class="kpi-l">Fakturerbara timmar</div></div>
+      <div class="kpi c-gold"><div class="kpi-n" style="font-size:18px">${money(projects.reduce((s,p)=>s+(projInvoiceAmount(p,month)||0),0))}</div><div class="kpi-l">Fakturaunderlag</div></div>
+    </div>
+    ${Object.entries(kundMap).map(([kid,{co,projs}])=>`
+      <div class="kund-card">
+        <div class="kund-card-hdr" onclick="toggleKundCard('${kid}')">
+          <div class="sring sh" style="width:36px;height:36px;font-size:12px;border-width:2px">${projs.filter(p=>p.status==="Aktiv").length}</div>
+          <h3>${co?`${FLAG[co.land]||"🌍"} ${e(co.namn)}`:"Utan kund"}</h3>
+          <span style="font-size:12px;color:#888">${projs.length} projekt</span>
+          <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openNewProjectForCo('${co?.id||""}')" style="margin-left:8px">+ Projekt</button>
+          <span style="color:#aaa;margin-left:8px">▾</span>
+        </div>
+        <div class="kund-card-body" id="kund-body-${kid}">
+          ${projs.map(p=>renderProjektItem(p,month)).join("")}
+        </div>
+      </div>`).join("")}
+    ${!Object.keys(kundMap).length?'<div class="empty"><div class="empty-icon">💼</div><p>Inga projekt ännu</p></div>':""}`;
+}
+
+function renderProjektItem(p,month){
+  const logged=projLoggedHours(p.id);const est=Number(p.estimerad_tid)||0;const pct=est?Math.round((logged/est)*100):null;
+  const warn=est&&pct>=80;const danger=est&&pct>=100;
+  const pt=tasks.filter(t=>t.project_id===p.id);const billable=projBillableHours(p.id,month);
+  return`<div class="projekt-item">
+    <div class="projekt-item-hdr" onclick="toggleProjItem('${p.id}')">
+      <span class="${statusClass(p.status)}" style="flex-shrink:0">${e(p.status)}</span>
+      <h4>${e(p.namn)}</h4>
+      ${est?`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">${progressBar(logged,est,120)}</div>`:""}
+      <span style="font-size:11px;color:#888;flex-shrink:0">${billable.toFixed(1)}h ${month}</span>
+      <button class="btn btn-outline btn-xs" onclick="event.stopPropagation();openProjectCard('${p.id}')">Öppna</button><button class="btn-icon" title="Radera projekt" onclick="event.stopPropagation();deleteProject('${p.id}')" style="color:var(--red);font-size:12px">🗑</button>
+      <span style="color:#aaa">▾</span>
+    </div>
+    <div class="projekt-item-body" id="proj-body-${p.id}">
+      ${warn?`<div class="budget-warn ${danger?"budget-danger":""}">⚠️ ${danger?"Projektet har gått över budget!":"Projektet närmar sig budgetgränsen"} (${pct}% förbrukat)</div>`:""}
+
+      ${p.scope||p.notes?`<div style="background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:10px;border:1px solid var(--cream);font-size:13px;line-height:1.6">
+        ${p.scope?`<div style="margin-bottom:${p.notes?"6px":"0"}"><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888">Målsättning</span><div style="color:#444;margin-top:2px">${e(p.scope)}</div></div>`:""}
+        ${p.notes?`<div><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888">Anteckningar</span><div style="color:#666;margin-top:2px">${e(p.notes)}</div></div>`:""}
+      </div>`:""}
+
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-xs" onclick="openNewTask('${p.id}')">+ Uppgift</button>
+        <button class="btn btn-outline btn-xs" onclick="openNewDiaryEntryForProject('${p.id}')">+ Logga tid</button>
+        <button class="btn btn-outline btn-xs" onclick="openProjectCard('${p.id}')">Detaljer & dagbok</button>
+        <button class="btn btn-outline btn-xs" onclick="toggleProjectPlan('${p.id}')">📅 Projektplan</button>
+      </div>
+
+      <!-- PROJEKTPLAN -->
+      <div id="proj-plan-${p.id}" style="display:none;margin-bottom:12px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:12px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:10px">Projektplan</div>
+        ${renderProjectPlan(p)}
+      </div>
+
+      ${pt.length?pt.slice().sort((a,b)=>(a.sort_order??999)-(b.sort_order??999)||({"Hög":0,"Medium":1,"Låg":2}[a.priority]??1)-({"Hög":0,"Medium":1,"Låg":2}[b.priority]??1)).map((t,i,arr)=>{const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const done=t.status==="Klar";const sb2={"Ej startad":"ts-ej","Pågår":"ts-pagar","Väntar":"ts-vantar","Klar":"ts-klar"}[t.status]||"ts-ej";return`<div class="task-row" style="${done?"opacity:.55":""}">
+        <div style="display:flex;flex-direction:column;gap:1px;margin-right:2px">
+          <button class="btn-icon" style="font-size:10px;padding:1px 4px;${i===0?"opacity:.25":""}" onclick="${i>0?`moveTask(\'${t.id}\',\'up\',\'${p.id}\')`:"void 0"}">▲</button>
+          <button class="btn-icon" style="font-size:10px;padding:1px 4px;${i===arr.length-1?"opacity:.25":""}" onclick="${i<arr.length-1?`moveTask(\'${t.id}\',\'down\',\'${p.id}\')`:"void 0"}">▼</button>
+        </div>
+        <div class="cb ${done?"done":""}" onclick="toggleTask(\'${t.id}\',\'${t.status}\')">✓</div>
+        <div class="task-main"><div class="task-title" style="${done?"text-decoration:line-through":""}">${e(t.title)}</div><div class="task-sub">${t.due_date?`Deadline: ${e(t.due_date)} · `:""}${tl.toFixed(1)}h loggat${te?` / ${te}h est`:""}</div></div>
+        ${te?progressBar(tl,te,100):""}
+        <span class="ts ${sb2}">${e(t.status)}</span>
+        <button class="btn-icon" onclick="openEditTask(\'${t.id}\')">✎</button>
+        <button class="btn-icon" title="Visa tid" onclick="showTaskTime(\'${t.id}\')">⏱</button>
+      </div>\`;}).join("")E html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CRM NIS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--ink:#0D0D0D;--paper:#F7F4EF;--cream:#EDE9E2;--mid:#C8C0B4;--accent:#1A3A5C;--warm:#C4622D;--gold:#C49A3C;--green:#2D6A4F;--red:#B03030;--purple:#7B5EA7;--r:6px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px}
+button,input,select,textarea{font-family:"DM Sans",sans-serif}
+a{color:var(--accent)}
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--accent);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{padding:24px 22px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar-logo h1{font-family:"DM Serif Display",serif;font-size:22px;color:#fff}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.nav{padding:14px 0;flex:1;display:flex;flex-direction:column}
+.nav-sec{padding:10px 22px 3px;font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.28);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 22px;color:rgba(255,255,255,.62);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;border-left:3px solid transparent;position:relative;user-select:none}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nav-item.active{color:#fff;background:rgba(255,255,255,.1);border-left-color:var(--warm)}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{background:var(--warm);color:#fff;border-radius:20px;font-size:10px;padding:1px 6px;margin-left:auto;display:none;min-width:18px;text-align:center}
+.nav-spacer{flex:1}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--cream);padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.topbar-title{font-family:"DM Serif Display",serif;font-size:20px;white-space:nowrap}
+.topbar-search{position:relative;flex:1;max-width:440px;min-width:180px}
+.topbar-search input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--mid);border-radius:var(--r);font-size:13px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;pointer-events:none;font-size:13px}
+.search-drop{position:absolute;top:40px;left:0;right:0;background:#fff;border:1px solid var(--cream);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.12);z-index:80;display:none;max-height:340px;overflow:auto}
+.search-drop.open{display:block}
+.search-item{padding:9px 12px;border-bottom:1px solid var(--cream);cursor:pointer;font-size:13px}
+.search-item:hover{background:var(--paper)}
+.search-item-type{font-size:10px;text-transform:uppercase;color:#aaa;letter-spacing:.5px}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.content{flex:1;overflow-y:auto;padding:22px}
+.view{display:none}.view.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px}
+.kpi{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.c-blue::before{background:var(--accent)}.kpi.c-warm::before{background:var(--warm)}.kpi.c-gold::before{background:var(--gold)}.kpi.c-green::before{background:var(--green)}.kpi.c-red::before{background:var(--red)}.kpi.c-purple::before{background:var(--purple)}
+.kpi-n{font-family:"DM Serif Display",serif;font-size:32px}
+.kpi-l{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+.chain-bar{display:grid;grid-template-columns:repeat(4,1fr);border-radius:var(--r);overflow:hidden;margin-bottom:22px;border:1px solid var(--cream)}
+.chain-step{padding:12px;text-align:center;color:#fff}
+.cs1{background:#7B8FA1}.cs2{background:var(--accent)}.cs3{background:var(--warm)}.cs4{background:var(--green)}
+.chain-n{font-family:"DM Serif Display",serif;font-size:24px}.chain-l{font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.sec-title{font-family:"DM Serif Display",serif;font-size:17px;margin-bottom:12px}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input,.toolbar select{height:34px;padding:0 10px;border:1px solid var(--mid);border-radius:var(--r);font-size:13px}
+.tw{background:#fff;border:1px solid var(--cream);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{background:var(--accent);color:#fff;text-align:left;padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--cream);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--paper);cursor:pointer}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-aktiv{background:#D4EDDA;color:var(--green)}.b-prospekt{background:#D6E4F0;color:var(--accent)}.b-varm{background:#FDF3DC;color:#8A6914}.b-kund{background:#EAD5F5;color:#6B2F8A}.b-inaktiv{background:var(--cream);color:#888}
+.b-ny{background:#fdecea;color:var(--red)}.b-granskad{background:#D4EDDA;color:var(--green)}.b-ignorerad{background:var(--cream);color:#888}
+.btn{padding:7px 16px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#254d7a}
+.btn-warm{background:var(--warm);color:#fff}.btn-green{background:var(--green);color:#fff}
+.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--mid)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--red);color:#fff}.btn-gold{background:var(--gold);color:#fff}
+.btn-sm{padding:4px 11px;font-size:12px}.btn-xs{padding:3px 8px;font-size:11px}
+.btn-icon{background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:4px;font-size:13px;transition:background .12s}.btn-icon:hover{background:var(--cream)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.44);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:560px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.modal-lg{width:860px}
+.mhdr{padding:18px 22px 12px;border-bottom:1px solid var(--cream);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
+.mhdr h2{font-family:"DM Serif Display",serif;font-size:19px}
+.mclose{background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1;padding:0 4px}
+.mbody{padding:18px 22px}
+.mfoot{padding:12px 22px;border-top:1px solid var(--cream);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;background:#fff;z-index:2}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg .full{grid-column:1/-1}
+.fl{display:flex;flex-direction:column;gap:5px}
+.fl-row{display:flex;align-items:center;gap:8px}
+label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#666}
+input,select,textarea{padding:8px 10px;border:1px solid var(--mid);border-radius:var(--r);font-size:13px;color:var(--ink);background:#fff;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:68px}
+.card-hdr{background:var(--accent);color:#fff;padding:20px 24px;border-radius:var(--r) var(--r) 0 0}
+.card-hdr h2{font-family:"DM Serif Display",serif;font-size:21px}
+.card-hdr p{opacity:.65;font-size:13px;margin-top:3px}
+.card-hdr-badges{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.card-tabs{display:flex;border-bottom:1px solid var(--cream);padding:0 24px;overflow-x:auto;background:#fff}
+.ctab{padding:11px 12px;font-size:13px;font-weight:500;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .12s}
+.ctab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ctpane{display:none;padding:16px 24px}.ctpane.active{display:block}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.ii label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:2px}
+.ii span{font-size:14px}
+.fup-row{display:flex;align-items:center;padding:11px 12px;background:#fff;border-radius:var(--r);margin-bottom:7px;border:1px solid var(--cream);gap:8px;flex-wrap:wrap}
+.fup-info{flex:1;min-width:120px}
+.fup-name{font-weight:600;font-size:13px}.fup-meta{font-size:11px;color:#888;margin-top:1px}
+.empty{text-align:center;padding:44px 20px;color:#bbb}
+.empty-icon{font-size:34px;margin-bottom:10px}
+.sring{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"DM Serif Display",serif;border:3px solid;flex-shrink:0}
+.sh{border-color:var(--green);color:var(--green)}.sm{border-color:var(--gold);color:var(--gold)}.sl{border-color:var(--red);color:var(--red)}
+.overdue{color:var(--red);font-weight:600}
+.overdue-badge{background:#fdecea;color:var(--red);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:600}
+.pipe{display:grid;grid-template-columns:repeat(8,minmax(155px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
+.pipe-col{background:#fff;border:1px solid var(--cream);border-radius:var(--r);min-height:100px}
+.pipe-head{padding:9px 11px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;border-radius:var(--r) var(--r) 0 0;display:flex;justify-content:space-between;align-items:center}
+.pipe-card{margin:7px;padding:9px;border:1px solid var(--cream);border-radius:var(--r);background:var(--paper);cursor:pointer;transition:all .12s}
+.pipe-card:hover{background:#fff;transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.07)}
+.pipe-title{font-weight:600;font-size:13px}.pipe-meta{font-size:11px;color:#888;margin-top:3px}
+.sig-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:18px}
+.sig-src{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:13px;display:flex;flex-direction:column;gap:7px}
+.sig-src h4{font-size:13px;font-weight:600;margin:0}.sig-src p{font-size:11px;color:#888;margin:0;line-height:1.4}
+.proj-status{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.ps-planering{background:#D6E4F0;color:var(--accent)}.ps-aktiv{background:#D4EDDA;color:var(--green)}.ps-pausad{background:#FDF3DC;color:#8A6914}.ps-avslut{background:#EAD5F5;color:#6B2F8A}.ps-slutford{background:var(--cream);color:#666}.ps-forlorad{background:#fdecea;color:var(--red)}
+.task-row{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:9px 11px;margin-bottom:7px;transition:box-shadow .12s}
+.task-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.task-main{flex:1}.task-title{font-weight:600;font-size:13px}.task-sub{font-size:11px;color:#888;margin-top:1px}
+.ph{color:var(--red);font-weight:700}.pm{color:var(--gold);font-weight:600}.pl{color:#aaa}
+.ts{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.ts-ej{background:#EDE9E2;color:#666}.ts-pagar{background:#D6E4F0;color:var(--accent)}.ts-vantar{background:#FDF3DC;color:#8A6914}.ts-klar{background:#D4EDDA;color:var(--green)}
+.cb{width:18px;height:18px;border-radius:4px;border:2px solid var(--mid);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s;font-size:11px}
+.cb.done{background:var(--green);border-color:var(--green);color:#fff}
+
+/* PROGRESS BAR */
+.progress-wrap{background:var(--cream);border-radius:20px;height:8px;overflow:hidden;flex:1}
+.progress-bar{height:100%;border-radius:20px;transition:width .4s}
+.prog-ok{background:var(--green)}.prog-warn{background:var(--gold)}.prog-over{background:var(--red)}
+
+/* AKTIVITETSTYP KNAPPAR */
+.act-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.act-type-btn{padding:12px 8px;border:2px solid var(--cream);border-radius:var(--r);background:#fff;cursor:pointer;text-align:center;transition:all .15s;font-size:12px;font-weight:500}
+.act-type-btn:hover{border-color:var(--accent);color:var(--accent)}
+.act-type-btn.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+.act-type-btn .act-icon{font-size:20px;display:block;margin-bottom:4px}
+
+/* KUNDKORT */
+.kund-card{background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.kund-card-hdr{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .12s}
+.kund-card-hdr:hover{background:var(--paper)}
+.kund-card-hdr h3{font-family:"DM Serif Display",serif;font-size:16px;flex:1}
+.kund-card-body{padding:0 16px 14px;display:none}
+.kund-card-body.open{display:block}
+.projekt-item{border:1px solid var(--cream);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.projekt-item-hdr{padding:10px 14px;display:flex;align-items:center;gap:10px;background:var(--paper);cursor:pointer}
+.projekt-item-hdr:hover{background:var(--cream)}
+.projekt-item-hdr h4{font-size:14px;font-weight:600;flex:1}
+.projekt-item-body{padding:12px 14px;display:none}
+.projekt-item-body.open{display:block}
+.budget-warn{background:#fff7e8;border:1px solid var(--gold);border-radius:var(--r);padding:7px 11px;font-size:12px;color:#7a5c00;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.budget-danger{background:#fdecea;border-color:var(--red);color:#7a0000}
+
+/* DAGBOK AKTIVITETSLOGG */
+.diary-entry{background:var(--paper);border:1px solid var(--cream);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
+.diary-entry-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+.diary-entry-type{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.dt-uppdrag{background:#D6E4F0;color:var(--accent)}
+.dt-lunch{background:#D4EDDA;color:var(--green)}
+.dt-mote{background:#FDF3DC;color:#8A6914}
+.dt-aw{background:#EAD5F5;color:#6B2F8A}
+.dt-middag{background:#fdecea;color:var(--red)}
+.dt-ovrigt{background:var(--cream);color:#666}
+
+/* VECKOPLANERING */
+.week-grid{display:grid;grid-template-columns:200px repeat(7,1fr);gap:1px;background:var(--cream);border-radius:var(--r);overflow:hidden;border:1px solid var(--cream)}
+.week-grid-cell{background:#fff;padding:8px 10px;font-size:12px;min-height:60px}
+.week-grid-hdr{background:var(--accent);color:#fff;padding:8px 10px;font-size:11px;font-weight:600;text-align:center}
+.week-grid-label{background:var(--paper);padding:8px 10px;font-size:12px;font-weight:600;display:flex;align-items:center}
+.week-hour-chip{background:var(--accent);color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;margin:1px;display:inline-block;cursor:pointer}
+.week-hour-chip.social{background:var(--green)}
+
+/* TIDRAPPORT */
+.month-sum{background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:13px;margin-bottom:13px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.month-sum strong{display:block;font-family:"DM Serif Display",serif;font-size:22px}.month-sum span{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px}
+
+/* WEEK SECTION */
+.week-sec{background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+.week-sec-hdr{padding:12px 15px;border-bottom:1px solid var(--cream);display:flex;align-items:center;gap:9px}
+.week-sec-hdr h3{font-family:"DM Serif Display",serif;font-size:15px;flex:1}
+.week-row{display:flex;align-items:center;gap:9px;padding:11px 15px;border-bottom:1px solid var(--cream);flex-wrap:wrap;transition:background .1s;cursor:pointer}
+.week-row:last-child{border-bottom:none}.week-row:hover{background:var(--paper)}
+.week-rn{font-weight:600;font-size:13px}.week-rs{font-size:11px;color:#888}
+
+/* SNABBLOGG TIMER */
+.timer-fab{position:fixed;bottom:22px;right:22px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.timer-fab-btn{width:50px;height:50px;border-radius:50%;background:var(--warm);color:#fff;border:none;cursor:pointer;font-size:20px;box-shadow:0 4px 14px rgba(196,98,45,.4);transition:all .18s;display:flex;align-items:center;justify-content:center}
+.timer-fab-btn:hover{transform:scale(1.07)}
+.timer-fab-btn.running{background:var(--red);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 4px 14px rgba(176,48,48,.4)}50%{box-shadow:0 4px 22px rgba(176,48,48,.65)}}
+.timer-panel{background:#fff;border:1px solid var(--cream);border-radius:10px;padding:15px;width:320px;box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;max-height:80vh;overflow-y:auto}
+.timer-panel.open{display:block}
+.timer-display{font-family:"DM Serif Display",serif;font-size:34px;text-align:center;margin:9px 0;color:var(--ink)}
+.timer-display.running{color:var(--red)}
+.focus-blur{filter:blur(5px);user-select:none;pointer-events:none}
+.focus-hidden{display:none!important}
+.focus-banner{background:var(--warm);color:#fff;text-align:center;padding:6px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:50}
+.privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:9px 12px;font-size:12px;line-height:1.4;margin-bottom:12px}
+#co-autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.co-ac-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--cream)}
+.co-ac-item:hover{background:var(--paper)}
+.co-ac-item:last-child{border-bottom:none}
+.co-ac-match{font-weight:600}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;opacity:0;transition:opacity .28s;z-index:300;pointer-events:none;max-width:340px;text-align:center}
+#toast.show{opacity:1}
+#login-screen{position:fixed;inset:0;background:var(--paper);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-card{background:#fff;padding:26px;border-radius:10px;width:370px;max-width:100%;border:1px solid var(--cream);box-shadow:0 10px 32px rgba(0,0,0,.08)}
+.login-card h2{font-family:"DM Serif Display",serif;font-size:26px;margin-bottom:14px}
+.login-card input{width:100%;margin-bottom:9px}.login-card .btn{width:100%;justify-content:center;margin-top:3px}
+.login-err{color:var(--red);font-size:12px;margin-top:7px;min-height:15px}
+.log-entry{padding:10px 0;border-bottom:1px solid var(--cream);display:grid;grid-template-columns:85px 100px 1fr auto;gap:8px;align-items:start}
+.note-chip{background:var(--paper);border:1px solid var(--cream);border-radius:var(--r);padding:5px 11px;font-size:13px;line-height:1.5}
+.chip-cat{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-right:5px;font-weight:600}
+.inline-create{display:flex;gap:6px;align-items:center}
+.inline-create input{flex:1}
+.inline-create .btn{flex-shrink:0;padding:6px 10px;font-size:12px}
+
+@media(max-width:768px){
+  .shell{flex-direction:column;height:auto;min-height:100vh}
+  .sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:52px;overflow-x:auto;overflow-y:hidden;flex-shrink:0}
+  .sidebar-logo{padding:0 12px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:52px;display:flex;align-items:center;flex-shrink:0}
+  .sidebar-logo h1{font-size:14px}.sidebar-logo p{display:none}
+  .nav{flex-direction:row;padding:0;height:52px;overflow-x:auto;flex:1}
+  .nav-sec{display:none}
+  .nav-item{padding:0 9px;height:52px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:11px;flex-direction:column;gap:1px;justify-content:center;min-width:auto}
+  .nav-item.active{border-left:none;border-bottom-color:var(--warm)}
+  .nav-icon{font-size:13px;width:auto}
+  .nav-badge{position:absolute;top:3px;right:3px;margin-left:0;font-size:8px;padding:0 4px}
+  .nav-spacer{display:none}
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .topbar{padding:9px 12px;gap:7px}
+  .topbar-title{font-size:16px}
+  .topbar-search{order:3;max-width:none;flex-basis:100%}
+  .content{padding:11px;flex:1;overflow-y:auto}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+  .kpi{padding:12px}.kpi-n{font-size:26px}
+  .chain-bar{grid-template-columns:repeat(2,1fr)}
+  .tw{overflow-x:auto}table{min-width:520px}
+  .fg,.ig{grid-template-columns:1fr}.fg .full{grid-column:1}
+  .modal{width:98vw!important;max-height:96vh}
+  .pipe{grid-template-columns:repeat(3,minmax(145px,1fr))}
+  .act-type-grid{grid-template-columns:repeat(2,1fr)}
+  .week-grid{grid-template-columns:120px repeat(7,1fr)}
+  .timer-panel{width:290px}
+  .topbar-right .btn{padding:5px 9px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>CRM NIS</h2>
+    <input id="l-email" type="email" placeholder="E-post" autocomplete="email">
+    <input id="l-pw" type="password" placeholder="Lösenord" autocomplete="current-password">
+    <button class="btn btn-primary" onclick="doLogin()">Logga in</button>
+    <p id="l-err" class="login-err"></p>
+  </div>
+</div>
+
+<!-- TIMER FAB -->
+<div class="timer-fab" id="timer-fab" style="display:flex">
+  <!-- Quick actions menu -->
+  <div id="quick-menu" style="display:none;flex-direction:column;align-items:flex-end;gap:6px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Logga tid</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;box-shadow:0 2px 8px rgba(196,98,45,.3)" onclick="openQuickAction('timer')">⏱</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Ny kontakt</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--accent);box-shadow:0 2px 8px rgba(26,58,92,.3)" onclick="openQuickAction('contact')">👤</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Nytt bolag</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--accent);box-shadow:0 2px 8px rgba(26,58,92,.3)" onclick="openQuickAction('company')">🏢</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Logga aktivitet</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--green);box-shadow:0 2px 8px rgba(45,106,79,.3)" onclick="openQuickAction('log')">✎</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Todo</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--purple);box-shadow:0 2px 8px rgba(123,94,167,.3)" onclick="openQuickAction('todo')">✅</button>
+    </div>
+  </div>
+  <div class="timer-panel" id="timer-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+      <strong style="font-size:13px">⏱ Snabblogg</strong>
+      <button class="btn-icon" onclick="closeTimerPanel()">✕</button>
+    </div>
+    <!-- Typ -->
+    <div class="fl" style="margin-bottom:10px">
+      <label>Typ av aktivitet</label>
+      <select id="t-typ" onchange="updateTimerType()">
+        <option value="uppdrag">💼 Uppdragsarbete</option>
+        <option value="lunch">🤝 Lunch</option>
+        <option value="mote">📞 Möte</option>
+        <option value="aw">🎉 AW</option>
+        <option value="middag">🍽️ Middag</option>
+        <option value="ovrigt">📋 Övrigt</option>
+      </select>
+    </div>
+    <!-- Uppdragsfält -->
+    <div id="timer-uppdrag-fields">
+      <div class="fl" style="margin-bottom:7px">
+        <label>Kund</label>
+        <div class="inline-create">
+          <select id="t-kund" onchange="loadTimerProjects()"></select>
+          <button class="btn btn-outline btn-xs" onclick="quickCreateCompany()">+</button>
+        </div>
+      </div>
+      <div class="fl" style="margin-bottom:7px">
+        <label>Projekt</label>
+        <div class="inline-create">
+          <select id="t-proj" onchange="loadTimerTasks()"></select>
+          <button class="btn btn-outline btn-xs" onclick="quickCreateProject()">+</button>
+        </div>
+      </div>
+      <div class="fl" style="margin-bottom:7px">
+        <label>Uppgift</label>
+        <div class="inline-create">
+          <select id="t-task"></select>
+          <button class="btn btn-outline btn-xs" onclick="quickCreateTask()">+</button>
+        </div>
+      </div>
+      <div class="fl" style="margin-bottom:7px">
+        <label>Kategori</label>
+        <select id="t-cat"></select>
+      </div>
+    </div>
+    <!-- Socialfält -->
+    <div id="timer-social-fields" style="display:none">
+      <div class="fl" style="margin-bottom:7px">
+        <label>Kontakter</label>
+        <select id="t-contacts" multiple style="min-height:70px"></select>
+      </div>
+      <div class="fl" style="margin-bottom:7px">
+        <label>Plats</label>
+        <input id="t-plats" placeholder="Restaurang / lokal...">
+      </div>
+    </div>
+    <div class="fl" style="margin-bottom:11px">
+      <label>Beskrivning *</label>
+      <textarea id="t-desc" rows="2" placeholder="Vad jobbar du med?"></textarea>
+    </div>
+    <div class="timer-display" id="t-display">00:00:00</div>
+    <div style="font-size:11px;color:#aaa;text-align:center;margin-bottom:8px" id="t-startlbl"></div>
+    <!-- Spara direkt eller timer -->
+    <div style="margin-bottom:8px">
+      <label>Eller ange timmar direkt</label>
+      <input id="t-direct-hours" type="number" step="0.25" min="0" placeholder="t.ex. 1.5">
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-green" style="flex:1" id="t-startbtn" onclick="startTimer()">▶ Starta</button>
+      <button class="btn btn-danger" style="flex:1;display:none" id="t-stopbtn" onclick="stopTimer()">■ Stopp & spara</button>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:7px" onclick="saveDirectLog()">💾 Spara direkt</button>
+  </div>
+  <button class="timer-fab-btn" id="t-mainbtn" onclick="toggleQuickMenu()" title="Snabbmeny" style="font-size:22px">＋</button>
+</div>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>CRM</h1><p>NIS</p></div>
+  <nav class="nav">
+    <div class="nav-sec">Översikt</div>
+    <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
+    <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
+    <div class="nav-sec">Bolag</div>
+    <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span>Bolag</div>
+    <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span>Signaler<span class="nav-badge" id="badge-signals">0</span></div>
+    <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span>Nätverk</div>
+    <div class="nav-sec">Uppdrag</div>
+    <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span>Uppdrag</div>
+    <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span>Dagbok</div>
+    <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span>Tidrapport</div>
+    <div class="nav-item" data-v="veckoplan" onclick="gotoView('veckoplan')"><span class="nav-icon">🗓️</span>Veckoplan</div>
+    <div class="nav-sec">Relationer</div>
+    <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span>Kontakter<span class="nav-badge" id="badge-linkedin">0</span></div>
+    <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
+    <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span>Uppföljningar<span class="nav-badge" id="badge-followups">0</span></div>
+    <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span>Underkonsulter</div>
+    <div class="nav-sec">Aktivitet</div>
+    <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
+    <div class="nav-spacer"></div>
+    <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
+    <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
+    <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div id="focus-indicator" style="display:none;align-items:center;gap:6px;background:var(--cream);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0" onclick="openFocusModal()">
+      <span>🔒</span><span id="focus-indicator-text"></span><span style="color:#aaa;font-size:10px">· byta</span>
+    </div>
+    <div class="topbar-search">
+      <span class="search-icon">🔍</span>
+      <input id="gsearch" placeholder="Sök kontakter, bolag, tasks..." oninput="debounceSearch()" autocomplete="off">
+      <div class="search-drop" id="search-drop"></div>
+    </div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </div>
+
+  <div class="content">
+    <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
+    <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
+    <div class="view" id="view-companies">
+      <div class="toolbar" style="flex-wrap:nowrap;overflow-x:auto">
+        <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
+        <select id="co-pipe-filter" onchange="renderCompanies()" style="min-width:120px;flex-shrink:0"><option value="">Alla steg</option></select>
+        <select id="co-land-filter" onchange="renderCompanies()" style="min-width:110px;flex-shrink:0"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Börsnoterade</label>
+      </div>
+      <div id="companies-content"></div>
+    </div>
+    <div class="view" id="view-signals">
+      <p class="sec-title">Lead Discovery</p>
+      <div class="sig-grid" id="sig-sources"></div>
+      <div class="toolbar">
+        <input id="sig-search-f" placeholder="Sök signaler..." oninput="renderSignals()" style="flex:1;max-width:240px">
+        <select id="sig-company-f" onchange="renderSignals()"><option value="">Alla bolag</option></select>
+        <select id="sig-status-f" onchange="renderSignals()"><option value="">Alla statusar</option><option value="ny">Ny</option><option value="granskad">Granskad</option><option value="ignorerad">Ignorerad</option></select>
+        <select id="sig-type-f" onchange="renderSignals()"><option value="">Alla typer</option></select>
+        <select id="sig-land-f" onchange="renderSignals()"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+      </div>
+      <div id="signals-content"></div>
+    </div>
+    <div class="view" id="view-network">
+      <div class="toolbar">
+        <input id="net-filter" placeholder="Sök namn, bolag, roll..." oninput="renderNetwork()" style="flex:1;max-width:300px">
+        <select id="net-signal-f" onchange="renderNetwork()"><option value="">Alla bolag</option><option value="signals">Med nya signaler</option></select>
+        <select id="net-score-f" onchange="renderNetwork()"><option value="">Alla poäng</option><option value="high">Höga (60+)</option><option value="med">Medel (30–59)</option><option value="low">Låga (&lt;30)</option></select>
+      </div>
+      <div id="network-content"></div>
+    </div>
+    <div class="view" id="view-contacts">
+      <div class="toolbar">
+        <input id="ct-filter" placeholder="Filtrera kontakter..." oninput="renderContacts()" style="flex:1;max-width:280px">
+        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="">Alla (aktiva + inaktiva)</option><option value="aktiv">Aktiva</option><option value="inaktiv">Inaktiva / vilande</option></select>
+        <select id="ct-status-f" onchange="renderContacts()">
+          <option value="">Alla statusar</option>
+          <option>Ny kontakt</option><option>Aktiv relation</option>
+          <option>Varm – möte bokat</option><option>Kund</option>
+          <option>Introduktör</option><option>Kollega / nätverk</option>
+          <option>Tidigare kund</option><option>Vilande</option>
+          <option>Prospekt</option><option>Inaktiv</option>
+        </select>
+      </div>
+      <div class="tw"><table><thead><tr>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('namn')">Namn <span id="sort-namn">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('foretag')">Företag <span id="sort-foretag">↕</span></th>
+          <th>Roll</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('status')">Status <span id="sort-status">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('score')">Poäng <span id="sort-score">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('senast')">Senaste kontakt <span id="sort-senast">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('nasta')">Nästa uppfölj. <span id="sort-nasta">↕</span></th>
+          <th></th>
+        </tr></thead><tbody id="contacts-tbody"></tbody></table></div>
+    </div>
+
+    <!-- UPPDRAG - kundkort -->
+    <div class="view" id="view-projects"><div id="projects-content"></div></div>
+
+    <!-- DAGBOK -->
+    <div class="view" id="view-dagbok">
+      <div class="toolbar">
+        <input id="db-date-filter" type="date" onchange="renderDagbok()">
+        <select id="db-type-filter" onchange="renderDagbok()"><option value="">Alla typer</option><option value="uppdrag">💼 Uppdrag</option><option value="lunch">🤝 Lunch</option><option value="mote">📞 Möte</option><option value="aw">🎉 AW</option><option value="middag">🍽️ Middag</option><option value="ovrigt">📋 Övrigt</option></select>
+        <select id="db-proj-filter" onchange="renderDagbok()"><option value="">Alla projekt</option></select>
+      </div>
+      <div id="dagbok-content"></div>
+    </div>
+
+    <!-- TIDRAPPORT -->
+    <div class="view" id="view-tidrapport">
+      <div class="toolbar">
+        <input id="tr-month" type="month" onchange="renderTidrapport()">
+        <select id="tr-kund-filter" onchange="renderTidrapport()"><option value="">Alla kunder</option></select>
+        <select id="tr-proj-filter" onchange="renderTidrapport()"><option value="">Alla projekt</option></select>
+        <button class="btn btn-green btn-sm" onclick="exportTidrapportCSV()">Exportera CSV</button>
+      </div>
+      <div id="tidrapport-content"></div>
+    </div>
+
+    <!-- VECKOPLAN -->
+    <div class="view" id="view-veckoplan">
+      <div class="toolbar">
+        <input id="vp-week" type="week" onchange="renderVeckoplan()">
+      </div>
+      <div id="veckoplan-content"></div>
+    </div>
+
+    <div class="view" id="view-tasks">
+      <div class="toolbar">
+        <input id="tk-filter" placeholder="Filtrera tasks..." oninput="renderTasks()" style="flex:1;max-width:280px">
+        <select id="tk-status-f" onchange="renderTasks()"><option value="">Alla statusar</option><option>Ej startad</option><option>Pågår</option><option>Väntar</option><option>Klar</option></select>
+        <select id="tk-prio-f" onchange="renderTasks()"><option value="">Alla prioriteter</option><option>Hög</option><option>Medium</option><option>Låg</option></select>
+        <select id="tk-proj-f" onchange="renderTasks()"><option value="">Alla uppdrag</option></select>
+      </div>
+      <div id="tasks-content"></div>
+    </div>
+    <div class="view" id="view-followups">
+      <div class="toolbar"><select id="fup-filter" onchange="renderFollowups()"><option value="all">Alla</option><option value="overdue">Försenade</option><option value="today">Idag</option><option value="week">Denna vecka</option></select></div>
+      <div id="followups-list"></div>
+    </div>
+    <div class="view" id="view-subconsultants">
+      <div class="toolbar">
+        <input id="sub-filter" placeholder="Filtrera eller sök kompetens..." oninput="renderSubconsultants()" style="flex:1;max-width:280px">
+        <select id="sub-av-f" onchange="renderSubconsultants()"><option value="">Alla</option><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select>
+      </div>
+      <div id="subconsultants-content"></div>
+    </div>
+    <div class="view" id="view-log"><div class="tw"><table><thead><tr><th>Datum</th><th>Kontakt</th><th>Typ</th><th>Anteckning</th><th>Nästa steg</th><th></th></tr></thead><tbody id="log-tbody"></tbody></table></div></div>
+    <div class="view" id="view-settings"><div id="settings-content"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="m-card"><div class="modal modal-lg"><div id="card-content"></div></div></div>
+<div class="overlay" id="m-company-card"><div class="modal modal-lg"><div id="co-card-content"></div></div></div>
+<div class="overlay" id="m-project-card"><div class="modal" style="width:940px"><div id="pr-card-content"></div></div></div>
+
+<div class="overlay" id="m-contact">
+  <div class="modal">
+    <div class="mhdr"><h2 id="ct-modal-title">Ny kontakt</h2><button class="mclose" onclick="closeM('m-contact')">×</button></div>
+    <div class="mbody">
+      <div class="privacy-note">Skriv bara information relevant för affärsrelationen.</div>
+      <div class="fg">
+        <div class="fl"><label>Förnamn *</label><input id="f-fn"></div>
+        <div class="fl"><label>Efternamn *</label><input id="f-en"></div>
+        <div class="fl" style="position:relative">
+          <label>Företag</label>
+          <input id="f-co" autocomplete="off" oninput="acCompany(this.value)" onblur="setTimeout(()=>hideAC(),200)" placeholder="Börja skriva bolagsnamn...">
+          <div id="co-autocomplete" style="display:none"></div>
+        </div>
+        <div class="fl"><label>Org.nr</label><input id="f-orgnr"></div>
+        <div class="fl"><label>Roll</label><input id="f-roll"></div>
+        <div class="fl"><label>Bransch</label><input id="f-bransch"></div>
+        <div class="fl"><label>Stad</label><input id="f-stad"></div>
+        <div class="fl"><label>E-post</label><input id="f-epost" type="email"></div>
+        <div class="fl"><label>Telefon</label><input id="f-telefon"></div>
+        <div class="fl"><label>LinkedIn</label><input id="f-linkedin"></div>
+        <div class="fl"><label>Status / Relation</label><select id="f-status">
+          <option value="Ny kontakt">🔵 Ny kontakt</option>
+          <option value="Aktiv relation">🟢 Aktiv relation</option>
+          <option value="Varm – möte bokat">🟠 Varm – möte bokat</option>
+          <option value="Kund">⭐ Kund</option>
+          <option value="Introduktör">🤝 Introduktör</option>
+          <option value="Kollega / nätverk">👥 Kollega / nätverk</option>
+          <option value="Tidigare kund">📁 Tidigare kund</option>
+          <option value="Vilande">💤 Vilande</option>
+          <option value="Prospekt">📋 Prospekt</option>
+          <option value="Inaktiv">⛔ Inaktiv</option>
+        </select></div>
+        <div class="fl"><label>Prioritet</label><select id="f-prio"><option>Hög</option><option selected>Medium</option><option>Låg</option></select></div>
+        <div class="fl"><label>Kontaktnivå</label><select id="f-kniva"><option value="medel">Medel (120 dagar)</option><option value="stark">Stark (60 dagar)</option><option value="strategisk">Strategisk</option></select></div>
+        <div class="fl"><label>Anpassat intervall (dagar)</label><input id="f-interval" type="number"></div>
+        <div class="fl"><label>Introducerad av</label><select id="f-intro-av"><option value="">– Ingen –</option></select></div>
+        <div class="fl"><label>Introduktion ledde till</label><input id="f-intro-ledde" placeholder="t.ex. Uppdrag Avonova 2024"></div>
+        <div class="fl"><label>Nästa uppföljning (manuellt datum)</label><input id="f-nasta-foljup" type="date"></div>
+        <div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="f-ar-aktiv" style="width:auto" checked><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-ar-aktiv">Aktiv kontakt (avmarkera för att pausa uppföljning)</label></div>
+        <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="f-beslut" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-beslut">Beslutsfattare</label></div>
+        <div class="fl full fl-row"><input type="checkbox" id="f-introduktor" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="f-introduktor">Potentiell introduktör</label></div>
+        <div class="fl full"><label>Anteckningar</label><textarea id="f-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-contact')">Avbryt</button><button class="btn btn-primary" onclick="saveContact()">Spara kontakt</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-company">
+  <div class="modal">
+    <div class="mhdr"><h2 id="co-modal-title">Nytt bolag</h2><button class="mclose" onclick="closeM('m-company')">×</button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fl"><label>Namn *</label><input id="co-namn"></div>
+        <div class="fl"><label>Org.nr</label><input id="co-orgnr"></div>
+        <div class="fl"><label>Bransch</label><input id="co-bransch"></div>
+        <div class="fl"><label>Stad</label><input id="co-stad"></div>
+        <div class="fl"><label>Land</label><select id="co-land"><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option><option>Annat</option></select></div>
+        <div class="fl"><label>Hemsida</label><input id="co-hemsida"></div>
+        <div class="fl"><label>Pipeline</label><select id="co-pipe"></select></div>
+        <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-bors" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-bors">Börsnoterat bolag</label></div>
+        <div class="fl full fl-row"><input type="checkbox" id="co-auto-proj" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-auto-proj">Skapa projekt automatiskt när "Vunnet"</label></div>
+        <div class="fl full"><label>Anteckningar</label><textarea id="co-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-company')">Avbryt</button><button class="btn btn-primary" onclick="saveCompany()">Spara bolag</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-project">
+  <div class="modal">
+    <div class="mhdr"><h2 id="pr-modal-title">Nytt projekt</h2><button class="mclose" onclick="closeM('m-project')">×</button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fl full"><label>Projektnamn *</label><input id="p-namn"></div>
+        <div class="fl"><label>Kund (bolag)</label><select id="p-coid"></select></div>
+        <div class="fl"><label>Kontakt</label><select id="p-ctid"></select></div>
+        <div class="fl"><label>Underkonsult</label><select id="p-subid"></select></div>
+        <div class="fl"><label>Typ</label><select id="p-typ"></select></div>
+        <div class="fl"><label>Status</label><select id="p-status"></select></div>
+        <div class="fl"><label>Startdatum *</label><input id="p-start" type="date"></div>
+        <div class="fl"><label>Slutdatum *</label><input id="p-end" type="date"></div>
+        <div class="fl"><label>Estimerad tid (timmar)</label><input id="p-esttid" type="number" step="0.5" placeholder="t.ex. 40"></div>
+        <div class="fl"><label>Prisformat</label><select id="p-ratetype"><option value="hourly">Timpris</option><option value="daily">Dagspris</option><option value="fixed">Fast</option></select></div>
+        <div class="fl"><label>Timpris (kr)</label><input id="p-hrrate" type="number"></div>
+        <div class="fl"><label>Dagspris (kr)</label><input id="p-dayrate" type="number"></div>
+        <div class="fl"><label>Fakturareferens</label><input id="p-invref"></div>
+        <div class="fl full"><label>Beskrivning</label><textarea id="p-scope"></textarea></div>
+        <div class="fl full"><label>Interna anteckningar</label><textarea id="p-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-project')">Avbryt</button><button class="btn btn-primary" onclick="saveProject()">Spara</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-task">
+  <div class="modal" style="width:500px">
+    <div class="mhdr"><h2 id="tk-modal-title">Ny uppgift</h2><button class="mclose" onclick="closeM('m-task')">×</button></div>
+    <div class="mbody">
+      <input id="tk-pid" type="hidden"><input id="tk-id" type="hidden">
+      <div class="fg">
+        <div class="fl full"><label>Projekt *</label><select id="tk-projsel"></select></div>
+        <div class="fl full"><label>Uppgift *</label><input id="tk-title"></div>
+        <div class="fl"><label>Status</label><select id="tk-status"></select></div>
+        <div class="fl"><label>Prioritet</label><select id="tk-prio"><option>Hög</option><option selected>Medium</option><option>Låg</option></select></div>
+        <div class="fl"><label>Deadline</label><input id="tk-due" type="date"></div>
+        <div class="fl"><label>Estimerad tid (timmar)</label><input id="tk-esttid" type="number" step="0.5"></div>
+        <div class="fl"><label>Ägare</label><input id="tk-owner"></div>
+        <div class="fl full"><label>Beskrivning</label><textarea id="tk-desc"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-task')">Avbryt</button><button class="btn btn-primary" onclick="saveTask()">Spara</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-diary-entry">
+  <div class="modal">
+    <div class="mhdr"><h2 id="de-modal-title">Ny dagboksrad</h2><button class="mclose" onclick="closeM('m-diary-entry')">×</button></div>
+    <div class="mbody">
+      <!-- Typ -->
+      <div class="fl" style="margin-bottom:14px">
+        <label>Typ av aktivitet</label>
+        <div class="act-type-grid">
+          <button class="act-type-btn selected" data-typ="uppdrag" onclick="selectDiaryType('uppdrag',this)"><span class="act-icon">💼</span>Uppdrag</button>
+          <button class="act-type-btn" data-typ="lunch" onclick="selectDiaryType('lunch',this)"><span class="act-icon">🤝</span>Lunch</button>
+          <button class="act-type-btn" data-typ="mote" onclick="selectDiaryType('mote',this)"><span class="act-icon">📞</span>Möte</button>
+          <button class="act-type-btn" data-typ="aw" onclick="selectDiaryType('aw',this)"><span class="act-icon">🎉</span>AW</button>
+          <button class="act-type-btn" data-typ="middag" onclick="selectDiaryType('middag',this)"><span class="act-icon">🍽️</span>Middag</button>
+          <button class="act-type-btn" data-typ="ovrigt" onclick="selectDiaryType('ovrigt',this)"><span class="act-icon">📋</span>Övrigt</button>
+        </div>
+        <input type="hidden" id="de-typ" value="uppdrag">
+      </div>
+      <input id="de-id" type="hidden">
+      <!-- Uppdragsfält -->
+      <div id="de-uppdrag-fields">
+        <div class="fg">
+          <div class="fl"><label>Kund</label><select id="de-kund" onchange="loadDiaryProjects()"></select></div>
+          <div class="fl"><label>Projekt *</label><select id="de-proj" onchange="loadDiaryTasks()"></select></div>
+          <div class="fl full"><label>Uppgift</label><select id="de-task"></select></div>
+          <div class="fl"><label>Kategori</label><select id="de-cat"></select></div>
+          <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="de-bill" checked style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="de-bill">Fakturerbar tid</label></div>
+        </div>
+      </div>
+      <!-- Socialfält -->
+      <div id="de-social-fields" style="display:none">
+        <div class="fg">
+          <div class="fl full"><label>Kontakter</label><select id="de-contacts" multiple style="min-height:80px"></select></div>
+          <div class="fl full"><label>Plats / Restaurang</label><input id="de-plats"></div>
+        </div>
+      </div>
+      <!-- Gemensamma fält -->
+      <div class="fg" style="margin-top:10px">
+        <div class="fl"><label>Datum *</label><input id="de-datum" type="date"></div>
+        <div class="fl"><label>Timmar *</label><input id="de-hours" type="number" step="0.25" min="0"></div>
+        <div class="fl full"><label>Beskrivning *</label><textarea id="de-desc"></textarea></div>
+        <div class="fl full"><label>Fakturatext</label><input id="de-invnote"></div>
+        <div class="fl full"><label>Nästa steg</label><input id="de-nextstep"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-diary-entry')">Avbryt</button><button class="btn btn-primary" onclick="saveDiaryEntry()">Spara</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-veckoplan-entry">
+  <div class="modal" style="width:440px">
+    <div class="mhdr"><h2>Planera tid</h2><button class="mclose" onclick="closeM('m-veckoplan-entry')">×</button></div>
+    <div class="mbody">
+      <input id="vpe-id" type="hidden">
+      <div class="fg">
+        <div class="fl full"><label>Projekt</label><select id="vpe-proj" onchange="loadVpTasks()"></select></div>
+        <div class="fl full"><label>Uppgift</label><select id="vpe-task"></select></div>
+        <div class="fl"><label>Datum</label><input id="vpe-datum" type="date"></div>
+        <div class="fl"><label>Planerade timmar</label><input id="vpe-hours" type="number" step="0.25" min="0"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-veckoplan-entry')">Avbryt</button><button class="btn btn-primary" onclick="saveVeckoplanEntry()">Spara</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-signal">
+  <div class="modal">
+    <div class="mhdr"><h2>Lägg till signal</h2><button class="mclose" onclick="closeM('m-signal')">×</button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fl full"><label>Bolag *</label><select id="sig-coid"></select></div>
+        <div class="fl"><label>Typ</label><select id="sig-typ"></select></div>
+        <div class="fl"><label>Styrka</label><select id="sig-styrka"><option value="1">1 – Svag</option><option value="2">2 – Medel</option><option value="3">3 – Stark</option></select></div>
+        <div class="fl"><label>Datum</label><input id="sig-datum" type="date"></div>
+        <div class="fl"><label>Källa</label><input id="sig-kalla"></div>
+        <div class="fl full"><label>Rubrik *</label><input id="sig-rubrik"></div>
+        <div class="fl full"><label>Käll-URL</label><input id="sig-url" type="url"></div>
+        <div class="fl full"><label>Beskrivning</label><textarea id="sig-beskr"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-signal')">Avbryt</button><button class="btn btn-primary" onclick="saveSignal()">Spara</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-analyze">
+  <div class="modal">
+    <div class="mhdr"><h2>AI-analys av rapport</h2><button class="mclose" onclick="closeM('m-analyze')">×</button></div>
+    <div class="mbody">
+      <div class="privacy-note">Klistra in URL eller text från en årsredovisning.</div>
+      <div class="fg">
+        <div class="fl full"><label>Bolag *</label><select id="ar-coid"></select></div>
+        <div class="fl full"><label>URL till rapport</label><input id="ar-url" type="url" placeholder="https://..."></div>
+        <div class="fl full"><label>Eller klistra in text</label><textarea id="ar-text" rows="5"></textarea></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-analyze')">Avbryt</button><button class="btn btn-primary" id="ar-btn" onclick="runAnalyze()">Analysera med AI</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-log">
+  <div class="modal">
+    <div class="mhdr"><h2 id="log-modal-title">Logga aktivitet</h2><button class="mclose" onclick="closeM('m-log')">×</button></div>
+    <div class="mbody">
+      <div class="privacy-note">Logga bara nödvändiga affärsanteckningar.</div>
+      <!-- Kontaktsök -->
+      <div class="fl" style="margin-bottom:12px;position:relative">
+        <label>Kontakt *</label>
+        <input id="lg-contact-search" placeholder="Sök kontakt..." autocomplete="off" oninput="searchLogContact(this.value)" onblur="setTimeout(()=>hideLgAC(),200)">
+        <div id="lg-contact-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-radius:0 0 var(--r) var(--r);z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+        <input type="hidden" id="lg-contact-id">
+      </div>
+      <div class="fg">
+        <div class="fl"><label>Kontakttyp *</label><select id="lg-typ"><option value="Mote">Möte</option><option value="Telefonsamtal">Telefonsamtal</option><option value="LinkedIn">LinkedIn</option><option value="E-post">E-post</option><option value="Lunch">Lunch</option></select></div>
+        <div class="fl"><label>Interaktionstyp</label><select id="lg-itype"><option value="">- Välj -</option><option value="lunch">Lunch</option><option value="samtal">Samtal</option><option value="kaffe">Kaffe</option><option value="mote">Möte</option><option value="svar">De svarade</option><option value="introduktion">Introduktion</option><option value="epost">E-post</option><option value="meddelande">Meddelande</option><option value="grattis">Grattis</option><option value="artikel_skickad">Artikel skickad</option><option value="annat">Annat</option></select></div>
+        <div class="fl"><label>Datum</label><input id="lg-datum" type="date"></div>
+        <div class="fl full"><label>Anteckning</label><textarea id="lg-note"></textarea></div>
+        <div class="fl full"><label>Nästa steg</label><input id="lg-next"></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-log')">Avbryt</button><button class="btn btn-warm" onclick="saveLog()">Spara aktivitet</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-note"><div class="modal" style="width:440px"><div class="mhdr"><h2>Anteckning</h2><button class="mclose" onclick="closeM('m-note')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Kategori</label><select id="nt-kat"><option value="intressen">Intressen</option><option value="familj">Familj</option><option value="karriarmal">Karriärmål</option><option value="resa">Resa</option><option value="sport">Sport</option><option value="jobbbyte">Jobbbyte</option><option value="ovrigt">Övrigt</option></select></div><div class="fl full"><label>Anteckning</label><textarea id="nt-text"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-note')">Avbryt</button><button class="btn btn-primary" onclick="saveNote()">Spara</button></div></div></div>
+
+<div class="overlay" id="m-sub"><div class="modal"><div class="mhdr"><h2 id="sub-modal-title">Ny underkonsult</h2><button class="mclose" onclick="closeM('m-sub')">×</button></div><div class="mbody"><div class="fg"><div class="fl"><label>Förnamn *</label><input id="sb-fn"></div><div class="fl"><label>Efternamn *</label><input id="sb-en"></div><div class="fl"><label>E-post</label><input id="sb-epost" type="email"></div><div class="fl"><label>Telefon</label><input id="sb-tel"></div><div class="fl"><label>LinkedIn</label><input id="sb-linkedin"></div><div class="fl"><label>Stad</label><input id="sb-stad"></div><div class="fl"><label>Tillgänglighet</label><select id="sb-av"><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select></div><div class="fl"><label>Tillgänglig från</label><input id="sb-avfrom" type="date"></div><div class="fl"><label>Dagspris från (kr)</label><input id="sb-pricefrom" type="number"></div><div class="fl"><label>Dagspris till (kr)</label><input id="sb-priceto" type="number"></div><div class="fl"><label>Nivå</label><select id="sb-level"><option value="">-</option><option value="junior">Junior</option><option value="senior">Senior</option><option value="expert">Expert</option></select></div><div class="fl full"><label>Kompetenser (kommaseparerade)</label><input id="sb-skills" placeholder="IFRS, SAP, Interim CFO"></div><div class="fl full"><label>Anteckningar</label><textarea id="sb-notes"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub')">Avbryt</button><button class="btn btn-primary" onclick="saveSub()">Spara</button></div></div></div>
+
+<div class="overlay" id="m-snooze">
+  <div class="modal" style="width:380px">
+    <div class="mhdr"><h2>Flytta uppföljning</h2><button class="mclose" onclick="closeM('m-snooze')">×</button></div>
+    <div class="mbody">
+      <input id="snooze-cid" type="hidden">
+      <div class="fl" style="margin-bottom:14px"><label>Välj nytt datum</label><input id="snooze-date" type="date"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(7)">+7 dagar</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(14)">+2 veckor</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(30)">+1 månad</button>
+        <button class="btn btn-outline btn-sm" onclick="snoozeRelative(90)">+3 månader</button>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-snooze')">Avbryt</button><button class="btn btn-primary" onclick="saveSnooze()">Spara nytt datum</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-todo">
+  <div class="modal" style="width:580px">
+    <div class="mhdr"><h2>Todo</h2><button class="mclose" onclick="closeM('m-todo')">×</button></div>
+    <div class="mbody">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="todo-input" placeholder="Ny uppgift..." style="flex:1" onkeydown="if(event.key==='Enter')addTodo()">
+        <select id="todo-prio" style="width:110px"><option value="Hög">🔴 Hög</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Låg</option></select>
+        <button class="btn btn-primary" onclick="addTodo()">+ Lägg till</button>
+      </div>
+      <div id="todo-list"></div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-lead">
+  <div class="modal" style="width:720px">
+    <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
+    <div id="lead-modal-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="m-focus">
+  <div class="modal" style="width:420px">
+    <div class="mhdr"><h2>Välj arbetsläge</h2><button class="mclose" onclick="closeM('m-focus')">×</button></div>
+    <div class="mbody">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="setFocusMode('all')">
+          🌐 Normalt läge – visa allt
+        </button>
+        <div style="border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+          <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px">🔒 Fokusläge – välj bolag</p>
+          <p style="font-size:12px;color:#888;margin-bottom:10px">Allt ser ut som vanligt – men bara data kopplad till valt bolag visas.</p>
+          <select id="focus-co-sel" style="width:100%;margin-bottom:10px"><option value="">– Välj bolag –</option></select>
+          <button class="btn btn-warm" style="width:100%;justify-content:center" onclick="setFocusMode('company')">Aktivera fokusläge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="m-confirm"><div class="modal" style="width:380px"><div class="mhdr"><h2>Bekräfta</h2><button class="mclose" onclick="closeM('m-confirm')">×</button></div><div class="mbody"><p id="confirm-txt" style="font-size:14px;line-height:1.6"></p></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-confirm')">Avbryt</button><button class="btn btn-danger" id="confirm-ok">Bekräfta</button></div></div></div>
+
+<div class="overlay" id="m-export-contacts">
+  <div class="modal" style="width:480px">
+    <div class="mhdr"><h2>Exportera kontakter till CSV</h2><button class="mclose" onclick="closeM('m-export-contacts')">×</button></div>
+    <div class="mbody">
+      <p style="font-size:13px;color:#666;margin-bottom:14px">Välj fält att ta med i exporten.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="fl-row"><input type="checkbox" id="exp-fn" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-fn">Förnamn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-en" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-en">Efternamn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-co" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-co">Företag</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-roll" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-roll">Roll</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-status" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-status">Status</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-epost" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-epost">E-post</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-telefon" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-telefon">Telefon</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-linkedin" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-linkedin">LinkedIn</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-stad" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-stad">Stad</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-bransch" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-bransch">Bransch</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-senast" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-senast">Senaste kontakt</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-nasta" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-nasta">Nästa uppföljning</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-notes" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-notes">Anteckningar</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-poang" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-poang">Relationspoäng</label></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-export-contacts')">Avbryt</button><button class="btn btn-green" onclick="doExportContacts()">📥 Exportera CSV</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SB_URL="https://nchrbkeyvwqyswwyxkgn.supabase.co";
+const SB_KEY="sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23";
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],settings=null,subs=[],subSkills=[];
+let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
+let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
+let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView="dashboard";
+let timerInterval=null,timerStart=null,timerRunning=false,searchTimer=null,rtChannel=null;
+let curDiaryType="uppdrag";
+
+const PIPELINE=["Watchlist","Intressant","Varm","Mojlighet","Mote","Offert","Vunnet","Forlorat"];
+const PIPE_LABEL={Mote:"Möte",Forlorat:"Förlorat",Mojlighet:"Möjlighet"};
+const SIG_TYPES=["jobbannons","finance_hiring","management_change","growth","expansion","restructuring","layoffs","new_hires","acquisition","funding","ownership_change","annual_report","arsredovisning_publicerad","financial_pressure","balance_sheet_change","profitability_change","system_change","audit_remark","ny_cfo","ny_vd","ny_ledning","forvärv","varsel","nyhet","arsredovisning","manuell"];
+const SIG_LABEL={jobbannons:"Jobbannons",finance_hiring:"Finance hiring",management_change:"Ledningsförändring",growth:"Tillväxt",expansion:"Expansion",restructuring:"Omstrukturering",layoffs:"Varsel/uppsägningar",new_hires:"Nyrekrytering",acquisition:"Förvärv/fusion",funding:"Finansiering",ownership_change:"Ägarförändring",annual_report:"Årsredovisning",arsredovisning_publicerad:"Årsredov. publicerad",financial_pressure:"Finansiell press",balance_sheet_change:"Balansräkning",profitability_change:"Resultat/P&L",system_change:"System/ERP",audit_remark:"Revisionsanm.",ny_cfo:"Ny CFO",ny_vd:"Ny VD",ny_ledning:"Ny ledning","forvärv":"Förvärv",varsel:"Varsel",nyhet:"Nyhet",arsredovisning:"Årsredovisning",manuell:"Manuell"};
+const PROJ_STATUSES=["Planering","Aktiv","Pausad","Avslut","Slutförd","Förlorad"];
+const PROJ_TYPES=["Interim CFO","Controller","Finance Manager","Månadsbokslut","Årsbokslut","Rapportering","ERP/systemprojekt","Restrukturering","M&A/integration","Business control","Annat"];
+const TASK_STATUSES=["Ej startad","Pågår","Väntar","Klar"];
+const WORK_CATS=["Löpande arbete","Månadsbokslut","Rapportering","Avstämningar","Budget/prognos","Cash flow","Projektledning","Möten","System/ERP","Analys","Dokumentation","Övrigt"];
+const KEDJA={"":["LinkedIn","Koppla på LinkedIn",0],"Inget":["LinkedIn","Koppla på LinkedIn",0],LinkedIn:["Telefonsamtal","Boka telefonsamtal",14],"E-post":["Telefonsamtal","Boka telefonsamtal",7],Telefonsamtal:["Lunch","Bjud in på lunch",5],Lunch:["Mote","Aktivt samarbete",30],Mote:["Mote","Fortsätt relationen",3],mote:["Mote","Fortsätt relationen",3],samtal:["Lunch","Bjud in på lunch",5],lunch:["Mote","Aktivt samarbete",30]};
+const FLAG={Sverige:"🇸🇪",Norge:"🇳🇴",Danmark:"🇩🇰",Finland:"🇫🇮"};
+const ACT_TYPE_LABEL={uppdrag:"💼 Uppdrag",lunch:"🤝 Lunch",mote:"📞 Möte",aw:"🎉 AW",middag:"🍽️ Middag",ovrigt:"📋 Övrigt"};
+const ACT_TYPE_CLASS={uppdrag:"dt-uppdrag",lunch:"dt-lunch",mote:"dt-mote",aw:"dt-aw",middag:"dt-middag",ovrigt:"dt-ovrigt"};
+
+const e=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const toast=msg=>{const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3400);};
+const openM=id=>document.getElementById(id).classList.add("open");
+const closeM=id=>document.getElementById(id).classList.remove("open");
+const today=()=>new Date().toISOString().split("T")[0];
+const curMonth=()=>new Date().toISOString().slice(0,7);
+const v=id=>document.getElementById(id)?.value?.trim()||"";
+const numv=id=>{const x=parseFloat(document.getElementById(id)?.value||"");return isFinite(x)?x:null;};
+const intv=id=>{const x=parseInt(document.getElementById(id)?.value||"");return isFinite(x)?x:null;};
+const cleanOrg=s=>String(s||"").replace(/\D/g,"")||null;
+const money=n=>n==null?"--":Math.round(n).toLocaleString("sv-SE")+" SEK";
+const csvCell=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+function scoreClass(s){return s>=60?"sh":s>=30?"sm":"sl";}
+function pipeLabel(p){return PIPE_LABEL[p]||p;}
+function sigLabel(t){return SIG_LABEL[t]||t;}
+function statusClass(s){const m=String(s||"").toLowerCase().replace(/ö/g,"o").replace(/å/g,"a").replace(/ä/g,"a");return"proj-status ps-"+({"planering":"planering","aktiv":"aktiv","pausad":"pausad","avslut":"avslut","slutförd":"slutford","slutford":"slutford","förlorad":"forlorad","forlorad":"forlorad"}[m]||"planering");}
+function badgeStatus(s){return{"Ny kontakt":"b-prospekt","Aktiv relation":"b-aktiv","Varm – möte bokat":"b-varm","Kund":"b-kund","Introduktör":"b-aktiv","Kollega / nätverk":"b-prospekt","Tidigare kund":"b-kund","Vilande":"b-inaktiv","Prospekt":"b-prospekt","Inaktiv":"b-inaktiv","Aktiv":"b-aktiv","Varm lead":"b-varm"}[s]||"b-prospekt";}
+function kedja(t){return KEDJA[t]||KEDJA[""];}
+function kedjaLevel(t){return{"":0,"Inget":0,"LinkedIn":1,"E-post":1,"Telefonsamtal":2,"samtal":2,"Lunch":3,"lunch":3,"Mote":4,"mote":4}[t]||0;}
+function fupInterval(c){if(c.kontakt_niva==="stark")return 60;if(c.kontakt_niva==="strategisk")return c.anpassad_foljup_dagar||45;return 120;}
+function daysSince(c){if(!c.senast_kontakt)return null;return Math.round((new Date()-new Date(c.senast_kontakt))/86400000);}
+function isOverdue(c){const d=daysSince(c);return d===null||d>fupInterval(c);}
+function calcNextDate(typ,fromDate){const k=kedja(typ);if(!k[2])return null;const d=new Date(fromDate||new Date());d.setDate(d.getDate()+k[2]);return d.toISOString().split("T")[0];}
+function projCompany(p){return companies.find(c=>c.id===p?.company_id)||null;}
+function projContact(p){return contacts.find(c=>c.id===p?.contact_id)||null;}
+function projSub(p){return subs.find(s=>s.id===p?.subconsultant_id)||null;}
+function confirm2(txt,fn){document.getElementById("confirm-txt").textContent=txt;document.getElementById("confirm-ok").onclick=()=>{closeM("m-confirm");fn();};openM("m-confirm");}
+
+// Projektberäkningar
+function projLoggedHours(pid){return diary.filter(d=>d.project_id===pid&&d.aktivitet_typ!=="lunch"&&d.aktivitet_typ!=="aw"&&d.aktivitet_typ!=="middag"&&d.billable!==false).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);}
+function projBillableHours(pid,month){return diary.filter(d=>d.project_id===pid&&d.billable!==false&&(!month||String(d.datum||"").startsWith(month))).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);}
+function taskLoggedHours(tid){return diary.filter(d=>d.task_id===tid).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);}
+function projInvoiceAmount(p,month){const h=projBillableHours(p.id,month);if(p.rate_type==="hourly"&&p.hourly_rate)return h*Number(p.hourly_rate);if(p.rate_type==="daily"&&p.daily_rate)return(h/8)*Number(p.daily_rate);return null;}
+
+function progressBar(logged,estimated,width=180){
+  if(!estimated)return'<span style="font-size:11px;color:#aaa">Ingen estimering</span>';
+  const pct=Math.min(100,Math.round((logged/estimated)*100));
+  const cls=pct>=100?"prog-over":pct>=80?"prog-warn":"prog-ok";
+  return`<div style="display:flex;align-items:center;gap:8px"><div class="progress-wrap" style="width:${width}px"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div><span style="font-size:12px;font-weight:600;color:${pct>=100?"var(--red)":pct>=80?"var(--gold)":"var(--green)"}">${pct}%</span><span style="font-size:11px;color:#888">${logged.toFixed(1)}/${estimated}h</span></div>`;
+}
+
+function calcScore(cid){
+  const logs=actLog.filter(l=>l.contact_id===cid);
+  const ds=d=>!d?9999:Math.round((new Date()-new Date(d))/86400000);
+  const has=(types,days)=>logs.some(l=>types.includes((l.interaktionstyp||"").toLowerCase())&&ds(l.datum)<=days);
+  const hasEver=types=>logs.some(l=>types.includes((l.interaktionstyp||"").toLowerCase()));
+  const c=contacts.find(x=>x.id===cid);
+  const pl=has(["lunch"],90)?20:0,ps=has(["samtal","kaffe","mote"],30)?20:0,pr=has(["svar"],60)?15:0,pi=hasEver(["introduktion"])?25:0;
+  const pn=(!c||!c.senast_kontakt||ds(c.senast_kontakt)>365)?-30:0;
+  return{total:Math.max(0,Math.min(100,pl+ps+pr+pi+pn)),pl,ps,pr,pi,pn};
+}
+
+// AUTH
+async function doLogin(){const email=document.getElementById("l-email").value.trim(),pw=document.getElementById("l-pw").value;const err=document.getElementById("l-err");err.textContent="Loggar in...";const r=await sb.auth.signInWithPassword({email,password:pw});if(r.error){err.textContent=r.error.message;return;}me=r.data.user;document.getElementById("login-screen").style.display="none";await loadAll();}
+async function checkSession(){const r=await sb.auth.getSession();if(r.data.session?.user){me=r.data.session.user;document.getElementById("login-screen").style.display="none";await loadAll();}}
+async function logout(){await sb.auth.signOut();location.reload();}
+async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!session){const r=await sb.auth.refreshSession();return r.data.session?.access_token||null;}return session.access_token;}
+
+// LOAD
+async function loadAll(){
+  if(!me)return;
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData()]);
+  fillSelects();updateBadges();updateWeekLabel();
+  fillTimerSelects();
+  if(!rtChannel)setupRT();
+  renderCurrent();
+}
+async function loadContacts(){const r=await sb.from("contacts").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false});contacts=r.data||[];}
+async function loadLog(){const r=await sb.from("activity_log").select("*").order("datum",{ascending:false}).limit(600);actLog=r.data||[];}
+async function loadNotes(){const r=await sb.from("contact_notes").select("*").order("created_at",{ascending:false});notes={};(r.data||[]).forEach(n=>{if(!notes[n.contact_id])notes[n.contact_id]=[];notes[n.contact_id].push(n);});}
+async function loadCompanies(){const r=await sb.from("companies").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false});companies=r.data||[];}
+async function loadSignals(){const r=await sb.from("company_signals").select("*,companies(namn,land)").order("signal_datum",{ascending:false}).limit(600);signals=r.data||[];}
+async function loadNetwork(){const r=await sb.from("company_network_map").select("*").limit(800);network=r.data||[];}
+async function loadSettings2(){const r=await sb.from("user_settings").select("*").eq("user_id",me.id).maybeSingle();if(!r.error&&r.data)settings=r.data;else if(!r.data){const ins=await sb.from("user_settings").insert({user_id:me.id,weekly_email:me.email,followup_email:me.email}).select("*").single();settings=ins.data||null;}}
+async function loadSubs(){const[a,b]=await Promise.all([sb.from("subconsultants").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false}),sb.from("subconsultant_skills").select("*")]);subs=a.data||[];subSkills=b.data||[];}
+async function loadProjects(){
+  const[p,t,d,pp,cl]=await Promise.all([
+    sb.from("projects").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false}),
+    sb.from("project_tasks").select("*").order("due_date",{ascending:true}),
+    sb.from("project_diary_entries").select("*").order("datum",{ascending:false}),
+    sb.from("project_contacts").select("*").order("created_at",{ascending:false}),
+    sb.from("project_closeouts").select("*").order("created_at",{ascending:false})
+  ]);
+  projects=p.data||[];tasks=t.data||[];diary=d.data||[];projPeople=pp.data||[];closeouts=cl.data||[];
+}
+async function loadVeckoplanData(){const r=await sb.from("veckoplan").select("*").eq("user_id",me.id).order("datum",{ascending:true});veckoplan=r.data||[];}
+
+function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",schema:"public",table:"contacts"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"activity_log"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"companies"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"company_signals"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"projects"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_tasks"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_diary_entries"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"veckoplan"},()=>loadAll()).subscribe();}
+
+function updateBadges(){
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const ns=signals.filter(s=>s.status==="ny").length;const nb=document.getElementById("badge-signals");if(nb){nb.textContent=ns;nb.style.display=ns>0?"inline":"none";}
+  const nt=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const ntb=document.getElementById("badge-tasks");if(ntb){ntb.textContent=nt;ntb.style.display=nt>0?"inline":"none";}
+  const nf=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;const nfb=document.getElementById("badge-followups");if(nfb){nfb.textContent=nf;nfb.style.display=nf>0?"inline":"none";}
+  // LinkedIn-påminnelser → badge på Kontakter (inte Dagbok)
+  const li=contacts.filter(c=>{
+    if(!c||c.ar_aktiv===false||c.status==="Inaktiv"||c.status==="Vilande")return false;
+    const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));
+    const last=logs[0]?.datum;
+    return !last||(Math.round((new Date()-new Date(last))/86400000)>30);
+  }).length;
+  const lib=document.getElementById("badge-linkedin");if(lib){lib.textContent=li;lib.style.display=li>0?"inline":"none";}
+}
+
+function updateWeekLabel(){const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];document.getElementById("nl-weekly").textContent=days[new Date().getDay()];}
+
+function fillSelects(){
+  ["co-pipe-filter","co-pipe"].forEach(id=>{const el=document.getElementById(id);if(!el)return;const curr=el.value;el.innerHTML=(id==="co-pipe-filter"?'<option value="">Alla steg</option>':"")+PIPELINE.map(p=>`<option value="${p}">${pipeLabel(p)}</option>`).join("");el.value=curr;});
+  ["sig-type-f","sig-typ"].forEach(id=>{const el=document.getElementById(id);if(!el)return;const curr=el.value;el.innerHTML=(id==="sig-type-f"?'<option value="">Alla typer</option>':"")+SIG_TYPES.map(t=>`<option value="${t}">${sigLabel(t)}</option>`).join("");if(id==="sig-typ")el.value=curr||"manuell";else el.value=curr;});
+  const sc=document.getElementById("sig-coid");if(sc)sc.innerHTML='<option value="">Välj bolag</option>'+companies.map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const arc=document.getElementById("ar-coid");if(arc)arc.innerHTML='<option value="">Välj bolag</option>'+companies.map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const ps=document.getElementById("p-status");if(ps)ps.innerHTML=PROJ_STATUSES.map(s=>`<option>${s}</option>`).join("");
+  const pt=document.getElementById("p-typ");if(pt)pt.innerHTML=PROJ_TYPES.map(s=>`<option>${s}</option>`).join("");
+  const pc=document.getElementById("p-coid");if(pc)pc.innerHTML='<option value="">– Välj kund –</option>'+companies.map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const pct=document.getElementById("p-ctid");if(pct)pct.innerHTML='<option value="">– Välj kontakt –</option>'+contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" · "+e(c.foretag):""}</option>`).join("");
+  const psb=document.getElementById("p-subid");if(psb)psb.innerHTML='<option value="">– Ingen –</option>'+subs.map(s=>`<option value="${s.id}">${e(s.fornamn)} ${e(s.efternamn)}</option>`).join("");
+  const prsf=document.getElementById("pr-status-f");if(prsf&&!prsf.children.length)prsf.innerHTML='<option value="">Alla statusar</option>'+PROJ_STATUSES.map(s=>`<option>${s}</option>`).join("");
+  const tpf=document.getElementById("tk-proj-f");if(tpf)tpf.innerHTML='<option value="">Alla uppdrag</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  const tks=document.getElementById("tk-status");if(tks)tks.innerHTML=TASK_STATUSES.map(s=>`<option>${s}</option>`).join("");
+  const tkps=document.getElementById("tk-projsel");if(tkps)tkps.innerHTML=projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  const dc=document.getElementById("de-cat");if(dc)dc.innerHTML=WORK_CATS.map(c=>`<option>${c}</option>`).join("");
+  // Kontakt introduktion
+  const fia=document.getElementById("f-intro-av");if(fia)fia.innerHTML='<option value="">– Ingen –</option>'+contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}</option>`).join("");
+  // Dagbok projekt filter
+  const dbpf=document.getElementById("db-proj-filter");if(dbpf)dbpf.innerHTML='<option value="">Alla projekt</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  // Tidrapport filter
+  const trkf=document.getElementById("tr-kund-filter");if(trkf)trkf.innerHTML='<option value="">Alla kunder</option>'+companies.filter(c=>projects.some(p=>p.company_id===c.id)).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const trpf=document.getElementById("tr-proj-filter");if(trpf)trpf.innerHTML='<option value="">Alla projekt</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  // Tidrapport månad
+  const trm=document.getElementById("tr-month");if(trm&&!trm.value)trm.value=curMonth();
+  // Dagbok datum
+  const dbd=document.getElementById("db-date-filter");if(dbd&&!dbd.value)dbd.value=today();
+  // Veckoplan
+  const vpw=document.getElementById("vp-week");if(vpw&&!vpw.value){const d=new Date();const wn=`${d.getFullYear()}-W${String(getWeekNumber(d)).padStart(2,"0")}`;vpw.value=wn;}
+  const vpep=document.getElementById("vpe-proj");if(vpep)vpep.innerHTML=projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+}
+
+function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
+
+// NAV
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar"};
+
+function gotoView(name){
+  curView=name;
+  document.querySelectorAll(".view").forEach(v2=>v2.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.getElementById("view-"+name).classList.add("active");
+  document.querySelector(`.nav-item[data-v="${name}"]`)?.classList.add("active");
+  const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
+  document.getElementById("topbar-title").textContent=name==="weekly"?days[new Date().getDay()]:VIEW_TITLE[name];
+  const tr=document.getElementById("topbar-right");tr.innerHTML="";
+  if(name==="contacts")tr.innerHTML='<button class="btn btn-primary" onclick="openNewContact()">+ Ny kontakt</button><button class="btn btn-green" onclick="openExportContacts()">📥 Exportera</button>';
+  else if(name==="projects")tr.innerHTML='<button class="btn btn-primary" onclick="openNewProject()">+ Nytt projekt</button>';
+  else if(name==="companies")tr.innerHTML='<button class="btn btn-primary" onclick="openNewCompany()">+ Nytt bolag</button>';
+  else if(name==="signals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSignal()">+ Manuell signal</button>';
+  else if(name==="tasks")tr.innerHTML='<button class="btn btn-primary" onclick="openNewTaskGlobal()">+ Ny uppgift</button>';
+  else if(name==="subconsultants")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSub()">+ Ny underkonsult</button>';
+  else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
+  else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button>';
+  else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings};
+  renders[name]?.();
+}
+function renderCurrent(){gotoView(curView);}
+
+// GLOBAL SEARCH
+function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(doSearch,260);}
+async function doSearch(){const q=v("gsearch");const box=document.getElementById("search-drop");if(q.length<2){box.classList.remove("open");return;}const r=await sb.rpc("search_crm",{p_user_id:me.id,p_query:q});const tm=tasks.filter(t=>t.title?.toLowerCase().includes(q.toLowerCase())).slice(0,4).map(t=>{const p=projects.find(x=>x.id===t.project_id);return{typ:"task",id:t.id,titel:t.title,undertitel:p?.namn||"",extra:t.status};});const all=[...(r.data||[]),...tm];box.innerHTML=all.length?all.map(x=>`<div class="search-item" onclick="openSearchResult('${x.typ}','${x.id}')"><div class="search-item-type">${e(x.typ)}</div><strong>${e(x.titel)}</strong><div style="font-size:12px;color:#888">${e(x.undertitel||"")}${x.extra?" · "+e(x.extra):""}</div></div>`).join(""):'<div class="search-item"><span style="color:#aaa">Inga träffar</span></div>';box.classList.add("open");}
+function openSearchResult(type,id){document.getElementById("search-drop").classList.remove("open");document.getElementById("gsearch").value="";if(type==="kontakt"){gotoView("contacts");openCard(id);}else if(type==="bolag"){gotoView("companies");openCompanyCard(id);}else if(type==="task"){gotoView("tasks");}else if(type==="underkonsult"){gotoView("subconsultants");}}
+
+// DASHBOARD
+function renderDashboard(){
+  if(focusMode==="company"&&focusCompanyId){
+    renderFocusDashboard();
+    return;
+  }
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const ns=signals.filter(s=>s.status==="ny").length;const ap=projects.filter(p=>p.status==="Aktiv").length;const ot=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;
+  document.getElementById("dash-kpi").innerHTML=[["Kontakter",contacts.length,"c-blue"],["Bolag",companies.length,"c-green"],["Nya signaler",ns,"c-gold"],["Försenade uppfölj.",of2,"c-red"],["Aktiva projekt",ap,"c-purple"],["Försenade tasks",ot,"c-warm"]].map(([l,n,c2])=>`<div class="kpi ${c2}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+  const ej=contacts.filter(c=>!c.senast_typ||["","Inget","LinkedIn","E-post"].includes(c.senast_typ)).length;const rg=contacts.filter(c=>["Telefonsamtal","samtal"].includes(c.senast_typ)).length;const lu=contacts.filter(c=>["Lunch","lunch"].includes(c.senast_typ)).length;const ak=contacts.filter(c=>["Mote","mote"].includes(c.senast_typ)).length;
+  document.getElementById("dash-chain").innerHTML=`<div class="chain-bar">${[["Ej ringt",ej,"cs1"],["Telefonsamtal",rg,"cs2"],["Lunch",lu,"cs3"],["Aktivt",ak,"cs4"]].map(([l,n,c2])=>`<div class="chain-step ${c2}"><div class="chain-n">${n}</div><div class="chain-l">${l}</div></div>`).join("")}</div>`;
+  renderFups("dash-fups",8);
+}
+
+// WEEKLY
+function renderFocusDashboard(){
+  const co=companies.find(x=>x.id===focusCompanyId);
+  const coProjs=projects.filter(p=>p.company_id===focusCompanyId);
+  const coContacts=contacts.filter(c=>c.company_id===focusCompanyId);
+  const coSignals=signals.filter(s=>s.company_id===focusCompanyId&&s.status==="ny");
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const month=curMonth();
+  const totalH=coProjs.reduce((s,p)=>s+projBillableHours(p.id,month),0);
+  const openTasks=tasks.filter(t=>coProjs.some(p=>p.id===t.project_id)&&t.status!=="Klar");
+  const overdueTasks=openTasks.filter(t=>t.due_date&&new Date(t.due_date)<today2);
+
+  document.getElementById("dash-kpi").innerHTML=[
+    ["Projekt",coProjs.length,"c-blue"],
+    ["Kontakter",coContacts.length,"c-green"],
+    ["Nya signaler",coSignals.length,"c-gold"],
+    ["Öppna tasks",openTasks.length,"c-warm"],
+    ["Försenade tasks",overdueTasks.length,"c-red"],
+    ["Timmar "+month.slice(5),totalH.toFixed(1),"c-purple"]
+  ].map(([l,n,c2])=>`<div class="kpi ${c2}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+
+  document.getElementById("dash-chain").innerHTML=`
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Aktiva projekt</p>
+      ${coProjs.filter(p=>p.status==="Aktiv").map(p=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream)">
+          <span class="${statusClass(p.status)}">${e(p.status)}</span>
+          <span style="font-weight:600">${e(p.namn)}</span>
+          <span style="font-size:12px;color:#888;margin-left:auto">${projBillableHours(p.id,month).toFixed(1)}h ${month.slice(5)}</span>
+          <button class="btn btn-outline btn-xs" onclick="openProjectCard('${p.id}')">Öppna</button>
+        </div>`).join("")||'<p style="color:#aaa;font-size:13px">Inga aktiva projekt</p>'}
+    </div>`;
+
+  renderFups("dash-fups",8);
+}
+
+function renderWeekly(){
+  const days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
+  const dayName=days[new Date().getDay()];
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const od=contacts.filter(c=>isOverdue(c)).sort((a,b)=>(daysSince(b)||999)-(daysSince(a)||999)).slice(0,8);
+  const ns=signals.filter(s=>s.status==="ny").slice(0,8);
+  const wm=network.filter(n=>(n.nya_signaler||0)>0).sort((a,b)=>(b.relationspoang||0)-(a.relationspoang||0)).slice(0,6);
+  const ot=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<=today()).sort((a,b)=>(a.due_date||"").localeCompare(b.due_date||"")).slice(0,8);
+  const month=curMonth();
+  const fakt=projects.filter(p=>p.status==="Aktiv").map(p=>({p,amt:projInvoiceAmount(p,month),h:projBillableHours(p.id,month)})).filter(x=>x.h>0);
+  // LinkedIn-påminnelser
+  const liPaminn=contacts.filter(c=>{const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));const last=logs[0]?.datum;return !last||(Math.round((new Date()-new Date(last))/86400000)>30);}).slice(0,6);
+  // Budgetvarningar
+  const budgetWarn=projects.filter(p=>{if(!p.estimerad_tid)return false;const pct=(projLoggedHours(p.id)/Number(p.estimerad_tid))*100;return pct>=80;}).slice(0,5);
+  document.getElementById("weekly-content").innerHTML=`
+    <p style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:16px;color:var(--accent)">${dayName}</p>
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi c-warm"><div class="kpi-n">${od.length}</div><div class="kpi-l">Relationer att värma</div></div>
+      <div class="kpi c-gold"><div class="kpi-n">${ns.length}</div><div class="kpi-l">Nya signaler</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${wm.length}</div><div class="kpi-l">Kända kontakt + signal</div></div>
+      <div class="kpi c-red"><div class="kpi-n">${ot.length}</div><div class="kpi-l">Försenade tasks</div></div>
+    </div>
+    ${budgetWarn.length?weekSec("⚠️ Budgetvarning",budgetWarn.map(p=>{const pct=Math.round((projLoggedHours(p.id)/Number(p.estimerad_tid))*100);const co=projCompany(p);return weekRow(`${e(p.namn)}`,`${e(co?.namn||"--")} · ${pct}% av ${p.estimerad_tid}h förbrukad`,pct>=100?3:2,`openProjectCard('${p.id}')`,null,false);})):""}
+    ${weekSec("Relationer att kontakta",od.map(c=>weekRow(`${e(c.fornamn)} ${e(c.efternamn)}`,`${e(c.foretag||"--")} · ${daysSince(c)??"--"} dagar sedan`,calcScore(c.id).total,`openCard('${c.id}')`,`openLogModal('${c.id}')`,true)))}
+    ${liPaminn.length?weekSec("💼 LinkedIn – dags att interagera",liPaminn.map(c=>weekRow(`${e(c.fornamn)} ${e(c.efternamn)}`,`${e(c.foretag||"--")} · Ingen LinkedIn-kontakt på 30+ dagar`,1,`openCard('${c.id}')`,null,false))):""}
+    ${weekSec("Försenade tasks",ot.map(t=>{const p=projects.find(x=>x.id===t.project_id);return weekRow(e(t.title),`${e(p?.namn||"--")} · Deadline: ${e(t.due_date||"--")}`,t.priority==="Hög"?3:2,`gotoView('tasks')`,null,false);}))}
+    ${weekSec("Nya signaler",ns.map(s=>weekRow(e(s.rubrik),`${e(s.companies?.namn||"")} · ${sigLabel(s.signal_typ)}`,s.signal_styrka,`openCompanyCard('${s.company_id}')`,null,false)))}
+    ${fakt.length?weekSec("Faktura denna månad",fakt.map(({p,amt,h})=>{const co=projCompany(p);return weekRow(e(p.namn),`${e(co?.namn||"--")} · ${h.toFixed(1)}h · ${money(amt)}`,3,`openProjectCard('${p.id}')`,null,false);})):""}`
+}
+function weekSec(title,rows){return`<div class="week-sec"><div class="week-sec-hdr"><h3>${title}</h3><span style="font-size:12px;color:#888">${rows.length}</span></div>${rows.length?rows.join(""):'<div class="week-row" style="color:#aaa;font-size:13px;cursor:default">Inget att visa</div>'}</div>`;}
+function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0;return`<div class="week-row" onclick="${onclick}"><div class="sring ${scoreClass(sc)}" style="width:36px;height:36px;font-size:12px;border-width:2px">${sc}</div><div style="flex:1"><div class="week-rn">${title}</div><div class="week-rs">${sub}</div></div>${showLog&&onclick2?`<button class="btn btn-warm btn-xs" onclick="event.stopPropagation();${onclick2}">Logga</button>`:""}<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();${onclick}">Öppna</button></div>`;}
+
+// UPPDRAG – kundkort
+function toggleProjectPlan(pid){
+  const el=document.getElementById("proj-plan-"+pid);
+  if(el)el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function renderProjectPlan(p){
+  const pt=tasks.filter(t=>t.project_id===p.id).slice().sort((a,b)=>{
+    if(a.due_date&&b.due_date)return a.due_date.localeCompare(b.due_date);
+    if(a.due_date)return -1;if(b.due_date)return 1;
+    const po={Hög:0,Medium:1,Låg:2};return(po[a.priority]??1)-(po[b.priority]??1);
+  });
+
+  if(!pt.length)return '<p style="color:#aaa;font-size:13px">Inga uppgifter tillagda ännu.</p>';
+
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const prioColor={Hög:"var(--red)",Medium:"var(--gold)",Låg:"var(--green)"};
+  const statusIcon={Klar:"✅","Pågår":"🔵","Väntar":"⏸","Ej startad":"⭕"};
+
+  // Timeline
+  let html=`<div style="position:relative;padding-left:24px">
+    <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--cream)"></div>`;
+
+  pt.forEach((t,i)=>{
+    const done=t.status==="Klar";
+    const od=t.due_date&&new Date(t.due_date)<today2&&!done;
+    const tl=taskLoggedHours(t.id);
+    const te=Number(t.estimerad_tid)||0;
+    html+=`<div style="position:relative;margin-bottom:12px;padding:9px 11px;border:1px solid ${od?"var(--red)":done?"var(--cream)":"var(--cream)"};border-radius:var(--r);background:${done?"var(--paper)":"#fff"};${done?"opacity:.6":""}">
+      <div style="position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:${done?"var(--green)":od?"var(--red)":prioColor[t.priority]||"var(--mid)"};border:2px solid #fff;box-shadow:0 0 0 2px ${done?"var(--green)":od?"var(--red)":prioColor[t.priority]||"var(--mid)"}"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:13px">${statusIcon[t.status]||"⭕"}</span>
+        <span style="font-weight:600;font-size:13px;${done?"text-decoration:line-through":""}">${e(t.title)}</span>
+        <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${prioColor[t.priority]||"#eee"}22;color:${prioColor[t.priority]||"#888"};font-weight:600">${e(t.priority||"")}</span>
+        ${t.due_date?`<span style="font-size:11px;color:${od?"var(--red)":"#888"};margin-left:auto">${od?"⚠️ ":""}${e(t.due_date)}</span>`:""}
+      </div>
+      ${te?`<div style="margin-top:5px">${progressBar(tl,te,160)}</div>`:""}
+      ${t.description?`<div style="font-size:12px;color:#888;margin-top:4px">${e(t.description.slice(0,100))}${t.description.length>100?"…":""}</div>`:""}
+    </div>`;
+  });
+
+  html+="</div>";
+
+  // Summary
+  const done=pt.filter(t=>t.status==="Klar").length;
+  const total=pt.length;
+  html+=`<div style="margin-top:8px;display:flex;gap:16px;font-size:12px;color:#888;border-top:1px solid var(--cream);padding-top:8px">
+    <span>✅ ${done}/${total} klara</span>
+    ${p.start_date?`<span>Start: ${e(p.start_date)}</span>`:""}
+    ${p.end_date?`<span>Slut: ${e(p.end_date)}</span>`:""}
+    ${p.estimerad_tid?`<span>Budget: ${projLoggedHours(p.id).toFixed(1)}/${p.estimerad_tid}h</span>`:""}
+  </div>`;
+
+  return html;
+}
+
+
 function renderProjects(){
   const today2=new Date();today2.setHours(0,0,0,0);
   // Gruppera projekt per kund
@@ -1947,7 +3253,7 @@ async function saveTask(){
   const p=projects.find(x=>x.id===pid);const due=v("tk-due");
   if(due&&p?.start_date&&due<p.start_date){toast("Deadline kan inte vara före projektets startdatum");return;}
   if(due&&p?.end_date&&due>p.end_date){toast("Deadline kan inte vara efter projektets slutdatum");return;}
-  const data={user_id:me.id,project_id:pid,title,description:v("tk-desc"),status:v("tk-status")||"Ej startad",priority:v("tk-prio")||"Medium",due_date:due||null,owner:v("tk-owner"),estimerad_tid:numv("tk-esttid")};
+  const existingTasks=tasks.filter(t=>t.project_id===pid);const maxOrder=existingTasks.reduce((m,t)=>Math.max(m,t.sort_order??0),0);  const data={user_id:me.id,project_id:pid,title,description:v("tk-desc"),status:v("tk-status")||"Ej startad",priority:v("tk-prio")||"Medium",due_date:due||null,owner:v("tk-owner"),estimerad_tid:numv("tk-esttid"),...(!editTid&&{sort_order:maxOrder+10})};
   const r=editTid?await sb.from("project_tasks").update(data).eq("id",editTid):await sb.from("project_tasks").insert(data);if(r.error){alert(r.error.message);return;}closeM("m-task");toast("Uppgift sparad");await loadAll();if(curProjId)openProjectCard(curProjId);
 }
 function deleteTask(id){confirm2("Ta bort uppgiften?",async()=>{await sb.from("project_tasks").delete().eq("id",id);await loadAll();if(curProjId)openProjectCard(curProjId);});}
