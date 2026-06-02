@@ -1132,6 +1132,61 @@ function weekSec(title,rows){return`<div class="week-sec"><div class="week-sec-h
 function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0;return`<div class="week-row" onclick="${onclick}"><div class="sring ${scoreClass(sc)}" style="width:36px;height:36px;font-size:12px;border-width:2px">${sc}</div><div style="flex:1"><div class="week-rn">${title}</div><div class="week-rs">${sub}</div></div>${showLog&&onclick2?`<button class="btn btn-warm btn-xs" onclick="event.stopPropagation();${onclick2}">Logga</button>`:""}<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();${onclick}">Öppna</button></div>`;}
 
 // UPPDRAG – kundkort
+function toggleProjectPlan(pid){
+  const el=document.getElementById("proj-plan-"+pid);
+  if(el)el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function renderProjectPlan(p){
+  const pt=tasks.filter(t=>t.project_id===p.id).slice().sort((a,b)=>{
+    if(a.due_date&&b.due_date)return a.due_date.localeCompare(b.due_date);
+    if(a.due_date)return -1;if(b.due_date)return 1;
+    const po={Hög:0,Medium:1,Låg:2};return(po[a.priority]??1)-(po[b.priority]??1);
+  });
+
+  if(!pt.length)return '<p style="color:#aaa;font-size:13px">Inga uppgifter tillagda ännu.</p>';
+
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const prioColor={Hög:"var(--red)",Medium:"var(--gold)",Låg:"var(--green)"};
+  const statusIcon={Klar:"✅","Pågår":"🔵","Väntar":"⏸","Ej startad":"⭕"};
+
+  // Timeline
+  let html=`<div style="position:relative;padding-left:24px">
+    <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--cream)"></div>`;
+
+  pt.forEach((t,i)=>{
+    const done=t.status==="Klar";
+    const od=t.due_date&&new Date(t.due_date)<today2&&!done;
+    const tl=taskLoggedHours(t.id);
+    const te=Number(t.estimerad_tid)||0;
+    html+=`<div style="position:relative;margin-bottom:12px;padding:9px 11px;border:1px solid ${od?"var(--red)":done?"var(--cream)":"var(--cream)"};border-radius:var(--r);background:${done?"var(--paper)":"#fff"};${done?"opacity:.6":""}">
+      <div style="position:absolute;left:-20px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:${done?"var(--green)":od?"var(--red)":prioColor[t.priority]||"var(--mid)"};border:2px solid #fff;box-shadow:0 0 0 2px ${done?"var(--green)":od?"var(--red)":prioColor[t.priority]||"var(--mid)"}"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:13px">${statusIcon[t.status]||"⭕"}</span>
+        <span style="font-weight:600;font-size:13px;${done?"text-decoration:line-through":""}">${e(t.title)}</span>
+        <span style="font-size:10px;padding:1px 7px;border-radius:20px;background:${prioColor[t.priority]||"#eee"}22;color:${prioColor[t.priority]||"#888"};font-weight:600">${e(t.priority||"")}</span>
+        ${t.due_date?`<span style="font-size:11px;color:${od?"var(--red)":"#888"};margin-left:auto">${od?"⚠️ ":""}${e(t.due_date)}</span>`:""}
+      </div>
+      ${te?`<div style="margin-top:5px">${progressBar(tl,te,160)}</div>`:""}
+      ${t.description?`<div style="font-size:12px;color:#888;margin-top:4px">${e(t.description.slice(0,100))}${t.description.length>100?"…":""}</div>`:""}
+    </div>`;
+  });
+
+  html+="</div>";
+
+  // Summary
+  const done=pt.filter(t=>t.status==="Klar").length;
+  const total=pt.length;
+  html+=`<div style="margin-top:8px;display:flex;gap:16px;font-size:12px;color:#888;border-top:1px solid var(--cream);padding-top:8px">
+    <span>✅ ${done}/${total} klara</span>
+    ${p.start_date?`<span>Start: ${e(p.start_date)}</span>`:""}
+    ${p.end_date?`<span>Slut: ${e(p.end_date)}</span>`:""}
+    ${p.estimerad_tid?`<span>Budget: ${projLoggedHours(p.id).toFixed(1)}/${p.estimerad_tid}h</span>`:""}
+  </div>`;
+
+  return html;
+}
+
 function renderProjects(){
   const today2=new Date();today2.setHours(0,0,0,0);
   // Gruppera projekt per kund
@@ -1176,12 +1231,26 @@ function renderProjektItem(p,month){
     </div>
     <div class="projekt-item-body" id="proj-body-${p.id}">
       ${warn?`<div class="budget-warn ${danger?"budget-danger":""}">⚠️ ${danger?"Projektet har gått över budget!":"Projektet närmar sig budgetgränsen"} (${pct}% förbrukat)</div>`:""}
+
+      ${p.scope||p.notes?`<div style="background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:10px;border:1px solid var(--cream);font-size:13px;line-height:1.6">
+        ${p.scope?`<div style="margin-bottom:${p.notes?"6px":"0"}"><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888">Målsättning</span><div style="color:#444;margin-top:2px">${e(p.scope)}</div></div>`:""}
+        ${p.notes?`<div><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888">Anteckningar</span><div style="color:#666;margin-top:2px">${e(p.notes)}</div></div>`:""}
+      </div>`:""}
+
       <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary btn-xs" onclick="openNewTask('${p.id}')">+ Uppgift</button>
         <button class="btn btn-outline btn-xs" onclick="openNewDiaryEntryForProject('${p.id}')">+ Logga tid</button>
         <button class="btn btn-outline btn-xs" onclick="openProjectCard('${p.id}')">Detaljer & dagbok</button>
+        <button class="btn btn-outline btn-xs" onclick="toggleProjectPlan('${p.id}')">📅 Projektplan</button>
       </div>
-      ${pt.length?pt.map(t=>{const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const done=t.status==="Klar";return`<div class="task-row" style="${done?"opacity:.55":""}">
+
+      <!-- PROJEKTPLAN -->
+      <div id="proj-plan-${p.id}" style="display:none;margin-bottom:12px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:12px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:10px">Projektplan</div>
+        ${renderProjectPlan(p)}
+      </div>
+
+      ${pt.length?pt.slice().sort((a,b)=>{const po={Hög:0,Medium:1,Låg:2};return(po[a.priority]??1)-(po[b.priority]??1);}).map(t=>{const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const done=t.status==="Klar";return`<div class="task-row" style="${done?"opacity:.55":""}">
         <div class="cb ${done?"done":""}" onclick="toggleTask('${t.id}','${t.status}')">✓</div>
         <div class="task-main">
           <div class="task-title" style="${done?"text-decoration:line-through":""}">${e(t.title)}</div>
