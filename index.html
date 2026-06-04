@@ -384,6 +384,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span>Underkonsulter</div>
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
+    <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span>Min aktivitet</div>
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
@@ -516,6 +517,14 @@ textarea{resize:vertical;min-height:68px}
       <div id="subconsultants-content"></div>
     </div>
     <div class="view" id="view-log"><div class="tw"><table><thead><tr><th>Datum</th><th>Kontakt</th><th>Typ</th><th>Anteckning</th><th>Nästa steg</th><th></th></tr></thead><tbody id="log-tbody"></tbody></table></div></div>
+    <div class="view" id="view-myactivity">
+      <div class="toolbar">
+        <select id="ma-period" onchange="renderMyActivity()"><option value="7">Senaste 7 dagarna</option><option value="14">Senaste 14 dagarna</option><option value="30" selected>Senaste 30 dagarna</option><option value="90">Senaste 90 dagarna</option><option value="all">Allt</option></select>
+        <select id="ma-type" onchange="renderMyActivity()"><option value="">Alla aktiviteter</option><option value="kontakt">Kontaktaktiviteter</option><option value="signal">Granskade signaler</option><option value="tid">Loggad tid</option></select>
+      </div>
+      <div id="myactivity-kpi" class="kpi-grid"></div>
+      <div id="myactivity-content"></div>
+    </div>
     <div class="view" id="view-settings"><div id="settings-content"></div></div>
   </div>
 </div>
@@ -1029,7 +1038,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet"};
 
 function gotoView(name){
   curView=name;
@@ -1049,7 +1058,7 @@ function gotoView(name){
   else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
   else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button>';
   else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1814,6 +1823,68 @@ else{await sb.from("contacts").update({senast_kontakt:datum,senast_typ:typ}).eq(
 closeM("m-log");toast("Aktivitet sparad");await loadAll();}
 function renderLog(){if(!actLog.length){document.getElementById("log-tbody").innerHTML='<tr><td colspan="6"><div class="empty"><p>Ingen aktivitet</p></div></td></tr>';return;}document.getElementById("log-tbody").innerHTML=actLog.map(l=>`<tr><td>${e(l.datum||"")}</td><td><strong>${e(l.kontakt_namn||"")}</strong></td><td>${e(l.typ||"")}</td><td>${e(l.anteckning||"--")}</td><td>${e(l.nasta_steg||"--")}</td><td><button class="btn-icon" onclick="openLogModal('${l.contact_id}','${l.id}')">✎</button><button class="btn-icon" onclick="deleteLogEntry('${l.id}')">🗑</button></td></tr>`).join("");}
 function deleteLogEntry(id){confirm2("Ta bort?",async()=>{await sb.from("activity_log").delete().eq("id",id);await loadAll();});}
+
+function renderMyActivity(){
+  const period=v("ma-period")||"30";
+  const typeF=v("ma-type")||"";
+  const cutoff=period==="all"?null:new Date(Date.now()-Number(period)*86400000);
+  const inPeriod=dateStr=>{if(!dateStr)return false;if(!cutoff)return true;const d=new Date(dateStr);return d>=cutoff;};
+
+  const items=[];
+  // 1) Kontaktaktiviteter (möten, samtal, lunch etc)
+  if(!typeF||typeF==="kontakt"){
+    actLog.forEach(l=>{
+      if(!inPeriod(l.datum))return;
+      const c=contacts.find(x=>x.id===l.contact_id);
+      items.push({datum:l.datum,kind:"kontakt",icon:"📞",title:`${e(l.typ||"Aktivitet")} – ${e(l.kontakt_namn||(c?c.fornamn+" "+c.efternamn:"okänd kontakt"))}`,sub:l.anteckning?e(l.anteckning.slice(0,120)):"",onclick:c?`openCard('${c.id}')`:""});
+    });
+  }
+  // 2) Granskade/ignorerade signaler
+  if(!typeF||typeF==="signal"){
+    signals.forEach(s=>{
+      if(s.status!=="granskad"&&s.status!=="ignorerad")return;
+      // signal har inget granskningsdatum – använd signal_datum som approximation
+      if(!inPeriod(s.signal_datum))return;
+      items.push({datum:s.signal_datum,kind:"signal",icon:s.status==="granskad"?"✅":"🚫",title:`${s.status==="granskad"?"Granskade":"Ignorerade"} lead – ${e(s.companies?.namn||"bolag")}`,sub:e((s.rubrik||"").slice(0,120)),onclick:`openLead('${s.id}')`});
+    });
+  }
+  // 3) Loggad projekttid
+  if(!typeF||typeF==="tid"){
+    diary.forEach(d=>{
+      if(!inPeriod(d.datum))return;
+      const p=projects.find(x=>x.id===d.project_id);
+      const co=p?projCompany(p):null;
+      items.push({datum:d.datum,kind:"tid",icon:"⏱",title:`Loggade ${Number(d.hours||0).toFixed(1)}h – ${e(p?.namn||"projekt")}`,sub:`${co?e(co.namn)+" · ":""}${e((d.description||"").slice(0,100))}`,onclick:p?`openProjectCard('${p.id}')`:""});
+    });
+  }
+
+  // KPI:er
+  const kontaktN=items.filter(i=>i.kind==="kontakt").length;
+  const signalN=items.filter(i=>i.kind==="signal").length;
+  const tidN=items.filter(i=>i.kind==="tid").length;
+  const tidSum=diary.filter(d=>inPeriod(d.datum)).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
+  document.getElementById("myactivity-kpi").innerHTML=[
+    ["Kontaktaktiviteter",kontaktN,"c-blue"],
+    ["Granskade leads",signalN,"c-gold"],
+    ["Tidsloggar",tidN,"c-green"],
+    ["Timmar totalt",tidSum.toFixed(1),"c-purple"]
+  ].map(([l,n,c])=>`<div class="kpi ${c}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+
+  // Sortera nyast först, gruppera per datum
+  items.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
+  if(!items.length){document.getElementById("myactivity-content").innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Ingen aktivitet i vald period</p></div>';return;}
+  const byDate={};items.forEach(i=>{const d=i.datum||"Okänt";if(!byDate[d])byDate[d]=[];byDate[d].push(i);});
+  document.getElementById("myactivity-content").innerHTML=Object.entries(byDate).map(([datum,arr])=>`
+    <div class="week-sec" style="margin-bottom:12px">
+      <div class="week-sec-hdr"><h3>${e(datum)}</h3><span style="font-size:12px;color:#888">${arr.length} händelser</span></div>
+      <div style="padding:6px 0">
+        ${arr.map(i=>`<div class="week-row" ${i.onclick?`onclick="${i.onclick}"`:'style="cursor:default"'}>
+          <span style="font-size:18px;width:28px;text-align:center;flex-shrink:0">${i.icon}</span>
+          <div style="flex:1"><div class="week-rn">${i.title}</div>${i.sub?`<div class="week-rs">${i.sub}</div>`:""}</div>
+        </div>`).join("")}
+      </div>
+    </div>`).join("");
+}
 function openNoteModal(cid){noteCid=cid;document.getElementById("nt-text").value="";closeM("m-card");openM("m-note");}
 async function saveNote(){const txt=v("nt-text");if(!txt)return;await sb.from("contact_notes").insert({user_id:me.id,contact_id:noteCid,kategori:document.getElementById("nt-kat").value,anteckning:txt});closeM("m-note");toast("Sparad");await loadNotes();openCard(noteCid);}
 async function deleteNote(nid,cid){confirm2("Ta bort?",async()=>{await sb.from("contact_notes").delete().eq("id",nid);await loadNotes();openCard(cid);});}
