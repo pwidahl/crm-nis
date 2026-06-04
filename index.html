@@ -1181,7 +1181,11 @@ function renderProjektItem(p,month){
         <button class="btn btn-outline btn-xs" onclick="openNewDiaryEntryForProject('${p.id}')">+ Logga tid</button>
         <button class="btn btn-outline btn-xs" onclick="openProjectCard('${p.id}')">Detaljer & dagbok</button>
       </div>
-      ${pt.length?pt.map(t=>{const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const done=t.status==="Klar";return`<div class="task-row" style="${done?"opacity:.55":""}">
+      ${pt.length?pt.slice().sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)).map((t,i,arr)=>{const tl=taskLoggedHours(t.id);const te=Number(t.estimerad_tid)||0;const done=t.status==="Klar";return`<div class="task-row" style="${done?"opacity:.55":""}">
+        <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+          <button class="btn-icon" style="font-size:10px;padding:0 4px;line-height:1.2;${i===0?"opacity:.2;cursor:default":""}" ${i>0?`onclick="moveTask('${t.id}','up','${p.id}')"`:"disabled"} title="Flytta upp">▲</button>
+          <button class="btn-icon" style="font-size:10px;padding:0 4px;line-height:1.2;${i===arr.length-1?"opacity:.2;cursor:default":""}" ${i<arr.length-1?`onclick="moveTask('${t.id}','down','${p.id}')"`:"disabled"} title="Flytta ned">▼</button>
+        </div>
         <div class="cb ${done?"done":""}" onclick="toggleTask('${t.id}','${t.status}')">✓</div>
         <div class="task-main">
           <div class="task-title" style="${done?"text-decoration:line-through":""}">${e(t.title)}</div>
@@ -1189,6 +1193,7 @@ function renderProjektItem(p,month){
         </div>
         ${te?progressBar(tl,te,100):""}
         <span class="ts ${{"Ej startad":"ts-ej","Pågår":"ts-pagar","Väntar":"ts-vantar","Klar":"ts-klar"}[t.status]||"ts-ej"}">${e(t.status)}</span>
+        <button class="btn-icon" title="Visa tid" onclick="showTaskTime('${t.id}')">⏱</button>
         <button class="btn-icon" onclick="openEditTask('${t.id}')">✎</button>
       </div>`;}).join(""):'<p style="color:#aaa;font-size:12px;padding:6px 0">Inga uppgifter. Klicka "+ Uppgift" för att lägga till.</p>'}
     </div>
@@ -2553,6 +2558,34 @@ function setFocusMode(mode){
   }
   closeM('m-focus');
   renderCurrent();
+}
+
+async function moveTask(tid,dir,pid){
+  const pt=tasks.filter(t=>t.project_id===pid).slice().sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));
+  const idx=pt.findIndex(t=>t.id===tid);
+  const swapIdx=dir==="up"?idx-1:idx+1;
+  if(swapIdx<0||swapIdx>=pt.length)return;
+  pt.forEach((t,i)=>{t.sort_order=i*10;});
+  const a=pt[idx],b=pt[swapIdx];
+  const tmp=a.sort_order;a.sort_order=b.sort_order;b.sort_order=tmp;
+  await Promise.all([
+    sb.from("project_tasks").update({sort_order:a.sort_order}).eq("id",a.id),
+    sb.from("project_tasks").update({sort_order:b.sort_order}).eq("id",b.id)
+  ]);
+  await loadProjects();renderProjects();
+  const el=document.getElementById("proj-body-"+pid);if(el)el.classList.add("open");
+}
+
+function showTaskTime(tid){
+  const entries=diary.filter(d=>d.task_id===tid);
+  const total=entries.reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
+  const t=tasks.find(x=>x.id===tid);
+  const byDate={};
+  entries.forEach(d=>{if(!byDate[d.datum])byDate[d.datum]=0;byDate[d.datum]+=parseFloat(d.hours)||0;});
+  const rows=Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,h])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--cream);font-size:13px"><span>${e(d)}</span><span>${h.toFixed(1)}h</span></div>`).join("");
+  confirm2(`Tid på "${t?.title||""}"`,()=>{});
+  document.getElementById("confirm-txt").innerHTML=`<strong>${e(t?.title||"")}</strong><div style="font-size:28px;font-family:'DM Serif Display',serif;margin:8px 0">${total.toFixed(1)}h totalt</div>${rows||'<p style="color:#aaa">Inga loggade timmar</p>'}`;
+  document.getElementById("confirm-ok").style.display="none";
 }
 
 checkSession();
