@@ -386,6 +386,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span>Min aktivitet</div>
     <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span>Statistik</div>
+    <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
@@ -531,6 +532,12 @@ textarea{resize:vertical;min-height:68px}
         <select id="stats-period" onchange="renderStats()"><option value="12">Senaste 12 veckorna</option><option value="26" selected>Senaste 26 veckorna</option><option value="52">Senaste 52 veckorna</option></select>
       </div>
       <div id="stats-content"></div>
+    </div>
+    <div class="view" id="view-koncern">
+      <div class="toolbar">
+        <input id="koncern-filter" placeholder="Sök koncern eller bolag..." oninput="renderKoncern()" style="flex:1;max-width:280px">
+      </div>
+      <div id="koncern-content"></div>
     </div>
     <div class="view" id="view-settings"><div id="settings-content"></div></div>
   </div>
@@ -1047,7 +1054,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta"};
 
 function gotoView(name){
   curView=name;
@@ -1067,7 +1074,7 @@ function gotoView(name){
   else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
   else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button>';
   else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -2110,6 +2117,78 @@ async function saveTask(){
   const r=editTid?await sb.from("project_tasks").update(data).eq("id",editTid):await sb.from("project_tasks").insert(data);if(r.error){alert(r.error.message);return;}closeM("m-task");toast("Uppgift sparad");await loadAll();if(curProjId)openProjectCard(curProjId);
 }
 function deleteTask(id){confirm2("Ta bort uppgiften?",async()=>{await sb.from("project_tasks").delete().eq("id",id);await loadAll();if(curProjId)openProjectCard(curProjId);});}
+
+// ══ KONCERNKARTA ═════════════════════════════════════════════
+function koncernCard(c,isParent){
+  const fl=FLAG[c.land]||"🌍";
+  const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;
+  const proj=projects.filter(p=>p.company_id===c.id).length;
+  const kontakter=contacts.filter(x=>x.company_id===c.id).length;
+  return`<div onclick="openCompanyCard('${c.id}')" style="cursor:pointer;background:#fff;border:1px solid ${isParent?"var(--accent)":"var(--cream)"};border-radius:var(--r);padding:10px 13px;min-width:180px;${isParent?"border-width:2px":""};transition:box-shadow .12s" onmouseover="this.style.boxShadow='0 3px 12px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
+    <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="color:var(--gold);font-size:11px">★</span>':""}</div>
+    <div style="font-size:11px;color:#888;margin-top:3px">${pipeLabel(c.pipeline_status||"")}</div>
+    <div style="font-size:10px;color:#aaa;margin-top:4px;display:flex;gap:8px">${kontakter?`<span>👤 ${kontakter}</span>`:""}${proj?`<span>💼 ${proj}</span>`:""}${sig?`<span style="color:var(--red)">⚡ ${sig}</span>`:""}</div>
+  </div>`;
+}
+
+function renderKoncern(){
+  const q=(v("koncern-filter")||"").toLowerCase();
+  // Hitta alla moderbolag (bolag som har minst ett dotterbolag)
+  const parentIds=[...new Set(companies.filter(c=>c.parent_company_id).map(c=>c.parent_company_id))];
+  const koncerner=parentIds.map(pid=>companies.find(c=>c.id===pid)).filter(Boolean);
+  // Filtrera på sökterm (matchar moder eller något dotterbolag)
+  const matchKoncern=parent=>{
+    if(!q)return true;
+    if((parent.namn||"").toLowerCase().includes(q))return true;
+    return companies.some(c=>c.parent_company_id===parent.id&&(c.namn||"").toLowerCase().includes(q));
+  };
+  const visibleKoncerner=koncerner.filter(matchKoncern).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
+
+  let html="";
+  if(visibleKoncerner.length){
+    html+=visibleKoncerner.map(parent=>{
+      const subs=companies.filter(c=>c.parent_company_id===parent.id).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
+      return`<div class="week-sec" style="margin-bottom:18px">
+        <div class="week-sec-hdr"><h3>🏢 ${e(parent.namn)}-koncernen</h3><span style="font-size:12px;color:#888">${subs.length} dotterbolag</span></div>
+        <div style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:0">
+          ${koncernCard(parent,true)}
+          ${subs.length?`
+            <div style="width:2px;height:18px;background:var(--mid)"></div>
+            <div style="height:2px;background:var(--mid);width:${subs.length>1?"80%":"2px"};margin-bottom:0"></div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:-1px">
+              ${subs.map(sub=>`<div style="display:flex;flex-direction:column;align-items:center"><div style="width:2px;height:16px;background:var(--mid)"></div>${koncernCard(sub,false)}</div>`).join("")}
+            </div>`:""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // Fristående bolag (ingen moder och inga dotterbolag) – kompakt lista
+  const standalone=companies.filter(c=>!c.parent_company_id&&!companies.some(x=>x.parent_company_id===c.id));
+  const visibleStandalone=q?standalone.filter(c=>(c.namn||"").toLowerCase().includes(q)):standalone;
+
+  if(!visibleKoncerner.length&&!visibleStandalone.length){
+    document.getElementById("koncern-content").innerHTML='<div class="empty"><div class="empty-icon">🗺️</div><p>Inga bolag matchar. Skapa koncerner genom att sätta "Moderbolag" på ett bolag.</p></div>';
+    return;
+  }
+
+  if(!visibleKoncerner.length){
+    html+=`<div class="privacy-note" style="margin-bottom:16px">Inga koncerner ännu. Koppla ihop bolag genom att öppna ett bolag → Redigera → välj "Moderbolag (koncern)".</div>`;
+  }
+
+  if(visibleStandalone.length){
+    html+=`<div class="week-sec">
+      <div class="week-sec-hdr"><h3>Fristående bolag</h3><span style="font-size:12px;color:#888">${visibleStandalone.length} bolag utan koncern</span></div>
+      <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
+        ${visibleStandalone.sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).slice(0,60).map(c=>koncernCard(c,false)).join("")}
+      </div>
+      ${visibleStandalone.length>60?`<p style="padding:0 16px 12px;font-size:12px;color:#aaa">Visar 60 av ${visibleStandalone.length}. Använd sökrutan för att hitta fler.</p>`:""}
+    </div>`;
+  }
+
+  document.getElementById("koncern-content").innerHTML=html;
+}
+
 
 // FOLLOWUPS
 function renderFups(elId,limit){
