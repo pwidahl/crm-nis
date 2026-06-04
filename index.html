@@ -385,6 +385,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec">Aktivitet</div>
     <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
     <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span>Min aktivitet</div>
+    <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span>Statistik</div>
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
@@ -524,6 +525,12 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="myactivity-kpi" class="kpi-grid"></div>
       <div id="myactivity-content"></div>
+    </div>
+    <div class="view" id="view-stats">
+      <div class="toolbar">
+        <select id="stats-period" onchange="renderStats()"><option value="12">Senaste 12 veckorna</option><option value="26" selected>Senaste 26 veckorna</option><option value="52">Senaste 52 veckorna</option></select>
+      </div>
+      <div id="stats-content"></div>
     </div>
     <div class="view" id="view-settings"><div id="settings-content"></div></div>
   </div>
@@ -1038,7 +1045,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik"};
 
 function gotoView(name){
   curView=name;
@@ -1058,7 +1065,7 @@ function gotoView(name){
   else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
   else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button>';
   else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1889,6 +1896,124 @@ function openNoteModal(cid){noteCid=cid;document.getElementById("nt-text").value
 async function saveNote(){const txt=v("nt-text");if(!txt)return;await sb.from("contact_notes").insert({user_id:me.id,contact_id:noteCid,kategori:document.getElementById("nt-kat").value,anteckning:txt});closeM("m-note");toast("Sparad");await loadNotes();openCard(noteCid);}
 async function deleteNote(nid,cid){confirm2("Ta bort?",async()=>{await sb.from("contact_notes").delete().eq("id",nid);await loadNotes();openCard(cid);});}
 function confirmDeleteContact(id){const c=contacts.find(x=>x.id===id);if(!c)return;confirm2(`Ta bort "${c.fornamn} ${c.efternamn}"?`,async()=>{await sb.from("contacts").delete().eq("id",id);closeM("m-card");await loadAll();});}
+
+// ══ STATISTIK ════════════════════════════════════════════════
+function isoWeekKey(d){const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);const ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));const wk=Math.ceil((((dt-ys)/86400000)+1)/7);return`${dt.getUTCFullYear()}-v${String(wk).padStart(2,"0")}`;}
+
+function lastNWeeks(n){
+  const weeks=[];const d=new Date();
+  for(let i=n-1;i>=0;i--){const w=new Date(d);w.setDate(d.getDate()-i*7);weeks.push(isoWeekKey(w));}
+  return weeks;
+}
+
+// Enkel SVG-linjegraf. series = [{label,color,values:[]}], labels = veckor
+function svgLineChart(labels,series,opts={}){
+  const W=opts.w||760,H=opts.h||240,padL=38,padB=34,padT=14,padR=12;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const allVals=series.flatMap(s=>s.values);
+  const maxV=Math.max(1,...allVals);
+  const n=labels.length;
+  const x=i=>padL+(n<=1?plotW/2:(i/(n-1))*plotW);
+  const y=val=>padT+plotH-(val/maxV)*plotH;
+  // gridlines (4)
+  let grid="";for(let g=0;g<=4;g++){const gy=padT+(g/4)*plotH;const gv=Math.round(maxV*(1-g/4));grid+=`<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="var(--cream)" stroke-width="1"/><text x="${padL-6}" y="${gy+4}" text-anchor="end" font-size="10" fill="#aaa">${gv}</text>`;}
+  // x-labels (visa max ~8 för läsbarhet)
+  let xlabels="";const step=Math.ceil(n/8);for(let i=0;i<n;i+=step){xlabels+=`<text x="${x(i)}" y="${H-padB+16}" text-anchor="middle" font-size="9" fill="#999">${labels[i].replace(/^\d{4}-/,"")}</text>`;}
+  // lines + points
+  let paths="";series.forEach(s=>{
+    const pts=s.values.map((v,i)=>`${x(i)},${y(v)}`).join(" ");
+    paths+=`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    paths+=s.values.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.color}"><title>${labels[i]}: ${v} ${s.label}</title></circle>`).join("");
+  });
+  // legend
+  const legend=series.map((s,i)=>`<g transform="translate(${padL+i*150},${padT-2})"><rect width="11" height="11" rx="2" fill="${s.color}"/><text x="16" y="10" font-size="11" fill="#555">${s.label}</text></g>`).join("");
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-family:'DM Sans',sans-serif">${grid}${paths}${xlabels}<g transform="translate(0,2)">${legend}</g></svg>`;
+}
+
+function renderStats(){
+  const nWeeks=Number(v("stats-period")||"26");
+  const weeks=lastNWeeks(nWeeks);
+  const weekIdx={};weeks.forEach((w,i)=>weekIdx[w]=i);
+  const inRange=dateStr=>{if(!dateStr)return -1;const k=isoWeekKey(new Date(dateStr));return weekIdx[k]??-1;};
+
+  // ── 1) AKTIVITETSUTVECKLING ──────────────────────────────
+  const moten=new Array(nWeeks).fill(0),samtal=new Array(nWeeks).fill(0),lunch=new Array(nWeeks).fill(0);
+  actLog.forEach(l=>{
+    const idx=inRange(l.datum);if(idx<0)return;
+    const t=(l.typ||"").toLowerCase(),it=(l.interaktionstyp||"").toLowerCase();
+    if(t.includes("lunch")||it==="lunch")lunch[idx]++;
+    else if(t.includes("telefon")||it==="samtal"||t.includes("mote")||t.includes("möte")||it==="mote")samtal[idx]++;
+    else moten[idx]++;
+  });
+  const aktivChart=svgLineChart(weeks,[
+    {label:"Möten/samtal",color:"var(--accent)",values:samtal},
+    {label:"Luncher",color:"var(--warm)",values:lunch},
+    {label:"Övrigt (LinkedIn/mejl)",color:"var(--gold)",values:moten}
+  ]);
+
+  // ── 2) PIPELINE & LEAD-UTVECKLING ────────────────────────
+  // Bolag som nått pipeline-steg (kumulativt per vecka via created_at som proxy)
+  const nyaSignaler=new Array(nWeeks).fill(0),granskade=new Array(nWeeks).fill(0);
+  signals.forEach(s=>{
+    const idx=inRange(s.signal_datum);if(idx<0)return;
+    nyaSignaler[idx]++;
+    if(s.status==="granskad")granskade[idx]++;
+  });
+  const leadChart=svgLineChart(weeks,[
+    {label:"Nya signaler",color:"var(--gold)",values:nyaSignaler},
+    {label:"Granskade",color:"var(--green)",values:granskade}
+  ]);
+  // Pipeline-fördelning just nu (stapel)
+  const pipeCount={};PIPELINE.forEach(p=>pipeCount[p]=0);
+  companies.forEach(c=>{const p=c.pipeline_status||"Watchlist";if(pipeCount[p]!=null)pipeCount[p]++;});
+  const maxPipe=Math.max(1,...Object.values(pipeCount));
+  const pipeBars=PIPELINE.map(p=>{const n=pipeCount[p];const h=Math.round((n/maxPipe)*120);return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div style="font-size:12px;font-weight:600;color:var(--accent)">${n}</div><div style="width:70%;height:${h}px;min-height:3px;background:var(--accent);border-radius:3px 3px 0 0;opacity:${0.4+0.6*(n/maxPipe)}"></div><div style="font-size:9px;color:#888;text-align:center;line-height:1.2">${pipeLabel(p)}</div></div>`;}).join("");
+
+  // ── 3) RELATIONSUTVECKLING ───────────────────────────────
+  // Fördelning av kontakter över relationskedjan (nuvarande snapshot)
+  const kedjaSteg=[0,0,0,0];// LinkedIn/inget, samtal, lunch, aktivt
+  contacts.forEach(c=>{const lvl=kedjaLevel(c.senast_typ);kedjaSteg[Math.min(3,Math.max(0,lvl===0?0:lvl-1))]++;});
+  const kedjaLabels=["LinkedIn/mejl","Telefonsamtal","Lunch","Aktivt samarbete"];
+  const kedjaColors=["#7B8FA1","var(--accent)","var(--warm)","var(--green)"];
+  const maxKedja=Math.max(1,...kedjaSteg);
+  const kedjaBars=kedjaSteg.map((n,i)=>{const h=Math.round((n/maxKedja)*120);return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div style="font-size:13px;font-weight:600;color:${kedjaColors[i]}">${n}</div><div style="width:60%;height:${h}px;min-height:3px;background:${kedjaColors[i]};border-radius:3px 3px 0 0"></div><div style="font-size:10px;color:#888;text-align:center">${kedjaLabels[i]}</div></div>`;}).join("");
+  // Relationspoäng-fördelning
+  const scoreBuckets={stark:0,medel:0,svag:0};
+  contacts.forEach(c=>{const sc=calcScore(c.id).total;if(sc>=60)scoreBuckets.stark++;else if(sc>=30)scoreBuckets.medel++;else scoreBuckets.svag++;});
+
+  // ── KPI-rad ──────────────────────────────────────────────
+  const totAktiviteter=samtal.reduce((a,b)=>a+b,0)+lunch.reduce((a,b)=>a+b,0)+moten.reduce((a,b)=>a+b,0);
+  const snittVecka=(totAktiviteter/nWeeks).toFixed(1);
+
+  document.getElementById("stats-content").innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi c-blue"><div class="kpi-n">${totAktiviteter}</div><div class="kpi-l">Aktiviteter (${nWeeks}v)</div></div>
+      <div class="kpi c-warm"><div class="kpi-n">${snittVecka}</div><div class="kpi-l">Snitt per vecka</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${scoreBuckets.stark}</div><div class="kpi-l">Starka relationer</div></div>
+      <div class="kpi c-red"><div class="kpi-n">${scoreBuckets.svag}</div><div class="kpi-l">Svaga – prioritera</div></div>
+    </div>
+
+    <div class="week-sec" style="margin-bottom:18px">
+      <div class="week-sec-hdr"><h3>📞 Aktivitetsutveckling</h3><span style="font-size:12px;color:#888">möten, samtal & luncher per vecka</span></div>
+      <div style="padding:16px">${aktivChart}</div>
+    </div>
+
+    <div class="week-sec" style="margin-bottom:18px">
+      <div class="week-sec-hdr"><h3>⚡ Lead-utveckling</h3><span style="font-size:12px;color:#888">signaler in & granskade per vecka</span></div>
+      <div style="padding:16px">${leadChart}</div>
+    </div>
+
+    <div class="week-sec" style="margin-bottom:18px">
+      <div class="week-sec-hdr"><h3>📊 Pipeline just nu</h3><span style="font-size:12px;color:#888">${companies.length} bolag totalt</span></div>
+      <div style="padding:16px;display:flex;align-items:flex-end;gap:6px;min-height:160px">${pipeBars}</div>
+    </div>
+
+    <div class="week-sec" style="margin-bottom:18px">
+      <div class="week-sec-hdr"><h3>● Relationskedjan</h3><span style="font-size:12px;color:#888">var dina kontakter befinner sig</span></div>
+      <div style="padding:16px;display:flex;align-items:flex-end;gap:12px;min-height:160px">${kedjaBars}</div>
+    </div>`;
+}
+
 
 // PROJECT MODAL
 function openNewProject(){editPid=null;fillSelects();document.getElementById("pr-modal-title").textContent="Nytt projekt";["p-namn","p-start","p-end","p-hrrate","p-dayrate","p-invref","p-scope","p-notes","p-esttid"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("p-status").value="Aktiv";document.getElementById("p-typ").value="Controller";document.getElementById("p-ratetype").value="hourly";openM("m-project");}
