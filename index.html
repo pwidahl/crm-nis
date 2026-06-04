@@ -865,6 +865,14 @@ let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
 let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
 let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView="dashboard";
 let leadNavList=[];
+function sigMentionsContact(s){
+  const t=`${s.rubrik||""} ${s.beskrivning||""}`.toLowerCase();
+  return contacts.find(c=>{
+    const fn=(c.fornamn||"").trim().toLowerCase(),en=(c.efternamn||"").trim().toLowerCase();
+    if(fn.length<2||en.length<2)return false;
+    return t.includes(`${fn} ${en}`);
+  })||null;
+}
 let timerInterval=null,timerStart=null,timerRunning=false,searchTimer=null,rtChannel=null;
 let curDiaryType="uppdrag";
 
@@ -1537,7 +1545,7 @@ function renderSignals(){
       <strong>${e(s.rubrik)}</strong>
       ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:340px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,120))}${(s.beskrivning||"").length>120?"…":""}</div>`:""}
       <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
-    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(s.companies?.namn||"")}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
+    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${(()=>{const m=sigMentionsContact(s);return m?`<span title="Nämner din kontakt: ${e(m.fornamn)} ${e(m.efternamn)}" style="margin-right:4px">📍</span>`:"";})()}${e(s.companies?.namn||"")}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
       ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
       <button class="btn-icon" title="Öppna bolagskort" onclick="openCompanyCard('${s.company_id}')">↗</button>
       <button class="btn-icon" title="Markera granskad" onclick="setSigStatus('${s.id}','granskad')">✓</button>
@@ -2337,7 +2345,26 @@ function openLead(sigId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
   const co=companies.find(x=>x.id===s.company_id);
-  const coContacts=contacts.filter(c=>c.company_id===s.company_id);
+  const companyContacts=contacts.filter(c=>c.company_id===s.company_id);
+  // Namnmatchning: kontakter vars för+efternamn nämns i signalens rubrik/beskrivning
+  const sigText=`${s.rubrik||""} ${s.beskrivning||""}`.toLowerCase();
+  const nameMatched=contacts.filter(c=>{
+    const fn=(c.fornamn||"").trim().toLowerCase();
+    const en=(c.efternamn||"").trim().toLowerCase();
+    if(fn.length<2||en.length<2)return false;
+    // kräver att BÅDE förnamn och efternamn finns i texten (som hela ord)
+    const full=`${fn} ${en}`;
+    return sigText.includes(full);
+  });
+  // Slå ihop: bolagskontakter + namnmatchade, utan dubbletter
+  const seen=new Set();
+  const coContacts=[];
+  for(const c of [...nameMatched,...companyContacts]){
+    if(seen.has(c.id))continue;
+    seen.add(c.id);
+    coContacts.push(c);
+  }
+  const matchedIds=new Set(nameMatched.map(c=>c.id));
   const coSignals=signals.filter(x=>x.company_id===s.company_id).slice(0,5);
   const coLogs=actLog.filter(l=>coContacts.some(c=>c.id===l.contact_id)).slice(0,5);
 
@@ -2390,15 +2417,15 @@ function openLead(sigId){
       <!-- KONTAKTER -->
       <div>
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kontakter (${coContacts.length})</div>
-        ${coContacts.length?coContacts.slice(0,4).map(c=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)">
+        ${coContacts.length?coContacts.slice(0,6).map(c=>{const matched=matchedIds.has(c.id);return`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)${matched?";background:#fff7e8;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:4px":""}">
             <div style="flex:1">
-              <div style="font-size:13px;font-weight:600">${e(c.fornamn)} ${e(c.efternamn)}</div>
-              <div style="font-size:11px;color:#888">${e(c.roll||"")}</div>
+              <div style="font-size:13px;font-weight:600">${e(c.fornamn)} ${e(c.efternamn)}${matched?'<span class="badge" style="background:var(--warm);color:#fff;font-size:9px;margin-left:6px">📍 NÄMNS I SIGNALEN</span>':""}</div>
+              <div style="font-size:11px;color:#888">${e(c.roll||"")}${matched&&c.foretag&&c.company_id!==s.company_id?` · ${e(c.foretag)}`:""}</div>
             </div>
             <button class="btn btn-warm btn-xs" onclick="closeM('m-lead');openLogModal('${c.id}')">Logga</button>
             <button class="btn btn-outline btn-xs" onclick="closeM('m-lead');openCard('${c.id}')">↗</button>
-          </div>`).join("")
+          </div>`;}).join("")
         :`<p style="color:#aaa;font-size:13px">Inga kontakter kopplade</p>`}
         <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="closeM('m-lead');openNewContact();setTimeout(()=>{const el=document.getElementById('f-co');if(el)el.value='${e(co?.namn||s.companies?.namn||"")}';},100)">+ Lägg till kontakt</button>
       </div>
