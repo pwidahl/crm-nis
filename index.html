@@ -2721,6 +2721,15 @@ async function saveSub(){const fn=v("sb-fn"),en=v("sb-en");if(!fn||!en){toast("N
 function archiveSub(id){confirm2("Arkivera?",async()=>{await sb.from("subconsultants").update({arkiverad_vid:new Date().toISOString()}).eq("id",id);await loadAll();});}
 
 // ══ UNDERKONSULTKORT (logg, bolag, relationer) ═══════════════
+function subSkillList(subId){return subSkills.filter(k=>k.subconsultant_id===subId).map(k=>(k.kompetens||"").toLowerCase().trim()).filter(Boolean);}
+function matchScore(subId,sig){
+  // antal av underkonsultens kompetenser som nämns i leadets "efterfragar" + text
+  const skills=subSkillList(subId);
+  if(!skills.length)return{count:0,matched:[]};
+  const hay=`${sig.efterfragar||""} ${sig.rubrik||""} ${sig.beskrivning||""}`.toLowerCase();
+  const matched=skills.filter(sk=>hay.includes(sk));
+  return{count:matched.length,matched};
+}
 function openSubCard(id){
   const s=subs.find(x=>x.id===id);if(!s)return;curSubId=id;
   const sk=subSkills.filter(k=>k.subconsultant_id===id).map(k=>k.kompetens);
@@ -2732,7 +2741,7 @@ function openSubCard(id){
   const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";
   document.getElementById("sub-card-content").innerHTML=`
     <div class="card-hdr"><h2>★ ${e(s.fornamn)} ${e(s.efternamn)}</h2><p>${e([s.stad,avlbl].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges">${sk.map(x=>`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(x)}</span>`).join("")}</div></div>
-    <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div></div>
+    <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div><div class="ctab" onclick="cct('sub','leads',this)">Passande leads</div></div>
     <div class="ctpane active" id="csub-overview">
       <div class="ig">
         <div class="ii"><label>E-post</label><span>${s.epost?`<a href="mailto:${e(s.epost)}">${e(s.epost)}</a>`:"--"}</span></div>
@@ -2758,6 +2767,19 @@ function openSubCard(id){
       <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openSubContact('${id}')">+ Koppla kontakt</button></div>
       ${cts.length?cts.map(x=>{const c=contacts.find(ct=>ct.id===x.contact_id);if(!c)return"";return`<div class="fup-row"><div class="fup-info"><div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openCard('${c.id}')">${e(c.fornamn)} ${e(c.efternamn)} ↗</div><div class="fup-meta">${e(CONN_TYPES[x.relation_typ]||x.relation_typ)}${c.foretag?" · "+e(c.foretag):""}${x.anteckning?" · "+e(x.anteckning):""}</div></div><button class="btn-icon" onclick="deleteSubContact('${x.id}')" style="color:var(--red)">🗑</button></div>`;}).join(""):'<p style="color:#aaa;font-size:13px">Inga kopplade kontakter ännu.</p>'}
     </div>
+    <div class="ctpane" id="csub-leads">${(()=>{
+      const skills=subSkillList(id);
+      if(!skills.length)return '<p style="color:#aaa;font-size:13px">Lägg till kompetenser på underkonsulten för att matcha mot leads.</p>';
+      const ranked=signals.map(sig=>({sig,...matchScore(id,sig)})).sort((a,b)=>b.count-a.count);
+      return `<p style="font-size:12px;color:#888;margin-bottom:10px">Kompetenser: ${skills.map(e).join(", ")}. Leads rankas efter antal matchande kompetenser mot leadets "efterfrågar"-fält och text.</p>`+
+        ranked.map(({sig,count,matched})=>`<div class="fup-row" style="${count>0?"border-left:3px solid var(--green)":""}">
+          <div class="fup-info">
+            <div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openLead('${sig.id}')">${e(sig.companies?.namn||"Bolag")} – ${e(sig.rubrik||"")} ↗</div>
+            <div class="fup-meta">${count>0?`<span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>`:'<span style="color:#aaa">Ingen kompetensmatch</span>'}${sig.efterfragar?` · efterfrågar: ${e(sig.efterfragar)}`:""}</div>
+          </div>
+          <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(sig.status)}</span>
+        </div>`).join("");
+    })()}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-sub-card')">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
   openM("m-sub-card");
 }
@@ -3449,6 +3471,12 @@ function openLead(sigId){
         <div id="lq-result-${s.id}" style="margin-top:12px"></div>
       </div>
 
+      <!-- MATCHANDE UNDERKONSULTER (auto från leadets text) -->
+      <div style="grid-column:1/-1">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Passande underkonsulter (matchas mot leadets text)</div>
+        <div id="lead-match-${s.id}">${leadMatchHtml(s)}</div>
+      </div>
+
       <!-- NOTERINGAR -->
       <div style="grid-column:1/-1">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Noteringar om detta lead</div>
@@ -3502,6 +3530,21 @@ async function saveLeadNotes(sigId, coId){
   }
   toast("Notering sparad ✓");
   await loadAll();
+}
+
+function leadMatchHtml(s){
+  // matcha alla underkonsulter mot leadets text, visa de med träff (rankade)
+  const ranked=subs.map(sub=>{
+    const m=matchScore(sub.id,s);
+    return{sub,count:m.count,matched:m.matched};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+  if(!ranked.length)return '<p style="color:#aaa;font-size:13px">Inga underkonsulter matchar leadets text. Lägg till kompetenser på dina underkonsulter för matchning.</p>';
+  return ranked.map(({sub,count,matched})=>`<div class="fup-row" style="border-left:3px solid var(--green)">
+    <div class="fup-info">
+      <div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-lead');openSubCard('${sub.id}')">★ ${e(sub.fornamn)} ${e(sub.efternamn)} ↗</div>
+      <div class="fup-meta"><span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>${sub.tillganglighet?` · ${({"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[sub.tillganglighet]||"")}`:""}</div>
+    </div>
+  </div>`).join("");
 }
 
 function movePipeline(coId){
