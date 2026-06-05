@@ -1038,7 +1038,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData(),loadConnections(),loadKnowledge()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData(),loadConnections(),loadKnowledge(),loadTodos()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -2860,9 +2860,28 @@ function openVeckoplanChipEdit(entryId){
 }
 
 // ══ TODO ═════════════════════════════════════════════════════
-let todos = JSON.parse(localStorage.getItem('crm_todos') || '[]');
+let todos = [];
 
-function saveTodos(){localStorage.setItem('crm_todos', JSON.stringify(todos));updateTodoBadge();}
+async function loadTodos(){
+  const r=await sb.from("todos").select("*").eq("user_id",me.id).order("created_at",{ascending:false});
+  todos=r.data||[];
+  // Migrera ev. gamla lokala todos en gång
+  await migrateLocalTodos();
+  updateTodoBadge();
+}
+
+async function migrateLocalTodos(){
+  let local=[];
+  try{local=JSON.parse(localStorage.getItem("crm_todos")||"[]");}catch(_){local=[];}
+  if(!local.length)return;
+  const rows=local.map(t=>({user_id:me.id,text:t.text||"",prioritet:t.prio||t.prioritet||"Medium",done:!!t.done}));
+  const r=await sb.from("todos").insert(rows).select("*");
+  if(!r.error){
+    localStorage.removeItem("crm_todos");
+    todos=[...(r.data||[]),...todos];
+    toast(`${rows.length} lokala todo flyttades till molnet ✓`);
+  }
+}
 
 function updateTodoBadge(){
   const open = todos.filter(t=>!t.done).length;
@@ -2875,26 +2894,29 @@ function openTodo(){
   openM('m-todo');
 }
 
-function addTodo(){
+async function addTodo(){
   const txt = document.getElementById('todo-input')?.value?.trim();
   if(!txt) return;
-  todos.unshift({id:Date.now(), text:txt, prio:document.getElementById('todo-prio')?.value||'Medium', done:false, created:today()});
+  const prioritet=document.getElementById('todo-prio')?.value||'Medium';
   document.getElementById('todo-input').value='';
-  saveTodos();
-  renderTodoList();
+  const r=await sb.from("todos").insert({user_id:me.id,text:txt,prioritet,done:false}).select("*").single();
+  if(r.error){alert(r.error.message);return;}
+  todos.unshift(r.data);
+  updateTodoBadge();renderTodoList();
 }
 
-function toggleTodo(id){
+async function toggleTodo(id){
   const t=todos.find(x=>x.id===id);
-  if(t){t.done=!t.done;}
-  saveTodos();
-  renderTodoList();
+  if(!t)return;
+  t.done=!t.done;
+  updateTodoBadge();renderTodoList();
+  await sb.from("todos").update({done:t.done}).eq("id",id);
 }
 
-function deleteTodo(id){
+async function deleteTodo(id){
   todos=todos.filter(x=>x.id!==id);
-  saveTodos();
-  renderTodoList();
+  updateTodoBadge();renderTodoList();
+  await sb.from("todos").delete().eq("id",id);
 }
 
 function renderTodoList(){
@@ -2903,19 +2925,17 @@ function renderTodoList(){
   const done=todos.filter(t=>t.done);
   const prioIcon={Hög:'🔴',Medium:'🟡',Låg:'🟢'};
   const row=t=>`<div class="task-row" style="${t.done?'opacity:.5':''}">
-    <div class="cb ${t.done?'done':''}" onclick="toggleTodo(${t.id})">✓</div>
+    <div class="cb ${t.done?'done':''}" onclick="toggleTodo('${t.id}')">✓</div>
     <div class="task-main">
-      <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prio]||'🟡'} ${e(t.text)}</div>
-      <div class="task-sub">${e(t.created||'')}</div>
+      <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prioritet]||'🟡'} ${e(t.text)}</div>
+      <div class="task-sub">${e((t.created_at||'').slice(0,10))}</div>
     </div>
-    <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo(${t.id})">🗑</button>
+    <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
   </div>`;
   el.innerHTML=(open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos</p>')
     +(done.length?`<p style="font-size:11px;color:#aaa;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.5px">Klara</p>${done.map(row).join('')}`:'');
 }
 
-// Init todo badge on load
-updateTodoBadge();
 
 // ══ COMPANY AUTOCOMPLETE ═════════════════════════════════════
 function acCompany(q){
