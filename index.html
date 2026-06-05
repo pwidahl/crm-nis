@@ -299,6 +299,10 @@ textarea{resize:vertical;min-height:68px}
       <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Bokföring/fakta</span>
       <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:var(--gold);box-shadow:0 2px 8px rgba(196,154,60,.3)" onclick="openQuickAction('kb')">📒</button>
     </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.12)">Underkonsult-aktivitet</span>
+      <button class="timer-fab-btn" style="width:40px;height:40px;font-size:16px;background:#7B8FA1;box-shadow:0 2px 8px rgba(123,143,161,.3)" onclick="openQuickAction('subact')">★</button>
+    </div>
   </div>
   <div class="timer-panel" id="timer-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
@@ -850,7 +854,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-sub-card"><div class="modal modal-lg"><div id="sub-card-content"></div></div></div>
 
-<div class="overlay" id="m-sub-act"><div class="modal" style="width:480px"><div class="mhdr"><h2>Logga aktivitet</h2><button class="mclose" onclick="closeM('m-sub-act')">×</button></div><div class="mbody"><input id="sa-subid" type="hidden"><input id="sa-id" type="hidden"><div class="fg"><div class="fl"><label>Typ</label><select id="sa-typ"><option value="Mote">Möte</option><option value="Telefonsamtal">Telefonsamtal</option><option value="LinkedIn">LinkedIn</option><option value="E-post">E-post</option><option value="Lunch">Lunch</option></select></div><div class="fl"><label>Datum</label><input id="sa-datum" type="date"></div><div class="fl full"><label>Anteckning</label><textarea id="sa-note"></textarea></div><div class="fl full"><label>Nästa steg</label><input id="sa-next"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub-act')">Avbryt</button><button class="btn btn-warm" onclick="saveSubActivity()">Spara</button></div></div></div>
+<div class="overlay" id="m-sub-act"><div class="modal" style="width:480px"><div class="mhdr"><h2>Logga aktivitet</h2><button class="mclose" onclick="closeM('m-sub-act')">×</button></div><div class="mbody"><input id="sa-subid" type="hidden"><input id="sa-id" type="hidden"><div class="fg"><div class="fl full" id="sa-sub-picker" style="display:none"><label>Underkonsult *</label><select id="sa-sub-sel"></select></div><div class="fl"><label>Typ</label><select id="sa-typ"><option value="Mote">Möte</option><option value="Telefonsamtal">Telefonsamtal</option><option value="LinkedIn">LinkedIn</option><option value="E-post">E-post</option><option value="Lunch">Lunch</option></select></div><div class="fl"><label>Datum</label><input id="sa-datum" type="date"></div><div class="fl full"><label>Anteckning</label><textarea id="sa-note"></textarea></div><div class="fl full"><label>Nästa steg</label><input id="sa-next"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub-act')">Avbryt</button><button class="btn btn-warm" onclick="saveSubActivity()">Spara</button></div></div></div>
 
 <div class="overlay" id="m-sub-co"><div class="modal" style="width:460px"><div class="mhdr"><h2>Lägg till bolag</h2><button class="mclose" onclick="closeM('m-sub-co')">×</button></div><div class="mbody"><input id="sco-subid" type="hidden"><div class="fg"><div class="fl full"><label>Bolag *</label><select id="sco-coid"></select></div><div class="fl"><label>Roll</label><input id="sco-roll" placeholder="t.ex. Interim CFO"></div><div class="fl"><label>Period</label><input id="sco-period" placeholder="t.ex. 2023–2024"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub-co')">Avbryt</button><button class="btn btn-primary" onclick="saveSubCompany()">Spara</button></div></div></div>
 
@@ -879,14 +883,15 @@ textarea{resize:vertical;min-height:68px}
   <div class="modal" style="width:580px">
     <div class="mhdr"><h2>Todo</h2><button class="mclose" onclick="closeM('m-todo')">×</button></div>
     <div class="mbody">
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input id="todo-input" placeholder="Ny uppgift..." style="flex:1" onkeydown="if(event.key==='Enter')addTodo()">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input id="todo-input" placeholder="Ny uppgift..." style="flex:1;min-width:140px" onkeydown="if(event.key==='Enter')addTodo()">
+        <input id="todo-date" type="date" style="width:150px" title="Deadline (valfritt)">
         <select id="todo-prio" style="width:110px"><option value="Hög">🔴 Hög</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Låg</option></select>
         <button class="btn btn-primary" onclick="addTodo()">+ Lägg till</button>
       </div>
       <div id="todo-list"></div>
     </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
+    <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Exportera till kalender</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
   </div>
 </div>
 
@@ -2764,16 +2769,20 @@ function openSubActivity(subId){
   document.getElementById("sa-datum").value=today();
   ["sa-note","sa-next"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("sa-typ").value="Mote";
+  document.getElementById("sa-sub-picker").style.display="none";
   closeM("m-sub-card");
   openM("m-sub-act");
 }
 async function saveSubActivity(){
-  const subId=v("sa-subid");if(!subId)return;
+  const pickerVisible=document.getElementById("sa-sub-picker").style.display!=="none";
+  const subId=pickerVisible?v("sa-sub-sel"):v("sa-subid");
+  if(!subId){toast("Välj underkonsult");return;}
   const data={user_id:me.id,subconsultant_id:subId,typ:v("sa-typ"),datum:v("sa-datum")||today(),anteckning:v("sa-note"),nasta_steg:v("sa-next")||null};
   const r=await sb.from("subconsultant_activity").insert(data);
   if(r.error){alert(r.error.message);return;}
   closeM("m-sub-act");toast("Aktivitet sparad ✓");
-  await loadSubRelations();openSubCard(subId);
+  await loadSubRelations();
+  if(!pickerVisible)openSubCard(subId);
 }
 function deleteSubActivity(id){const subId=curSubId;confirm2("Ta bort aktiviteten?",async()=>{await sb.from("subconsultant_activity").delete().eq("id",id);await loadSubRelations();openSubCard(subId);});}
 
@@ -2847,6 +2856,20 @@ function openQuickAction(type){
   }
   else if(type==="todo"){openTodo();}
   else if(type==="kb"){openNewKB();}
+  else if(type==="subact"){openSubActivityQuick();}
+}
+
+function openSubActivityQuick(){
+  if(!subs.length){toast("Inga underkonsulter ännu");return;}
+  document.getElementById("sa-subid").value="";
+  document.getElementById("sa-id").value="";
+  document.getElementById("sa-datum").value=today();
+  ["sa-note","sa-next"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("sa-typ").value="Mote";
+  const picker=document.getElementById("sa-sub-picker");
+  picker.style.display="";
+  document.getElementById("sa-sub-sel").innerHTML=subs.slice().sort((a,b)=>((a.fornamn||"")+(a.efternamn||"")).localeCompare((b.fornamn||"")+(b.efternamn||""),"sv")).map(s=>`<option value="${s.id}">${e(s.fornamn)} ${e(s.efternamn)}</option>`).join("");
+  openM("m-sub-act");
 }
 function toggleTimerPanel(){document.getElementById("timer-panel").classList.toggle("open");}
 function closeTimerPanel(){document.getElementById("timer-panel").classList.remove("open");}
@@ -3015,8 +3038,10 @@ async function addTodo(){
   const txt = document.getElementById('todo-input')?.value?.trim();
   if(!txt) return;
   const prioritet=document.getElementById('todo-prio')?.value||'Medium';
+  const due=document.getElementById('todo-date')?.value||null;
   document.getElementById('todo-input').value='';
-  const r=await sb.from("todos").insert({user_id:me.id,text:txt,prioritet,done:false}).select("*").single();
+  const d=document.getElementById('todo-date');if(d)d.value='';
+  const r=await sb.from("todos").insert({user_id:me.id,text:txt,prioritet,done:false,due_date:due}).select("*").single();
   if(r.error){alert(r.error.message);return;}
   todos.unshift(r.data);
   updateTodoBadge();renderTodoList();
@@ -3045,12 +3070,20 @@ function renderTodoList(){
     <div class="cb ${t.done?'done':''}" onclick="toggleTodo('${t.id}')">✓</div>
     <div class="task-main">
       <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prioritet]||'🟡'} ${e(t.text)}</div>
-      <div class="task-sub">${e((t.created_at||'').slice(0,10))}</div>
+      <div class="task-sub">${t.due_date?'📅 '+e(t.due_date):e((t.created_at||'').slice(0,10))}</div>
     </div>
     <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
   </div>`;
   el.innerHTML=(open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos</p>')
     +(done.length?`<p style="font-size:11px;color:#aaa;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.5px">Klara</p>${done.map(row).join('')}`:'');
+}
+
+function exportTodosICS(){
+  const open=todos.filter(t=>!t.done);
+  if(!open.length){toast("Inga öppna todos att exportera");return;}
+  const events=open.map(t=>({date:t.due_date||today(),title:"Todo: "+t.text,desc:"Prioritet: "+(t.prioritet||"Medium")}));
+  dlICS(makeICS(events),"todos.ics");
+  toast(open.length+" todos exporterade till kalender");
 }
 
 
