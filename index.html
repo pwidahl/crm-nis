@@ -1189,16 +1189,64 @@ function renderDashboard(){
     renderFocusDashboard();
     return;
   }
-  const today2=new Date();today2.setHours(0,0,0,0);
-  const ns=signals.filter(s=>s.status==="ny").length;const ap=projects.filter(p=>p.status==="Aktiv").length;const ot=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;
-  document.getElementById("dash-kpi").innerHTML=[["Kontakter",contacts.length,"c-blue"],["Bolag",companies.length,"c-green"],["Nya signaler",ns,"c-gold"],["Försenade uppfölj.",of2,"c-red"],["Aktiva projekt",ap,"c-purple"],["Försenade tasks",ot,"c-warm"]].map(([l,n,c2])=>`<div class="kpi ${c2}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
-  const ej=contacts.filter(c=>!c.senast_typ||["","Inget","LinkedIn","E-post"].includes(c.senast_typ)).length;const rg=contacts.filter(c=>["Telefonsamtal","samtal"].includes(c.senast_typ)).length;const lu=contacts.filter(c=>["Lunch","lunch"].includes(c.senast_typ)).length;const ak=contacts.filter(c=>["Mote","mote"].includes(c.senast_typ)).length;
-  document.getElementById("dash-chain").innerHTML=`<div class="chain-bar">${[["Ej ringt",ej,"cs1"],["Telefonsamtal",rg,"cs2"],["Lunch",lu,"cs3"],["Aktivt",ak,"cs4"]].map(([l,n,c2])=>`<div class="chain-step ${c2}"><div class="chain-n">${n}</div><div class="chain-l">${l}</div></div>`).join("")}</div>`;
-  renderFups("dash-fups",8);
+  const today2=new Date();today2.setHours(0,0,0,0);const td=today();
+  const ns=signals.filter(s=>s.status==="ny").length;
+  const ap=projects.filter(p=>p.status==="Aktiv").length;
+  const ot=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;
+  const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
+
+  // Kompakt KPI-rad
+  document.getElementById("dash-kpi").innerHTML=[["Försenade uppfölj.",of2,"c-red","gotoView('followups')"],["Försenade tasks",ot,"c-warm","gotoView('tasks')"],["Nya signaler",ns,"c-gold","gotoView('signals')"],["Aktiva uppdrag",ap,"c-purple","gotoView('projects')"]].map(([l,n,c2,onc])=>`<div class="kpi ${c2}" style="cursor:pointer" onclick="${onc}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+
+  // ── Listor: bygg in i dash-chain (återanvänder befintlig container) ──
+  const hasContact=cid=>contacts.some(c=>c.company_id===cid);
+
+  // 1) Dagens & försenade uppföljningar
+  const fups=contacts.filter(c=>c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td)
+    .sort((a,b)=>String(a.nasta_foljup).localeCompare(String(b.nasta_foljup))).slice(0,6);
+  // 2) Heta leads – nya signaler, känd kontakt först
+  const leads=signals.filter(s=>s.status==="ny").sort((a,b)=>{
+    const ka=hasContact(a.company_id)?1:0,kb=hasContact(b.company_id)?1:0;
+    if(ka!==kb)return kb-ka;
+    return (b.signal_styrka||0)-(a.signal_styrka||0);
+  }).slice(0,6);
+  // 3) Försenade tasks
+  const dtasks=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<=td)
+    .sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date))).slice(0,6);
+  // 4) Dagens todo (öppna)
+  const dtodos=todos.filter(t=>!t.done).slice(0,6);
+
+  const card=(title,countLabel,onclickAll,rowsHtml,emptyTxt)=>`
+    <div class="week-sec" style="margin-bottom:0">
+      <div class="week-sec-hdr"><h3>${title}</h3><span style="font-size:12px;color:#888">${countLabel}</span>${onclickAll?`<button class="btn btn-outline btn-xs" onclick="${onclickAll}">Visa alla</button>`:""}</div>
+      <div style="padding:4px 0">${rowsHtml||`<div class="week-row" style="cursor:default;color:#aaa;font-size:13px">${emptyTxt}</div>`}</div>
+    </div>`;
+
+  const fupRows=fups.map(c=>{const od=c.nasta_foljup<td;return`<div class="week-row" onclick="openCard('${c.id}')"><div style="flex:1"><div class="week-rn">${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")} · <span class="${od?"overdue":""}">${e(c.nasta_foljup)}</span></div></div><button class="btn btn-warm btn-xs" onclick="event.stopPropagation();openLogModal('${c.id}')">Logga</button></div>`;}).join("");
+  const leadRows=leads.map(s=>{const known=hasContact(s.company_id);return`<div class="week-row" onclick="openLead('${s.id}')"><div style="flex:1"><div class="week-rn">${known?'<span title="Känd kontakt">👤 </span>':""}${e(s.companies?.namn||"Bolag")}</div><div class="week-rs">${e((s.rubrik||"").slice(0,60))} · ${"★".repeat(s.signal_styrka||1)}</div></div></div>`;}).join("");
+  const taskRows=dtasks.map(t=>{const p=projects.find(x=>x.id===t.project_id);return`<div class="week-row" onclick="gotoView('tasks')"><div style="flex:1"><div class="week-rn">${e(t.title)}</div><div class="week-rs">${e(p?.namn||"")} · <span class="overdue">${e(t.due_date)}</span></div></div></div>`;}).join("");
+  const todoRows=dtodos.map(t=>{const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"}[t.prioritet]||"🟡";return`<div class="week-row" onclick="openTodo()"><div style="flex:1"><div class="week-rn">${pi} ${e(t.text)}</div>${t.due_date?`<div class="week-rs">📅 ${e(t.due_date)}</div>`:""}</div></div>`;}).join("");
+
+  document.getElementById("dash-chain").innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px">
+      ${card("📞 Att följa upp idag",`${fups.length}`,"gotoView('followups')",fupRows,"Inga uppföljningar idag – bra jobbat!")}
+      ${card("⚡ Heta leads",`${leads.length}`,"gotoView('signals')",leadRows,"Inga nya signaler")}
+      ${card("✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",taskRows,"Inga försenade tasks")}
+      ${card("✅ Todo",`${dtodos.length}`,"openTodo()",todoRows,"Inga öppna todos")}
+    </div>
+    <div class="week-sec">
+      <div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" onclick="toast('Målsidan kommer snart')">Öppna mål</button></div>
+      <div style="padding:16px;color:#888;font-size:13px">Här kommer dina mål att visas. Vi bygger målsidan som nästa steg.</div>
+    </div>`;
+
+  // dölj den gamla "Kommande uppföljningar"-rubriken och listan (ersatt av korten ovan)
+  const fupsEl=document.getElementById("dash-fups");if(fupsEl)fupsEl.innerHTML="";
+  const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="none";
 }
 
 // WEEKLY
 function renderFocusDashboard(){
+  const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="";
   const co=companies.find(x=>x.id===focusCompanyId);
   const coProjs=projects.filter(p=>p.company_id===focusCompanyId);
   const coContacts=contacts.filter(c=>c.company_id===focusCompanyId);
