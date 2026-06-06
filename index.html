@@ -388,6 +388,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-grp" id="grp-oversikt">
       <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
       <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
+      <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span>Mål</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none">Bolag &amp; leads <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
@@ -446,6 +447,7 @@ textarea{resize:vertical;min-height:68px}
   <div class="content">
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
+    <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:nowrap;overflow-x:auto">
         <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
@@ -850,6 +852,8 @@ textarea{resize:vertical;min-height:68px}
 </div>
 </div><div class="mfoot"><button class="btn btn-danger" id="kb-del-btn" style="display:none" onclick="deleteKB()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-kb')">Avbryt</button><button class="btn btn-primary" onclick="saveKB()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-goal"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="goal-modal-title">Nytt mål</h2><button class="mclose" onclick="closeM('m-goal')">×</button></div><div class="mbody"><input id="goal-id" type="hidden"><div class="fg"><div class="fl full"><label>Vad vill du mäta?</label><select id="goal-typ"></select></div><div class="fl"><label>Målvärde</label><input id="goal-varde" type="number" min="1" placeholder="t.ex. 20"></div><div class="fl"><label>Period</label><select id="goal-period"></select></div></div></div><div class="mfoot"><button class="btn btn-danger" id="goal-del-btn" style="display:none" onclick="deleteGoal()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-goal')">Avbryt</button><button class="btn btn-primary" onclick="saveGoal()">Spara</button></div></div></div>
+
 <div class="overlay" id="m-note"><div class="modal" style="width:440px"><div class="mhdr"><h2>Anteckning</h2><button class="mclose" onclick="closeM('m-note')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Kategori</label><select id="nt-kat"><option value="intressen">Intressen</option><option value="familj">Familj</option><option value="karriarmal">Karriärmål</option><option value="resa">Resa</option><option value="sport">Sport</option><option value="jobbbyte">Jobbbyte</option><option value="ovrigt">Övrigt</option></select></div><div class="fl full"><label>Anteckning</label><textarea id="nt-text"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-note')">Avbryt</button><button class="btn btn-primary" onclick="saveNote()">Spara</button></div></div></div>
 
 <div class="overlay" id="m-sub-card"><div class="modal modal-lg"><div id="sub-card-content"></div></div></div>
@@ -960,6 +964,7 @@ let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],se
 let contactConnections=[];
 let knowledgeNotes=[];
 let subActivity=[],subCompanies=[],subContacts=[];
+let goals=[];
 let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
 let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
 let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView="dashboard";
@@ -980,6 +985,8 @@ const PIPELINE=["Watchlist","Intressant","Varm","Mojlighet","Mote","Offert","Vun
 const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",annat:"Annat"};
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
+const GOAL_TYPES={aktiviteter:"Antal aktiviteter",nya_kontakter:"Nya kontakter",nya_kunder:"Nya kunder"};
+const GOAL_PERIODS={manad:"Denna månad",kvartal:"Detta kvartal",ar:"Detta år"};
 const PIPE_LABEL={Mote:"Möte",Forlorat:"Förlorat",Mojlighet:"Möjlighet"};
 const SIG_TYPES=["jobbannons","finance_hiring","management_change","growth","expansion","restructuring","layoffs","new_hires","acquisition","funding","ownership_change","annual_report","arsredovisning_publicerad","financial_pressure","balance_sheet_change","profitability_change","system_change","audit_remark","ny_cfo","ny_vd","ny_ledning","forvärv","varsel","nyhet","arsredovisning","manuell"];
 const SIG_LABEL={jobbannons:"Jobbannons",finance_hiring:"Finance hiring",management_change:"Ledningsförändring",growth:"Tillväxt",expansion:"Expansion",restructuring:"Omstrukturering",layoffs:"Varsel/uppsägningar",new_hires:"Nyrekrytering",acquisition:"Förvärv/fusion",funding:"Finansiering",ownership_change:"Ägarförändring",annual_report:"Årsredovisning",arsredovisning_publicerad:"Årsredov. publicerad",financial_pressure:"Finansiell press",balance_sheet_change:"Balansräkning",profitability_change:"Resultat/P&L",system_change:"System/ERP",audit_remark:"Revisionsanm.",ny_cfo:"Ny CFO",ny_vd:"Ny VD",ny_ledning:"Ny ledning","forvärv":"Förvärv",varsel:"Varsel",nyhet:"Nyhet",arsredovisning:"Årsredovisning",manuell:"Manuell"};
@@ -1053,7 +1060,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1088,6 +1095,7 @@ async function loadSubRelations(){
   ]);
   subActivity=a.data||[];subCompanies=b.data||[];subContacts=c.data||[];
 }
+async function loadGoals(){const r=await sb.from("goals").select("*").eq("user_id",me.id).order("created_at",{ascending:false});goals=r.data||[];}
 
 function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",schema:"public",table:"contacts"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"activity_log"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"companies"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"company_signals"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"projects"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_tasks"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_diary_entries"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"veckoplan"},()=>loadAll()).subscribe();}
 
@@ -1143,7 +1151,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1173,7 +1181,8 @@ function gotoView(name){
   else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
   else if(name==="kb")tr.innerHTML='<button class="btn btn-primary" onclick="openNewKB()">+ Ny notering</button>';
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV};
+  else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1235,8 +1244,8 @@ function renderDashboard(){
       ${card("✅ Todo",`${dtodos.length}`,"openTodo()",todoRows,"Inga öppna todos")}
     </div>
     <div class="week-sec">
-      <div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" onclick="toast('Målsidan kommer snart')">Öppna mål</button></div>
-      <div style="padding:16px;color:#888;font-size:13px">Här kommer dina mål att visas. Vi bygger målsidan som nästa steg.</div>
+      <div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" onclick="gotoView('goals')">Öppna mål</button></div>
+      <div style="padding:14px">${goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(GOAL_TYPES[g.typ]||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>'}</div>
     </div>`;
 
   // dölj den gamla "Kommande uppföljningar"-rubriken och listan (ersatt av korten ovan)
@@ -1633,7 +1642,9 @@ async function dropMovePipe(newStatus){
   const c=companies.find(x=>x.id===movePipeId);
   if(!c||c.pipeline_status===newStatus){movePipeId=null;renderCompanies();return;}
   const id=movePipeId;movePipeId=null;
-  await sb.from("companies").update({pipeline_status:newStatus}).eq("id",id);
+  const upd={pipeline_status:newStatus};
+  if(newStatus==="Kund"&&c.pipeline_status!=="Kund")upd.kund_datum=today();
+  await sb.from("companies").update(upd).eq("id",id);
   toast(`${c.namn} → ${pipeLabel(newStatus)}`);
   await loadAll();
 }
@@ -1645,6 +1656,7 @@ async function saveCompany(){
   const prevStatus=editCoid?companies.find(x=>x.id===editCoid)?.pipeline_status:null;
   const newStatus=document.getElementById("co-pipe").value||"Watchlist";
   const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null};
+  if(newStatus==="Kund"&&prevStatus!=="Kund")data.kund_datum=today();
   const r=editCoid?await sb.from("companies").update(data).eq("id",editCoid):await sb.from("companies").insert({...data});
   if(r.error){alert(r.error.message);return;}
   // Auto-skapa projekt vid Vunnet
@@ -2673,6 +2685,89 @@ async function exportCVDocx(){
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`CV_${today()}.doc`;a.click();
   toast("Word-dokument nedladdat ✓");
 }
+
+// ══ MÅL ══════════════════════════════════════════════════════
+function goalPeriodRange(period){
+  const now=new Date();const y=now.getFullYear();
+  let start,end;
+  if(period==="manad"){start=new Date(y,now.getMonth(),1);end=new Date(y,now.getMonth()+1,0);}
+  else if(period==="kvartal"){const q=Math.floor(now.getMonth()/3);start=new Date(y,q*3,1);end=new Date(y,q*3+3,0);}
+  else{start=new Date(y,0,1);end=new Date(y,11,31);}
+  const fmt=d=>d.toISOString().split("T")[0];
+  return{start:fmt(start),end:fmt(end)};
+}
+function goalProgress(g){
+  const{start,end}=goalPeriodRange(g.period);
+  const inRange=d=>d&&d>=start&&d<=end;
+  if(g.typ==="aktiviteter"){
+    return actLog.filter(l=>inRange(l.datum)).length;
+  }else if(g.typ==="nya_kontakter"){
+    return contacts.filter(c=>inRange((c.created_at||"").slice(0,10))).length;
+  }else if(g.typ==="nya_kunder"){
+    return companies.filter(c=>c.pipeline_status==="Kund"&&inRange(c.kund_datum)).length;
+  }
+  return 0;
+}
+
+function renderGoals(){
+  if(!goals.length){document.getElementById("goals-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga mål ännu. Klicka "+ Nytt mål" för att sätta ditt första mål.</p></div>';return;}
+  document.getElementById("goals-content").innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">${goals.map(g=>{
+    const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));
+    const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";
+    const col=pct>=100?"var(--green)":pct>=60?"var(--accent)":"var(--gold)";
+    return`<div class="week-sec" style="margin-bottom:0"><div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin:12px 0 8px"><span style="font-family:'DM Serif Display',serif;font-size:34px;color:${col}">${prog}</span><span style="font-size:16px;color:#888">/ ${mal}</span></div>
+      <div class="progress-wrap" style="height:10px"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div>
+      <div style="font-size:12px;color:#888;margin-top:6px">${pct}% ${pct>=100?"– uppnått! 🎉":`· ${mal-prog} kvar`}</div>
+    </div></div>`;
+  }).join("")}</div>`;
+}
+
+function fillGoalSelects(){
+  document.getElementById("goal-typ").innerHTML=Object.entries(GOAL_TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
+  document.getElementById("goal-period").innerHTML=Object.entries(GOAL_PERIODS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
+}
+function openNewGoal(){
+  document.getElementById("goal-modal-title").textContent="Nytt mål";
+  fillGoalSelects();
+  document.getElementById("goal-id").value="";
+  document.getElementById("goal-varde").value="";
+  document.getElementById("goal-typ").value="aktiviteter";
+  document.getElementById("goal-period").value="manad";
+  document.getElementById("goal-del-btn").style.display="none";
+  openM("m-goal");
+}
+function openEditGoal(id){
+  const g=goals.find(x=>x.id===id);if(!g)return;
+  document.getElementById("goal-modal-title").textContent="Redigera mål";
+  fillGoalSelects();
+  document.getElementById("goal-id").value=g.id;
+  document.getElementById("goal-typ").value=g.typ;
+  document.getElementById("goal-varde").value=g.mal_varde;
+  document.getElementById("goal-period").value=g.period;
+  document.getElementById("goal-del-btn").style.display="";
+  openM("m-goal");
+}
+async function saveGoal(){
+  const varde=parseFloat(document.getElementById("goal-varde").value);
+  if(!isFinite(varde)||varde<=0){toast("Ange ett målvärde");return;}
+  const id=v("goal-id");
+  const data={user_id:me.id,typ:v("goal-typ"),mal_varde:varde,period:v("goal-period")};
+  const r=id?await sb.from("goals").update(data).eq("id",id):await sb.from("goals").insert(data);
+  if(r.error){alert(r.error.message);return;}
+  closeM("m-goal");toast("Mål sparat ✓");
+  await loadGoals();renderGoals();
+}
+function deleteGoal(){const id=v("goal-id");if(id)deleteGoalById(id,true);}
+function deleteGoalById(id,fromModal){
+  confirm2("Ta bort målet?",async()=>{
+    await sb.from("goals").delete().eq("id",id);
+    if(fromModal)closeM("m-goal");
+    await loadGoals();renderGoals();
+  });
+}
+
 
 
 
