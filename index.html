@@ -6,6 +6,8 @@
 <title>CRM NIS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <style>
 :root{--ink:#0D0D0D;--paper:#F7F4EF;--cream:#EDE9E2;--mid:#C8C0B4;--accent:#1A3A5C;--warm:#C4622D;--gold:#C49A3C;--green:#2D6A4F;--red:#B03030;--purple:#7B5EA7;--r:6px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -852,7 +854,11 @@ textarea{resize:vertical;min-height:68px}
 </div>
 </div><div class="mfoot"><button class="btn btn-danger" id="kb-del-btn" style="display:none" onclick="deleteKB()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-kb')">Avbryt</button><button class="btn btn-primary" onclick="saveKB()">Spara</button></div></div></div>
 
-<div class="overlay" id="m-goal"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="goal-modal-title">Nytt mål</h2><button class="mclose" onclick="closeM('m-goal')">×</button></div><div class="mbody"><input id="goal-id" type="hidden"><div class="fg"><div class="fl full"><label>Vad vill du mäta?</label><select id="goal-typ"></select></div><div class="fl"><label>Målvärde</label><input id="goal-varde" type="number" min="1" placeholder="t.ex. 20"></div><div class="fl"><label>Period</label><select id="goal-period"></select></div></div></div><div class="mfoot"><button class="btn btn-danger" id="goal-del-btn" style="display:none" onclick="deleteGoal()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-goal')">Avbryt</button><button class="btn btn-primary" onclick="saveGoal()">Spara</button></div></div></div>
+<div class="overlay" id="m-goal"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="goal-modal-title">Nytt mål</h2><button class="mclose" onclick="closeM('m-goal')">×</button></div><div class="mbody"><input id="goal-id" type="hidden"><div class="fg"><div class="fl full"><label>Vad vill du mäta?</label><select id="goal-typ"></select></div><div class="fl"><label>Målvärde</label><input id="goal-varde" type="number" min="1" placeholder="t.ex. 20"></div><div class="fl"><label>Period</label><select id="goal-period" onchange="toggleGoalDates()"></select></div></div><div class="fg" id="goal-date-row" style="display:none;margin-top:10px"><div class="fl"><label>Startdatum</label><input id="goal-start" type="date"></div><div class="fl"><label>Slutdatum</label><input id="goal-slut" type="date"></div></div></div><div class="mfoot"><button class="btn btn-danger" id="goal-del-btn" style="display:none" onclick="deleteGoal()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-goal')">Avbryt</button><button class="btn btn-primary" onclick="saveGoal()">Spara</button></div></div></div>
+
+<div class="overlay" id="m-cv-result"><div class="modal modal-lg"><div class="mhdr"><h2>CV inläst</h2><button class="mclose" onclick="closeM('m-cv-result')">×</button></div><div class="mbody"><input id="cvres-subid" type="hidden"><div style="margin-bottom:8px;font-size:13px;color:#555">Föreslagna kompetenser (klicka för att lägga till på underkonsulten):</div><div id="cvres-suggest" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text (för att markera mer själv):</div><textarea id="cvres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-cv-result');if(curSubId)openSubCard(curSubId)">Klar</button></div></div></div>
+
+<div class="overlay" id="m-annual-result"><div class="modal modal-lg"><div class="mhdr"><h2>Årsredovisning inläst</h2><button class="mclose" onclick="closeM('m-annual-result')">×</button></div><div class="mbody"><input id="anres-coid" type="hidden"><div id="anres-nyckel" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text:</div><textarea id="anres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-annual-result')">Klar</button></div></div></div>
 
 <div class="overlay" id="m-note"><div class="modal" style="width:440px"><div class="mhdr"><h2>Anteckning</h2><button class="mclose" onclick="closeM('m-note')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Kategori</label><select id="nt-kat"><option value="intressen">Intressen</option><option value="familj">Familj</option><option value="karriarmal">Karriärmål</option><option value="resa">Resa</option><option value="sport">Sport</option><option value="jobbbyte">Jobbbyte</option><option value="ovrigt">Övrigt</option></select></div><div class="fl full"><label>Anteckning</label><textarea id="nt-text"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-note')">Avbryt</button><button class="btn btn-primary" onclick="saveNote()">Spara</button></div></div></div>
 
@@ -986,7 +992,7 @@ const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Stu
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
 const GOAL_TYPES={aktiviteter:"Antal aktiviteter (alla)",luncher:"Luncher",samtal:"Telefonsamtal",moten:"Möten",nya_kontakter:"Nya kontakter",kontakter_framat:"Kontakter framåt i kedjan",nya_kunder:"Nya kunder",sub_aktiviteter:"Aktiviteter med underkonsulter",nya_underkonsulter:"Nya underkonsulter"};
-const GOAL_PERIODS={manad:"Denna månad",kvartal:"Detta kvartal",ar:"Detta år"};
+const GOAL_PERIODS={manad:"Denna månad",kvartal:"Detta kvartal",ar:"Detta år",eget:"Eget datumintervall"};
 const PIPE_LABEL={Mote:"Möte",Forlorat:"Förlorat",Mojlighet:"Möjlighet"};
 const SIG_TYPES=["jobbannons","finance_hiring","management_change","growth","expansion","restructuring","layoffs","new_hires","acquisition","funding","ownership_change","annual_report","arsredovisning_publicerad","financial_pressure","balance_sheet_change","profitability_change","system_change","audit_remark","ny_cfo","ny_vd","ny_ledning","forvärv","varsel","nyhet","arsredovisning","manuell"];
 const SIG_LABEL={jobbannons:"Jobbannons",finance_hiring:"Finance hiring",management_change:"Ledningsförändring",growth:"Tillväxt",expansion:"Expansion",restructuring:"Omstrukturering",layoffs:"Varsel/uppsägningar",new_hires:"Nyrekrytering",acquisition:"Förvärv/fusion",funding:"Finansiering",ownership_change:"Ägarförändring",annual_report:"Årsredovisning",arsredovisning_publicerad:"Årsredov. publicerad",financial_pressure:"Finansiell press",balance_sheet_change:"Balansräkning",profitability_change:"Resultat/P&L",system_change:"System/ERP",audit_remark:"Revisionsanm.",ny_cfo:"Ny CFO",ny_vd:"Ny VD",ny_ledning:"Ny ledning","forvärv":"Förvärv",varsel:"Varsel",nyhet:"Nyhet",arsredovisning:"Årsredovisning",manuell:"Manuell"};
@@ -1685,6 +1691,11 @@ async function openCompanyCard(id){
         <div class="ii"><label>Hemsida</label><span>${c.hemsida?`<a href="${e(c.hemsida)}" target="_blank">Öppna ↗</a>`:"--"}</span></div>
       </div>
       ${c.anteckningar?`<div style="font-size:13px;line-height:1.7;white-space:pre-line;color:#444">${e(c.anteckningar)}</div>`:""}
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--cream);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:13px;color:#555">📊 Årsredovisning:</span>
+        ${c.arsredovisning_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(c.arsredovisning_path)}')">Öppna</button>`:""}
+        <button class="btn btn-primary btn-sm" onclick="openAnnualUpload('${id}')">${c.arsredovisning_path?"Ladda upp ny":"Ladda upp årsredovisning (PDF)"}</button>
+      </div>
       ${parentCo||subsidiaries.length?`
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏢 Koncernstruktur</div>
@@ -2687,7 +2698,12 @@ async function exportCVDocx(){
 }
 
 // ══ MÅL ══════════════════════════════════════════════════════
-function goalPeriodRange(period){
+function goalPeriodRange(g){
+  // g kan vara ett mål-objekt (med eget intervall) eller en period-sträng
+  const period=typeof g==="string"?g:g.period;
+  if(period==="eget"&&typeof g==="object"){
+    return{start:g.period_start||"1900-01-01",end:g.slut_datum||"2999-12-31"};
+  }
   const now=new Date();const y=now.getFullYear();
   let start,end;
   if(period==="manad"){start=new Date(y,now.getMonth(),1);end=new Date(y,now.getMonth()+1,0);}
@@ -2697,7 +2713,7 @@ function goalPeriodRange(period){
   return{start:fmt(start),end:fmt(end)};
 }
 function goalProgress(g){
-  const{start,end}=goalPeriodRange(g.period);
+  const{start,end}=goalPeriodRange(g);
   const inRange=d=>d&&d>=start&&d<=end;
   const actType=(l)=>{const t=(l.typ||"").toLowerCase(),it=(l.interaktionstyp||"").toLowerCase();return{t,it};};
   if(g.typ==="aktiviteter"){
@@ -2730,7 +2746,7 @@ function renderGoals(){
     const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";
     const col=pct>=100?"var(--green)":pct>=60?"var(--accent)":"var(--gold)";
     return`<div class="week-sec" style="margin-bottom:0"><div style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${g.period==="eget"?e((g.period_start||"")+" – "+(g.slut_datum||"")):e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
       <div style="display:flex;align-items:baseline;gap:6px;margin:12px 0 8px"><span style="font-family:'DM Serif Display',serif;font-size:34px;color:${col}">${prog}</span><span style="font-size:16px;color:#888">/ ${mal}</span></div>
       <div class="progress-wrap" style="height:10px"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div>
       <div style="font-size:12px;color:#888;margin-top:6px">${pct}% ${pct>=100?"– uppnått! 🎉":`· ${mal-prog} kvar`}</div>
@@ -2742,6 +2758,10 @@ function fillGoalSelects(){
   document.getElementById("goal-typ").innerHTML=Object.entries(GOAL_TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
   document.getElementById("goal-period").innerHTML=Object.entries(GOAL_PERIODS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
 }
+function toggleGoalDates(){
+  const eget=document.getElementById("goal-period").value==="eget";
+  document.getElementById("goal-date-row").style.display=eget?"":"none";
+}
 function openNewGoal(){
   document.getElementById("goal-modal-title").textContent="Nytt mål";
   fillGoalSelects();
@@ -2749,6 +2769,9 @@ function openNewGoal(){
   document.getElementById("goal-varde").value="";
   document.getElementById("goal-typ").value="aktiviteter";
   document.getElementById("goal-period").value="manad";
+  document.getElementById("goal-start").value="";
+  document.getElementById("goal-slut").value="";
+  toggleGoalDates();
   document.getElementById("goal-del-btn").style.display="none";
   openM("m-goal");
 }
@@ -2760,14 +2783,24 @@ function openEditGoal(id){
   document.getElementById("goal-typ").value=g.typ;
   document.getElementById("goal-varde").value=g.mal_varde;
   document.getElementById("goal-period").value=g.period;
+  document.getElementById("goal-start").value=g.period_start||"";
+  document.getElementById("goal-slut").value=g.slut_datum||"";
+  toggleGoalDates();
   document.getElementById("goal-del-btn").style.display="";
   openM("m-goal");
 }
 async function saveGoal(){
   const varde=parseFloat(document.getElementById("goal-varde").value);
   if(!isFinite(varde)||varde<=0){toast("Ange ett målvärde");return;}
+  const period=v("goal-period");
   const id=v("goal-id");
-  const data={user_id:me.id,typ:v("goal-typ"),mal_varde:varde,period:v("goal-period")};
+  const data={user_id:me.id,typ:v("goal-typ"),mal_varde:varde,period};
+  if(period==="eget"){
+    const s=v("goal-start"),sl=v("goal-slut");
+    if(!s||!sl){toast("Ange start- och slutdatum");return;}
+    if(s>sl){toast("Startdatum måste vara före slutdatum");return;}
+    data.period_start=s;data.slut_datum=sl;
+  }else{data.period_start=null;data.slut_datum=null;}
   const r=id?await sb.from("goals").update(data).eq("id",id):await sb.from("goals").insert(data);
   if(r.error){alert(r.error.message);return;}
   closeM("m-goal");toast("Mål sparat ✓");
@@ -2909,6 +2942,11 @@ function openSubCard(id){
         <div class="ii"><label>Nivå</label><span>${e(s.arvodesniva||"--")}</span></div>
       </div>
       ${s.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(s.anteckningar)}</p>`:""}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--cream);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:13px;color:#555">📄 CV:</span>
+        ${s.cv_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(s.cv_path)}')">Öppna CV</button>`:""}
+        <button class="btn btn-primary btn-sm" onclick="openCvUpload('${id}')">${s.cv_path?"Ladda upp nytt":"Ladda upp CV (PDF)"}</button>
+      </div>
     </div>
     <div class="ctpane" id="csub-acts">
       <div style="margin-bottom:10px"><button class="btn btn-warm btn-sm" onclick="openSubActivity('${id}')">+ Logga aktivitet</button></div>
@@ -3000,6 +3038,130 @@ async function saveSubContact(){
   await loadSubRelations();openSubCard(subId);
 }
 function deleteSubContact(id){const subId=curSubId;confirm2("Ta bort kopplingen?",async()=>{await sb.from("subconsultant_contacts").delete().eq("id",id);await loadSubRelations();openSubCard(subId);});}
+
+// ══ PDF-UPPLADDNING & GRATIS AVLÄSNING (pdf.js, ingen AI) ════
+const CV_SKILL_WORDS=["IFRS","GAAP","K3","K2","SAP","Tagetik","Oracle","Hyperion","Cognos","Power BI","Excel","Visma","Fortnox","Hogia","Agresso","Unit4","Navision","Dynamics","Microsoft Dynamics","Jeeves","Pyramid","SAP S/4HANA","S4HANA","Konsolidering","Koncernredovisning","Bokslut","Årsredovisning","Moms","Skatt","Revision","Controller","CFO","Interim","Redovisningschef","Ekonomichef","Business Control","Treasury","Cash management","Likviditet","Budget","Prognos","Forecast","Internkontroll","Transfer pricing","Internprissättning","M&A","Due diligence","ERP","Implementering","Systembyte","Process","Lean","Shared Service","Outsourcing","Lön","Payroll","HR","IPO","Börsnotering","Kapitalanskaffning","Finansiering"];
+
+async function extractPdfText(file){
+  if(!window.pdfjsLib)throw new Error("PDF-läsaren kunde inte laddas");
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let text="";
+  const maxPages=Math.min(pdf.numPages,30);
+  for(let i=1;i<=maxPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    text+=content.items.map(it=>it.str).join(" ")+"\n";
+  }
+  return text;
+}
+
+async function uploadPdfToStorage(file,prefix){
+  const safe=file.name.replace(/[^\w.\-]/g,"_");
+  const path=`${me.id}/${prefix}/${Date.now()}_${safe}`;
+  const r=await sb.storage.from("documents").upload(path,file,{contentType:"application/pdf",upsert:false});
+  if(r.error)throw r.error;
+  return path;
+}
+async function signedUrl(path){
+  const r=await sb.storage.from("documents").createSignedUrl(path,3600);
+  return r.data?.signedUrl||null;
+}
+async function openStoredPdf(path){
+  const url=await signedUrl(path);
+  if(url)window.open(url,"_blank");
+  else toast("Kunde inte öppna filen");
+}
+
+// ── CV för underkonsult ──
+function openCvUpload(subId){
+  curSubId=subId;
+  const inp=document.createElement("input");inp.type="file";inp.accept="application/pdf";
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;await handleCvUpload(subId,f);};
+  inp.click();
+}
+async function handleCvUpload(subId,file){
+  toast("Läser och laddar upp CV...");
+  let text="";
+  try{text=await extractPdfText(file);}catch(err){console.warn(err);}
+  let path=null;
+  try{path=await uploadPdfToStorage(file,"cv");}catch(err){alert("Kunde inte spara filen: "+err.message);return;}
+  // spara sökväg på underkonsulten
+  await sb.from("subconsultants").update({cv_path:path}).eq("id",subId);
+  // föreslå kompetenser
+  const found=[];const low=text.toLowerCase();
+  const existing=[...new Set(subSkills.map(s=>s.kompetens))];
+  [...new Set([...CV_SKILL_WORDS,...existing])].forEach(w=>{if(w&&low.includes(w.toLowerCase())&&!found.some(f=>f.toLowerCase()===w.toLowerCase()))found.push(w);});
+  await loadSubs();
+  showCvResult(subId,found,text);
+}
+function showCvResult(subId,found,text){
+  const existing=new Set(subSkills.filter(s=>s.subconsultant_id===subId).map(s=>s.kompetens.toLowerCase()));
+  document.getElementById("cvres-subid").value=subId;
+  document.getElementById("cvres-suggest").innerHTML=found.length?found.map(w=>{
+    const has=existing.has(w.toLowerCase());
+    return`<span class="badge ${has?"b-granskad":"b-prospekt"}" style="cursor:${has?"default":"pointer"};margin:2px" ${has?"":`onclick="addCvSkill('${subId}','${e(w).replace(/'/g,"\\'")}',this)"`}>${has?"✓ ":"+ "}${e(w)}</span>`;
+  }).join(""):'<span style="color:#aaa;font-size:13px">Inga kända kompetensord hittades i texten.</span>';
+  document.getElementById("cvres-text").value=text||"(Ingen text kunde läsas ur PDF:en)";
+  openM("m-cv-result");
+}
+async function addCvSkill(subId,skill,el){
+  const r=await sb.from("subconsultant_skills").insert({subconsultant_id:subId,kompetens:skill});
+  if(r.error){alert(r.error.message);return;}
+  await loadSubs();
+  if(el){el.className="badge b-granskad";el.style.cursor="default";el.textContent="✓ "+skill;el.onclick=null;}
+  toast("Kompetens tillagd");
+}
+
+// ── Årsredovisning för bolag ──
+function openAnnualUpload(coId){
+  const inp=document.createElement("input");inp.type="file";inp.accept="application/pdf";
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;await handleAnnualUpload(coId,f);};
+  inp.click();
+}
+function findNumberNear(text,keywords){
+  // sök första tal nära något av nyckelorden
+  const low=text.toLowerCase();
+  for(const kw of keywords){
+    let idx=low.indexOf(kw.toLowerCase());
+    while(idx!==-1){
+      const window2=text.slice(idx,idx+120);
+      // hitta tal med valfria mellanslag/punkter som tusentalsavgränsare
+      const m=window2.match(/(-?\d[\d \u00a0.,]{2,})/);
+      if(m){const num=m[1].replace(/[ \u00a0.]/g,"").replace(",",".");if(num.replace(/[^\d]/g,"").length>=3)return m[1].trim();}
+      idx=low.indexOf(kw.toLowerCase(),idx+1);
+    }
+  }
+  return null;
+}
+async function handleAnnualUpload(coId,file){
+  toast("Läser och laddar upp årsredovisning...");
+  let text="";
+  try{text=await extractPdfText(file);}catch(err){console.warn(err);}
+  let path=null;
+  try{path=await uploadPdfToStorage(file,"arsredovisning");}catch(err){alert("Kunde inte spara filen: "+err.message);return;}
+  await sb.from("companies").update({arsredovisning_path:path}).eq("id",coId);
+  const nyckeltal={
+    omsattning:findNumberNear(text,["nettoomsättning","omsättning","nettoomsattning","revenue","total revenue"]),
+    resultat:findNumberNear(text,["årets resultat","arets resultat","resultat efter","net income","profit for the year"]),
+    anstallda:findNumberNear(text,["medelantal anställda","antal anställda","antal anstallda","employees","number of employees"])
+  };
+  await loadCompanies();
+  showAnnualResult(coId,nyckeltal,text);
+}
+function showAnnualResult(coId,nyckeltal,text){
+  document.getElementById("anres-coid").value=coId;
+  document.getElementById("anres-nyckel").innerHTML=`
+    <div class="ig">
+      <div class="ii"><label>Omsättning (hittad)</label><span>${nyckeltal.omsattning?e(nyckeltal.omsattning):"–"}</span></div>
+      <div class="ii"><label>Årets resultat (hittad)</label><span>${nyckeltal.resultat?e(nyckeltal.resultat):"–"}</span></div>
+      <div class="ii"><label>Antal anställda (hittad)</label><span>${nyckeltal.anstallda?e(nyckeltal.anstallda):"–"}</span></div>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:8px">Nyckeltalen är hittade automatiskt via textsökning och kan vara ungefärliga – kontrollera mot dokumentet. PDF:en är sparad och kan öppnas från bolagskortet.</p>`;
+  document.getElementById("anres-text").value=text||"(Ingen text kunde läsas ur PDF:en)";
+  openM("m-annual-result");
+}
+
 
 
 // SETTINGS
