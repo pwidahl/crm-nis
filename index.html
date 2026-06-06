@@ -985,7 +985,7 @@ const PIPELINE=["Watchlist","Intressant","Varm","Mojlighet","Mote","Offert","Vun
 const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",annat:"Annat"};
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
-const GOAL_TYPES={aktiviteter:"Antal aktiviteter",nya_kontakter:"Nya kontakter",nya_kunder:"Nya kunder"};
+const GOAL_TYPES={aktiviteter:"Antal aktiviteter (alla)",luncher:"Luncher",samtal:"Telefonsamtal",moten:"Möten",nya_kontakter:"Nya kontakter",kontakter_framat:"Kontakter framåt i kedjan",nya_kunder:"Nya kunder",sub_aktiviteter:"Aktiviteter med underkonsulter",nya_underkonsulter:"Nya underkonsulter"};
 const GOAL_PERIODS={manad:"Denna månad",kvartal:"Detta kvartal",ar:"Detta år"};
 const PIPE_LABEL={Mote:"Möte",Forlorat:"Förlorat",Mojlighet:"Möjlighet"};
 const SIG_TYPES=["jobbannons","finance_hiring","management_change","growth","expansion","restructuring","layoffs","new_hires","acquisition","funding","ownership_change","annual_report","arsredovisning_publicerad","financial_pressure","balance_sheet_change","profitability_change","system_change","audit_remark","ny_cfo","ny_vd","ny_ledning","forvärv","varsel","nyhet","arsredovisning","manuell"];
@@ -2699,12 +2699,26 @@ function goalPeriodRange(period){
 function goalProgress(g){
   const{start,end}=goalPeriodRange(g.period);
   const inRange=d=>d&&d>=start&&d<=end;
+  const actType=(l)=>{const t=(l.typ||"").toLowerCase(),it=(l.interaktionstyp||"").toLowerCase();return{t,it};};
   if(g.typ==="aktiviteter"){
     return actLog.filter(l=>inRange(l.datum)).length;
+  }else if(g.typ==="luncher"){
+    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("lunch")||it==="lunch");}).length;
+  }else if(g.typ==="samtal"){
+    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||it==="samtal");}).length;
+  }else if(g.typ==="moten"){
+    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("mote")||t.includes("möte")||it==="mote");}).length;
   }else if(g.typ==="nya_kontakter"){
     return contacts.filter(c=>inRange((c.created_at||"").slice(0,10))).length;
+  }else if(g.typ==="kontakter_framat"){
+    // aktiviteter som flyttar relationen uppåt (samtal/lunch/möte) loggade i perioden
+    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||t.includes("lunch")||t.includes("mote")||t.includes("möte")||["samtal","lunch","mote"].includes(it));}).length;
   }else if(g.typ==="nya_kunder"){
     return companies.filter(c=>c.pipeline_status==="Kund"&&inRange(c.kund_datum)).length;
+  }else if(g.typ==="sub_aktiviteter"){
+    return subActivity.filter(a=>inRange(a.datum)).length;
+  }else if(g.typ==="nya_underkonsulter"){
+    return subs.filter(s=>inRange((s.created_at||"").slice(0,10))).length;
   }
   return 0;
 }
