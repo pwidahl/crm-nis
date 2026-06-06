@@ -3441,12 +3441,13 @@ async function deleteTodo(id){
   await sb.from("todos").delete().eq("id",id);
 }
 
+let showDoneTodos=false;
 function renderTodoList(){
   const el=document.getElementById('todo-list');if(!el)return;
   const open=todos.filter(t=>!t.done);
   const done=todos.filter(t=>t.done);
   const prioIcon={Hög:'🔴',Medium:'🟡',Låg:'🟢'};
-  const row=t=>`<div class="task-row" style="${t.done?'opacity:.5':''}">
+  const row=t=>`<div class="task-row" style="${t.done?'opacity:.55':''}">
     <div class="cb ${t.done?'done':''}" onclick="toggleTodo('${t.id}')">✓</div>
     <div class="task-main">
       <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prioritet]||'🟡'} ${e(t.text)}</div>
@@ -3454,8 +3455,11 @@ function renderTodoList(){
     </div>
     <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
   </div>`;
-  el.innerHTML=(open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos</p>')
-    +(done.length?`<p style="font-size:11px;color:#aaa;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.5px">Klara</p>${done.map(row).join('')}`:'');
+  const status=todos.length?`<div style="font-size:12px;color:#888;margin-bottom:10px">${open.length} öppna · ${done.length} klara</div>`:"";
+  const openHtml=open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos 🎉</p>';
+  const toggleBtn=done.length?`<div style="margin:12px 0 6px"><button class="btn btn-outline btn-sm" onclick="showDoneTodos=!showDoneTodos;renderTodoList()">${showDoneTodos?"Dölj klara":`Visa klara (${done.length})`}</button></div>`:"";
+  const doneHtml=showDoneTodos&&done.length?done.map(row).join(''):"";
+  el.innerHTML=status+openHtml+toggleBtn+doneHtml;
 }
 
 function exportTodosICS(){
