@@ -269,6 +269,10 @@ textarea{resize:vertical;min-height:68px}
     <input id="l-email" type="email" placeholder="E-post" autocomplete="email">
     <input id="l-pw" type="password" placeholder="Lösenord" autocomplete="current-password">
     <button class="btn btn-primary" onclick="doLogin()">Logga in</button>
+    <div id="l-mfa" style="display:none;margin-top:10px">
+      <input id="l-mfa-code" inputmode="numeric" maxlength="6" placeholder="6-siffrig kod från appen" autocomplete="one-time-code" style="text-align:center;letter-spacing:4px;font-size:18px">
+      <button class="btn btn-primary" onclick="verifyMfaLogin()">Verifiera kod</button>
+    </div>
     <p id="l-err" class="login-err"></p>
   </div>
 </div>
@@ -860,6 +864,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-annual-result"><div class="modal modal-lg"><div class="mhdr"><h2>Årsredovisning inläst</h2><button class="mclose" onclick="closeM('m-annual-result')">×</button></div><div class="mbody"><input id="anres-coid" type="hidden"><div id="anres-nyckel" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text:</div><textarea id="anres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-annual-result')">Klar</button></div></div></div>
 
+<div class="overlay" id="m-mfa"><div class="modal" style="width:420px"><div class="mhdr"><h2>Aktivera 2FA</h2><button class="mclose" onclick="closeM('m-mfa')">×</button></div><div class="mbody"><div class="privacy-note">Skanna QR-koden med en authenticator-app (Google Authenticator, Microsoft Authenticator m.fl.) och ange koden appen visar.</div><div id="mfa-qr" style="text-align:center;margin:14px 0"></div><div style="font-size:12px;color:#666;text-align:center;margin-bottom:4px">Kan du inte skanna? Skriv in denna kod manuellt i appen:</div><div id="mfa-secret" style="font-family:monospace;font-size:13px;text-align:center;word-break:break-all;background:var(--paper);padding:8px;border-radius:6px;margin-bottom:14px"></div><div class="fl full"><label>6-siffrig kod från appen</label><input id="mfa-enroll-code" inputmode="numeric" maxlength="6" style="text-align:center;letter-spacing:4px;font-size:18px"></div><p id="mfa-enroll-err" class="login-err"></p></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-mfa')">Avbryt</button><button class="btn btn-primary" onclick="confirmMfaEnroll()">Aktivera</button></div></div></div>
+
 <div class="overlay" id="m-note"><div class="modal" style="width:440px"><div class="mhdr"><h2>Anteckning</h2><button class="mclose" onclick="closeM('m-note')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Kategori</label><select id="nt-kat"><option value="intressen">Intressen</option><option value="familj">Familj</option><option value="karriarmal">Karriärmål</option><option value="resa">Resa</option><option value="sport">Sport</option><option value="jobbbyte">Jobbbyte</option><option value="ovrigt">Övrigt</option></select></div><div class="fl full"><label>Anteckning</label><textarea id="nt-text"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-note')">Avbryt</button><button class="btn btn-primary" onclick="saveNote()">Spara</button></div></div></div>
 
 <div class="overlay" id="m-sub-card"><div class="modal modal-lg"><div id="sub-card-content"></div></div></div>
@@ -1058,9 +1064,85 @@ function calcScore(cid){
 }
 
 // AUTH
-async function doLogin(){const email=document.getElementById("l-email").value.trim(),pw=document.getElementById("l-pw").value;const err=document.getElementById("l-err");err.textContent="Loggar in...";const r=await sb.auth.signInWithPassword({email,password:pw});if(r.error){err.textContent=r.error.message;return;}me=r.data.user;document.getElementById("login-screen").style.display="none";await loadAll();}
+async function doLogin(){const email=document.getElementById("l-email").value.trim(),pw=document.getElementById("l-pw").value;const err=document.getElementById("l-err");err.textContent="Loggar in...";const r=await sb.auth.signInWithPassword({email,password:pw});if(r.error){err.textContent=r.error.message;return;}
+  // Kolla om 2FA krävs
+  const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.data&&aal.data.nextLevel==="aal2"&&aal.data.nextLevel!==aal.data.currentLevel){
+    err.textContent="";
+    document.getElementById("l-mfa").style.display="";
+    document.getElementById("l-mfa-code").focus();
+    return;
+  }
+  me=r.data.user;document.getElementById("login-screen").style.display="none";await loadAll();}
+
+async function verifyMfaLogin(){
+  const code=document.getElementById("l-mfa-code").value.trim();const err=document.getElementById("l-err");
+  if(code.length<6){err.textContent="Ange 6-siffrig kod";return;}
+  err.textContent="Verifierar...";
+  const factors=await sb.auth.mfa.listFactors();
+  const totp=factors.data?.totp?.[0];
+  if(!totp){err.textContent="Ingen 2FA-faktor hittades";return;}
+  const ch=await sb.auth.mfa.challenge({factorId:totp.id});
+  if(ch.error){err.textContent=ch.error.message;return;}
+  const ver=await sb.auth.mfa.verify({factorId:totp.id,challengeId:ch.data.id,code});
+  if(ver.error){err.textContent="Fel kod – försök igen";return;}
+  const u=await sb.auth.getUser();me=u.data.user;
+  document.getElementById("l-mfa").style.display="none";
+  document.getElementById("login-screen").style.display="none";
+  await loadAll();
+}
 async function checkSession(){const r=await sb.auth.getSession();if(r.data.session?.user){me=r.data.session.user;document.getElementById("login-screen").style.display="none";await loadAll();}}
 async function logout(){await sb.auth.signOut();location.reload();}
+
+async function refreshMfaStatus(){
+  const statusEl=document.getElementById("mfa-status");const actEl=document.getElementById("mfa-actions");
+  if(!statusEl)return;
+  const factors=await sb.auth.mfa.listFactors();
+  const verified=(factors.data?.totp||[]).filter(f=>f.status==="verified");
+  if(verified.length){
+    statusEl.innerHTML='🟢 Tvåfaktorsinloggning är <strong>aktiverad</strong>. Du behöver en kod från din authenticator-app vid inloggning.';
+    actEl.innerHTML='<button class="btn btn-danger btn-sm" onclick="disableMfa(\''+verified[0].id+'\')">Inaktivera 2FA</button>';
+  }else{
+    statusEl.innerHTML='⚪ Tvåfaktorsinloggning är <strong>inte aktiverad</strong>. Lägg till ett extra säkerhetslager med en authenticator-app (Google/Microsoft Authenticator).';
+    actEl.innerHTML='<button class="btn btn-primary btn-sm" onclick="startMfaEnroll()">Aktivera 2FA</button>';
+  }
+  // städa ev. overifierade faktorer som ligger kvar (avbrutna försök)
+  const unverified=(factors.data?.totp||[]).filter(f=>f.status==="unverified");
+  for(const f of unverified){await sb.auth.mfa.unenroll({factorId:f.id});}
+}
+
+let enrollFactorId=null;
+async function startMfaEnroll(){
+  const r=await sb.auth.mfa.enroll({factorType:"totp"});
+  if(r.error){alert(r.error.message);return;}
+  enrollFactorId=r.data.id;
+  // visa QR (SVG) + hemlig kod
+  document.getElementById("mfa-qr").innerHTML=r.data.totp.qr_code?`<img src="${r.data.totp.qr_code}" alt="QR" style="width:200px;height:200px">`:"";
+  document.getElementById("mfa-secret").textContent=r.data.totp.secret||"";
+  document.getElementById("mfa-enroll-code").value="";
+  document.getElementById("mfa-enroll-err").textContent="";
+  openM("m-mfa");
+}
+async function confirmMfaEnroll(){
+  const code=document.getElementById("mfa-enroll-code").value.trim();
+  const err=document.getElementById("mfa-enroll-err");
+  if(code.length<6){err.textContent="Ange 6-siffrig kod";return;}
+  err.textContent="Verifierar...";
+  const ch=await sb.auth.mfa.challenge({factorId:enrollFactorId});
+  if(ch.error){err.textContent=ch.error.message;return;}
+  const ver=await sb.auth.mfa.verify({factorId:enrollFactorId,challengeId:ch.data.id,code});
+  if(ver.error){err.textContent="Fel kod – kontrollera appen och försök igen";return;}
+  closeM("m-mfa");toast("2FA aktiverat ✓");
+  refreshMfaStatus();
+}
+function disableMfa(factorId){
+  confirm2("Inaktivera tvåfaktorsinloggning? Du loggar då in med endast lösenord.",async()=>{
+    const r=await sb.auth.mfa.unenroll({factorId});
+    if(r.error){alert(r.error.message);return;}
+    toast("2FA inaktiverat");
+    refreshMfaStatus();
+  });
+}
 async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!session){const r=await sb.auth.refreshSession();return r.data.session?.access_token||null;}return session.access_token;}
 
 // LOAD
@@ -3165,7 +3247,7 @@ function showAnnualResult(coId,nyckeltal,text){
 
 
 // SETTINGS
-function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;}
+function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
 async function sendTestEmail(){toast("Skickar...",5000);const token=await getToken();if(!token)return;const r=await fetch("/api/test-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));toast(data.message||"Skickat ✓");}
 
