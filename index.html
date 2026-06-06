@@ -860,7 +860,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-goal"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="goal-modal-title">Nytt mål</h2><button class="mclose" onclick="closeM('m-goal')">×</button></div><div class="mbody"><input id="goal-id" type="hidden"><div class="fg"><div class="fl full"><label>Vad vill du mäta?</label><select id="goal-typ"></select></div><div class="fl"><label>Målvärde</label><input id="goal-varde" type="number" min="1" placeholder="t.ex. 20"></div><div class="fl"><label>Period</label><select id="goal-period" onchange="toggleGoalDates()"></select></div></div><div class="fg" id="goal-date-row" style="display:none;margin-top:10px"><div class="fl"><label>Startdatum</label><input id="goal-start" type="date"></div><div class="fl"><label>Slutdatum</label><input id="goal-slut" type="date"></div></div></div><div class="mfoot"><button class="btn btn-danger" id="goal-del-btn" style="display:none" onclick="deleteGoal()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-goal')">Avbryt</button><button class="btn btn-primary" onclick="saveGoal()">Spara</button></div></div></div>
 
-<div class="overlay" id="m-cv-result"><div class="modal modal-lg"><div class="mhdr"><h2>CV inläst</h2><button class="mclose" onclick="closeM('m-cv-result')">×</button></div><div class="mbody"><input id="cvres-subid" type="hidden"><div style="margin-bottom:8px;font-size:13px;color:#555">Föreslagna kompetenser (klicka för att lägga till på underkonsulten):</div><div id="cvres-suggest" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text (för att markera mer själv):</div><textarea id="cvres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-cv-result');if(curSubId)openSubCard(curSubId)">Klar</button></div></div></div>
+<div class="overlay" id="m-cv-result"><div class="modal modal-lg"><div class="mhdr"><h2>CV inläst</h2><button class="mclose" onclick="closeM('m-cv-result')">×</button></div><div class="mbody"><input id="cvres-subid" type="hidden"><div style="margin-bottom:8px;font-size:13px;color:#555">Föreslagna kompetenser (klicka för att lägga till på underkonsulten):</div><div id="cvres-head" style="margin-bottom:10px"></div><div id="cvres-suggest" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text (för att markera mer själv):</div><textarea id="cvres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-cv-result');if(curSubId)openSubCard(curSubId)">Klar</button></div></div></div>
 
 <div class="overlay" id="m-annual-result"><div class="modal modal-lg"><div class="mhdr"><h2>Årsredovisning inläst</h2><button class="mclose" onclick="closeM('m-annual-result')">×</button></div><div class="mbody"><input id="anres-coid" type="hidden"><div id="anres-nyckel" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text:</div><textarea id="anres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-annual-result')">Klar</button></div></div></div>
 
@@ -3180,19 +3180,34 @@ async function handleCvUpload(subId,file){
 function showCvResult(subId,found,text){
   const existing=new Set(subSkills.filter(s=>s.subconsultant_id===subId).map(s=>s.kompetens.toLowerCase()));
   document.getElementById("cvres-subid").value=subId;
+  const newOnes=found.filter(w=>!existing.has(w.toLowerCase()));
+  const head=document.getElementById("cvres-head");
+  if(head)head.innerHTML=newOnes.length?`<button class="btn btn-primary btn-sm" onclick="addAllCvSkills('${subId}')">+ Lägg till alla (${newOnes.length})</button> <span style="font-size:12px;color:#888">eller klicka på enstaka nedan</span>`:'<span style="font-size:13px;color:#888">Alla hittade kompetenser finns redan på underkonsulten.</span>';
   document.getElementById("cvres-suggest").innerHTML=found.length?found.map(w=>{
     const has=existing.has(w.toLowerCase());
     return`<span class="badge ${has?"b-granskad":"b-prospekt"}" style="cursor:${has?"default":"pointer"};margin:2px" ${has?"":`onclick="addCvSkill('${subId}','${e(w).replace(/'/g,"\\'")}',this)"`}>${has?"✓ ":"+ "}${e(w)}</span>`;
   }).join(""):'<span style="color:#aaa;font-size:13px">Inga kända kompetensord hittades i texten.</span>';
   document.getElementById("cvres-text").value=text||"(Ingen text kunde läsas ur PDF:en)";
+  window._cvFound=found;
   openM("m-cv-result");
+}
+async function addAllCvSkills(subId){
+  const found=window._cvFound||[];
+  const existing=new Set(subSkills.filter(s=>s.subconsultant_id===subId).map(s=>s.kompetens.toLowerCase()));
+  const toAdd=found.filter(w=>!existing.has(w.toLowerCase()));
+  if(!toAdd.length){toast("Inget nytt att lägga till");return;}
+  const rows=toAdd.map(w=>({subconsultant_id:subId,kompetens:w}));
+  const r=await sb.from("subconsultant_skills").insert(rows);
+  if(r.error){alert(r.error.message);return;}
+  await loadSubs();
+  toast(`${toAdd.length} kompetenser tillagda ✓`);
+  showCvResult(subId,found,document.getElementById("cvres-text").value);
 }
 async function addCvSkill(subId,skill,el){
   const r=await sb.from("subconsultant_skills").insert({subconsultant_id:subId,kompetens:skill});
   if(r.error){alert(r.error.message);return;}
   await loadSubs();
   if(el){el.className="badge b-granskad";el.style.cursor="default";el.textContent="✓ "+skill;el.onclick=null;}
-  toast("Kompetens tillagd");
 }
 
 // ── Årsredovisning för bolag ──
