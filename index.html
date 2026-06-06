@@ -412,7 +412,6 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span>Uppdrag</div>
       <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span>Dagbok</div>
       <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span>Tidrapport</div>
-      <div class="nav-item" data-v="veckoplan" onclick="gotoView('veckoplan')"><span class="nav-icon">🗓️</span>Veckoplan</div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('relationer')" style="cursor:pointer;user-select:none">Relationer <span class="nav-sec-arrow" id="arr-relationer">▾</span></div>
@@ -539,12 +538,7 @@ textarea{resize:vertical;min-height:68px}
     </div>
 
     <!-- VECKOPLAN -->
-    <div class="view" id="view-veckoplan">
-      <div class="toolbar">
-        <input id="vp-week" type="week" onchange="renderVeckoplan()">
-      </div>
-      <div id="veckoplan-content"></div>
-    </div>
+    <div class="view" id="view-veckoplan" style="display:none"></div>
 
     <div class="view" id="view-tasks">
       <div class="toolbar">
@@ -780,21 +774,7 @@ textarea{resize:vertical;min-height:68px}
   </div>
 </div>
 
-<div class="overlay" id="m-veckoplan-entry">
-  <div class="modal" style="width:440px">
-    <div class="mhdr"><h2>Planera tid</h2><button class="mclose" onclick="closeM('m-veckoplan-entry')">×</button></div>
-    <div class="mbody">
-      <input id="vpe-id" type="hidden">
-      <div class="fg">
-        <div class="fl full"><label>Projekt</label><select id="vpe-proj" onchange="loadVpTasks()"></select></div>
-        <div class="fl full"><label>Uppgift</label><select id="vpe-task"></select></div>
-        <div class="fl"><label>Datum</label><input id="vpe-datum" type="date"></div>
-        <div class="fl"><label>Planerade timmar</label><input id="vpe-hours" type="number" step="0.25" min="0"></div>
-      </div>
-    </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-veckoplan-entry')">Avbryt</button><button class="btn btn-primary" onclick="saveVeckoplanEntry()">Spara</button></div>
-  </div>
-</div>
+<div class="overlay" id="m-veckoplan-entry" style="display:none"></div>
 
 <div class="overlay" id="m-signal">
   <div class="modal">
@@ -1153,7 +1133,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadVeckoplanData(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1177,7 +1157,7 @@ async function loadProjects(){
   ]);
   projects=p.data||[];tasks=t.data||[];diary=d.data||[];projPeople=pp.data||[];closeouts=cl.data||[];
 }
-async function loadVeckoplanData(){const r=await sb.from("veckoplan").select("*").eq("user_id",me.id).order("datum",{ascending:true});veckoplan=r.data||[];}
+async function loadVeckoplanData(){veckoplan=[];}
 async function loadConnections(){const r=await sb.from("contact_connections").select("*").eq("user_id",me.id);contactConnections=r.data||[];}
 async function loadKnowledge(){const r=await sb.from("knowledge_notes").select("*").eq("user_id",me.id).order("updated_at",{ascending:false});knowledgeNotes=r.data||[];}
 async function loadSubRelations(){
@@ -1190,7 +1170,7 @@ async function loadSubRelations(){
 }
 async function loadGoals(){const r=await sb.from("goals").select("*").eq("user_id",me.id).order("created_at",{ascending:false});goals=r.data||[];}
 
-function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",schema:"public",table:"contacts"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"activity_log"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"companies"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"company_signals"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"projects"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_tasks"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_diary_entries"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"veckoplan"},()=>loadAll()).subscribe();}
+function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",schema:"public",table:"contacts"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"activity_log"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"companies"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"company_signals"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"projects"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_tasks"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_diary_entries"},()=>loadAll()).subscribe();}
 
 function updateBadges(){
   const today2=new Date();today2.setHours(0,0,0,0);
@@ -1244,7 +1224,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",veckoplan:"Veckoplanering",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1271,11 +1251,11 @@ function gotoView(name){
   else if(name==="subconsultants")tr.innerHTML='<button class="btn btn-primary" onclick="openNewSub()">+ Ny underkonsult</button>';
   else if(name==="followups")tr.innerHTML='<button class="btn btn-green" onclick="exportAllICS()">Exportera alla</button>';
   else if(name==="dagbok")tr.innerHTML='<button class="btn btn-primary" onclick="openNewDiaryEntry()">+ Ny logg</button>';
-  else if(name==="veckoplan")tr.innerHTML='<button class="btn btn-primary" onclick="openNewVeckoplanEntry()">+ Planera tid</button>';
+  // Veckoplan borttagen
   else if(name==="kb")tr.innerHTML='<button class="btn btn-primary" onclick="openNewKB()">+ Ny notering</button>';
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,veckoplan:renderVeckoplan,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1652,64 +1632,10 @@ function exportTidrapportCSV(){
   const csv="\ufeff"+rows.map(r=>r.map(csvCell).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`tidrapport_${month}.csv`;a.click();
 }
 
-// VECKOPLANERING
-function renderVeckoplan(){
-  const wpw=document.getElementById("vp-week")?.value||`${new Date().getFullYear()}-W${String(getWeekNumber(new Date())).padStart(2,"0")}`;
-  if(!document.getElementById("vp-week").value)document.getElementById("vp-week").value=wpw;
-  const [year,week]=wpw.split("-W").map(Number);
-  // Beräkna veckans datum
-  const weekDates=[];const jan4=new Date(year,0,4);const startOfWeek=new Date(jan4);startOfWeek.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(week-1)*7);
-  for(let i=0;i<7;i++){const d=new Date(startOfWeek);d.setDate(startOfWeek.getDate()+i);weekDates.push(d.toISOString().split("T")[0]);}
-  const dayNames=["Mån","Tis","Ons","Tor","Fre","Lör","Sön"];
-
-  const weekEntries=veckoplan.filter(vp=>weekDates.includes(vp.datum));
-  const diaryEntries2=diary.filter(d=>weekDates.includes(d.datum));
-
-  const totPlan=weekEntries.reduce((s,vp)=>s+(parseFloat(vp.planerade_timmar)||0),0);
-  const totLogged=diaryEntries2.filter(d=>(d.aktivitet_typ||"uppdrag")==="uppdrag").reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
-
-  document.getElementById("veckoplan-content").innerHTML=`
-    <div class="kpi-grid" style="margin-bottom:16px">
-      <div class="kpi c-blue"><div class="kpi-n">${totPlan.toFixed(1)}</div><div class="kpi-l">Planerade timmar</div></div>
-      <div class="kpi c-green"><div class="kpi-n">${totLogged.toFixed(1)}</div><div class="kpi-l">Loggade timmar</div></div>
-      <div class="kpi ${totLogged>=totPlan?"c-green":"c-warm"}"><div class="kpi-n">${totPlan>0?Math.round((totLogged/totPlan)*100):0}%</div><div class="kpi-l">Utfall vs plan</div></div>
-    </div>
-    ${totPlan>0?`<div style="margin-bottom:16px">${progressBar(totLogged,totPlan,300)}</div>`:""}
-    <div class="week-grid">
-      <div class="week-grid-hdr">Projekt / Uppgift</div>
-      ${dayNames.map((d,i)=>`<div class="week-grid-hdr" style="text-align:center">${d}<br><span style="font-size:10px;opacity:.7">${weekDates[i]?.slice(5)||""}</span></div>`).join("")}
-      ${projects.filter(p=>p.status==="Aktiv").map(p=>{
-        const pt=tasks.filter(t=>t.project_id===p.id&&t.status!=="Klar");
-        const rows=pt.length?pt.map(t=>`
-          <div class="week-grid-label" style="padding-left:24px;font-weight:400;font-size:11px">${e(t.title)}</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&x.task_id===t.id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.task_id===t.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" title="Klicka för att redigera" onclick="event.stopPropagation();openVeckoplanCellEdit('${p.id}','${t.id}','${datum}')" style="cursor:pointer">${logged.toFixed(1)}h ✎</span>`:""}</div>`;}).join("")}`).join(""):`
-          <div class="week-grid-label" style="color:#aaa;font-style:italic;font-weight:400">Inga uppgifter</div>
-          ${weekDates.map(datum=>{const vp=weekEntries.find(x=>x.project_id===p.id&&!x.task_id&&x.datum===datum);const logged=diaryEntries2.filter(d=>d.project_id===p.id&&d.datum===datum).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);return`<div class="week-grid-cell" onclick="openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer;text-align:center">${vp?`<span class="week-hour-chip">${vp.planerade_timmar}h</span>`:""} ${logged>0?`<span class="week-hour-chip social" onclick="event.stopPropagation();openVeckoplanCellEdit('${p.id}','','${datum}')" style="cursor:pointer">${logged.toFixed(1)}h ✎</span>`:""}</div>`;}).join("")}`;
-        return`<div class="week-grid-label" style="background:var(--accent);color:#fff;font-size:12px">${e(p.namn)}</div>${weekDates.map(()=>`<div class="week-grid-cell" style="background:var(--accent);opacity:.15"></div>`).join("")}${rows}`;
-      }).join("")}
-    </div>`;
-}
-
-function openVpEntry(pid,tid,datum){
-  document.getElementById("vpe-datum").value=datum;
-  const vpep=document.getElementById("vpe-proj");if(vpep)vpep.value=pid;
-  loadVpTasks();
-  setTimeout(()=>{const vpet=document.getElementById("vpe-task");if(vpet)vpet.value=tid;},50);
-  const existing=veckoplan.find(vp=>vp.project_id===pid&&(vp.task_id||"")===(tid||"")&&vp.datum===datum);
-  document.getElementById("vpe-id").value=existing?.id||"";
-  document.getElementById("vpe-hours").value=existing?.planerade_timmar||"";
-  openM("m-veckoplan-entry");
-}
-function openNewVeckoplanEntry(){document.getElementById("vpe-id").value="";document.getElementById("vpe-datum").value=today();document.getElementById("vpe-hours").value="";const vpep=document.getElementById("vpe-proj");if(vpep&&projects[0])vpep.value=projects[0].id;loadVpTasks();openM("m-veckoplan-entry");}
-function loadVpTasks(){const pid=v("vpe-proj");const el=document.getElementById("vpe-task");if(!el)return;el.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
-async function saveVeckoplanEntry(){
-  const pid=v("vpe-proj"),tid=v("vpe-task")||null,datum=v("vpe-datum"),hours=parseFloat(document.getElementById("vpe-hours")?.value||"");
-  if(!pid||!datum||!isFinite(hours)){toast("Fyll i alla fält");return;}
-  const eid=v("vpe-id");
-  const data={user_id:me.id,project_id:pid,task_id:tid,datum,planerade_timmar:hours};
-  const r=eid?await sb.from("veckoplan").update(data).eq("id",eid):await sb.from("veckoplan").insert(data);
-  if(r.error){alert(r.error.message);return;}closeM("m-veckoplan-entry");toast("Sparad");await loadVeckoplanData();renderVeckoplan();
-}
+// VECKOPLANERING borttagen (vyn och funktionerna raderade)
+async function saveVeckoplanEntry(){}
+function openNewVeckoplanEntry(){}
+function loadVpTasks(){}
 
 // COMPANIES
 function renderCompanies(){
@@ -3423,25 +3349,6 @@ function doExportContacts(){
 }
 
 // ══ VECKOPLAN: edit existing entry on click ═══════════════════
-function openVeckoplanCellEdit(pid, tid, datum){
-  // Hitta loggade poster för denna cell
-  const diaryEntries=diary.filter(d=>d.project_id===pid&&(d.task_id||"")===(tid||"")&&d.datum===datum);
-  if(diaryEntries.length===1){
-    // Exakt en post – öppna den för redigering
-    openEditDiaryEntry(diaryEntries[0].id);
-  } else if(diaryEntries.length>1){
-    // Flera poster – öppna ny (kan välja vilken via dagboken)
-    openNewDiaryEntryForProjectDate(pid,tid,datum);
-  } else {
-    // Ingen post – skapa ny
-    openNewDiaryEntryForProjectDate(pid,tid,datum);
-  }
-}
-function openVeckoplanChipEdit(entryId){
-  // Direkt redigera ett specifikt inlägg från chip
-  openEditDiaryEntry(entryId);
-}
-
 // ══ TODO ═════════════════════════════════════════════════════
 let todos = [];
 
