@@ -460,10 +460,10 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-companies">
-      <div class="toolbar" style="flex-wrap:nowrap;overflow-x:auto">
+      <div class="toolbar" style="flex-wrap:wrap">
         <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
-        <select id="co-pipe-filter" onchange="renderCompanies()" style="min-width:120px;flex-shrink:0"><option value="">Alla steg</option></select>
-        <select id="co-land-filter" onchange="renderCompanies()" style="min-width:110px;flex-shrink:0"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="">Alla steg</option></select>
+        <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Börsnoterade</label>
       </div>
       <div id="companies-content"></div>
