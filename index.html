@@ -2752,19 +2752,49 @@ function goalProgress(g){
   return 0;
 }
 
+let showAchievedGoals=false;
 function renderGoals(){
   if(!goals.length){document.getElementById("goals-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga mål ännu. Klicka "+ Nytt mål" för att sätta ditt första mål.</p></div>';return;}
-  document.getElementById("goals-content").innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">${goals.map(g=>{
-    const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));
+  // beräkna status för alla
+  const withProg=goals.map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));return{g,prog,mal,pct,done:pct>=100};});
+  const total=withProg.length;
+  const achieved=withProg.filter(x=>x.done).length;
+  const onTrack=total-achieved;
+  const avgPct=Math.round(withProg.reduce((s,x)=>s+x.pct,0)/total);
+  // statusstapel: andel uppnådda vs på väg
+  const achievedW=Math.round((achieved/total)*100);
+
+  const summary=`<div class="week-sec" style="margin-bottom:18px"><div style="padding:18px">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px">
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px">${total}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Mål totalt</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--green)">${achieved}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Uppnådda</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--accent)">${onTrack}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">På väg</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--gold)">${avgPct}%</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Snitt-progress</div></div>
+    </div>
+    <div style="display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--cream)">
+      ${achieved>0?`<div style="width:${achievedW}%;background:var(--green)" title="${achieved} uppnådda"></div>`:""}
+      ${onTrack>0?`<div style="width:${100-achievedW}%;background:var(--accent);opacity:.55" title="${onTrack} på väg"></div>`:""}
+    </div>
+    <div style="font-size:12px;color:#888;margin-top:6px">${achieved} av ${total} mål uppnådda${achieved<total?` · ${onTrack} pågår`:" – starkt jobbat! 🎉"}</div>
+  </div></div>`;
+
+  const visible=showAchievedGoals?withProg:withProg.filter(x=>!x.done);
+  const cardHtml=({g,prog,mal,pct,done})=>{
     const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";
     const col=pct>=100?"var(--green)":pct>=60?"var(--accent)":"var(--gold)";
-    return`<div class="week-sec" style="margin-bottom:0"><div style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${g.period==="eget"?e((g.period_start||"")+" – "+(g.slut_datum||"")):e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
+    return`<div class="week-sec" style="margin-bottom:0;${done?"opacity:.75":""}"><div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${done?"✓ ":""}${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${g.period==="eget"?e((g.period_start||"")+" – "+(g.slut_datum||"")):e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
       <div style="display:flex;align-items:baseline;gap:6px;margin:12px 0 8px"><span style="font-family:'DM Serif Display',serif;font-size:34px;color:${col}">${prog}</span><span style="font-size:16px;color:#888">/ ${mal}</span></div>
       <div class="progress-wrap" style="height:10px"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div>
       <div style="font-size:12px;color:#888;margin-top:6px">${pct}% ${pct>=100?"– uppnått! 🎉":`· ${mal-prog} kvar`}</div>
     </div></div>`;
-  }).join("")}</div>`;
+  };
+
+  const toggleBtn=achieved>0?`<div style="margin-bottom:14px"><button class="btn btn-outline btn-sm" onclick="showAchievedGoals=!showAchievedGoals;renderGoals()">${showAchievedGoals?"Dölj uppnådda":`Visa uppnådda (${achieved})`}</button></div>`:"";
+
+  const grid=visible.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">${visible.map(cardHtml).join("")}</div>`:'<div class="empty" style="padding:30px"><p style="color:#888">Alla mål är uppnådda! 🎉 Klicka "Visa uppnådda" ovan för att se dem.</p></div>';
+
+  document.getElementById("goals-content").innerHTML=summary+toggleBtn+grid;
 }
 
 function fillGoalSelects(){
