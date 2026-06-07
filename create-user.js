@@ -6,12 +6,11 @@
 //   SUPABASE_URL              = https://nchrbkeyvwqyswwyxkgn.supabase.co
 //   SUPABASE_SERVICE_ROLE_KEY = (hämtas i Supabase: Project Settings → API → service_role secret)
 //
-// Endast den e-post som anges i ADMIN_EMAIL får skapa användare.
+// Endast användare som finns i tabellen public.admins får skapa användare.
 
 import { createClient } from "@supabase/supabase-js";
 
-// Byt ut till DIN inloggnings-e-post (den som får bjuda in andra):
-const ADMIN_EMAIL = "DIN_EPOST_HÄR";
+// Admin styrs via tabellen public.admins (inget hårdkodat här).
 
 export default async function handler(req, res) {
   // Tillåt bara POST
@@ -39,13 +38,18 @@ export default async function handler(req, res) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1) Verifiera att den som anropar verkligen är inloggad OCH är admin.
+    // 1) Verifiera att den som anropar verkligen är inloggad OCH står i admins-tabellen.
     const { data: caller, error: callerErr } = await admin.auth.getUser(access_token);
     if (callerErr || !caller?.user) {
       return res.status(401).json({ error: "Inte inloggad" });
     }
-    if ((caller.user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      return res.status(403).json({ error: "Endast administratören får skapa konton" });
+    const { data: adminRow } = await admin
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", caller.user.id)
+      .maybeSingle();
+    if (!adminRow) {
+      return res.status(403).json({ error: "Endast administratörer får skapa konton" });
     }
 
     // 2) Skapa den nya användaren (direkt aktiv, ingen mejlbekräftelse krävs).
