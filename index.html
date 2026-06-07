@@ -406,6 +406,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span>Bolag</div>
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span>Signaler<span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
+      <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span>Nyckeltal</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none">Uppdrag &amp; tid <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
     <div class="nav-grp" id="grp-uppdrag">
@@ -458,6 +459,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
+    <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
         <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
@@ -962,6 +964,7 @@ let contactConnections=[];
 let knowledgeNotes=[];
 let subActivity=[],subCompanies=[],subContacts=[];
 let goals=[];
+let finAnalyses=[];
 let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
 let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
 let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView="dashboard";
@@ -1167,7 +1170,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1203,6 +1206,7 @@ async function loadSubRelations(){
   subActivity=a.data||[];subCompanies=b.data||[];subContacts=c.data||[];
 }
 async function loadGoals(){const r=await sb.from("goals").select("*").eq("user_id",me.id).order("created_at",{ascending:false});goals=r.data||[];}
+async function loadFinAnalyses(){const r=await sb.from("financial_analyses").select("*").eq("user_id",me.id).order("updated_at",{ascending:false});finAnalyses=r.data||[];}
 
 function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",schema:"public",table:"contacts"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"activity_log"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"companies"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"company_signals"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"projects"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_tasks"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"project_diary_entries"},()=>loadAll()).subscribe();}
 
@@ -1258,7 +1262,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1289,7 +1293,8 @@ function gotoView(name){
   else if(name==="kb")tr.innerHTML='<button class="btn btn-primary" onclick="openNewKB()">+ Ny notering</button>';
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals};
+  else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -2891,6 +2896,168 @@ function deleteGoalById(id,fromModal){
     await loadGoals();renderGoals();
   });
 }
+
+// ══ NYCKELTAL & FINANSIELL ANALYS ════════════════════════════
+let curFinId=null;
+const FIN_FIELDS=[
+  {k:"aktiekapital",l:"Aktiekapital"},
+  {k:"eget_kapital",l:"Eget kapital"},
+  {k:"tillgangar",l:"Totala tillgångar"},
+  {k:"omsattningstillg",l:"Omsättningstillgångar"},
+  {k:"kortfrist_skulder",l:"Kortfristiga skulder"},
+  {k:"totala_skulder",l:"Totala skulder"},
+  {k:"likvida_medel",l:"Likvida medel"},
+  {k:"omsattning",l:"Omsättning"},
+  {k:"ebit",l:"Rörelseresultat (EBIT)"},
+  {k:"arets_resultat",l:"Årets resultat"},
+  {k:"manatlig_burn",l:"Månatlig burn (kostnad/mån)"},
+  {k:"omsattning_foreg",l:"Omsättning föregående år"},
+  {k:"borsvarde",l:"Börsvärde (för P/E)"},
+  {k:"pris_per_aktie",l:"Pris per aktie"},
+  {k:"vinst_per_aktie",l:"Vinst per aktie (EPS)"}
+];
+
+function finNum(k){const el=document.getElementById("fin-"+k);if(!el)return 0;const v2=parseFloat((el.value||"").replace(/\s/g,"").replace(",","."));return isFinite(v2)?v2:0;}
+function fmtSEK(n){if(!isFinite(n))return "–";return Math.round(n).toLocaleString("sv-SE");}
+function fmtPct(n){if(!isFinite(n))return "–";return n.toFixed(1)+"%";}
+function fmtX(n){if(!isFinite(n)||n===0)return "–";return n.toFixed(2);}
+
+function finCalc(){
+  const ak=finNum("aktiekapital"),ek=finNum("eget_kapital"),tillg=finNum("tillgangar"),
+    omsTillg=finNum("omsattningstillg"),kfsk=finNum("kortfrist_skulder"),totsk=finNum("totala_skulder"),
+    likvid=finNum("likvida_medel"),oms=finNum("omsattning"),ebit=finNum("ebit"),ar=finNum("arets_resultat"),
+    burn=finNum("manatlig_burn"),omsForeg=finNum("omsattning_foreg"),borsv=finNum("borsvarde"),
+    pris=finNum("pris_per_aktie"),eps=finNum("vinst_per_aktie");
+
+  // KBR: EK < 50% av aktiekapitalet
+  const kbrGrans=ak*0.5;
+  const kbrPlikt=ak>0&&ek<kbrGrans;
+  const kbrMarginal=ek-kbrGrans; // hur långt över/under gränsen
+
+  const soliditet=tillg>0?(ek/tillg)*100:NaN;
+  const skuldsattning=ek>0?(totsk/ek):NaN; // skuldsättningsgrad (ggr)
+  const kassalikviditet=kfsk>0?((omsTillg-0)/kfsk)*100:NaN; // förenklat: oms.tillg/kortfrist
+  const balanslikviditet=kfsk>0?(omsTillg/kfsk)*100:NaN;
+  const roe=ek>0?(ar/ek)*100:NaN;
+  const roa=tillg>0?(ebit/tillg)*100:NaN;
+  const rorelsemarginal=oms>0?(ebit/oms)*100:NaN;
+  const vinstmarginal=oms>0?(ar/oms)*100:NaN;
+  const tillvaxt=omsForeg>0?((oms-omsForeg)/omsForeg)*100:NaN;
+  const runway=burn>0?(likvid/burn):NaN; // månader
+  const peBors=ar>0&&borsv>0?(borsv/ar):NaN;
+  const peAktie=eps>0&&pris>0?(pris/eps):NaN;
+
+  return{ak,ek,kbrGrans,kbrPlikt,kbrMarginal,soliditet,skuldsattning,kassalikviditet,balanslikviditet,roe,roa,rorelsemarginal,vinstmarginal,tillvaxt,runway,peBors,peAktie};
+}
+
+function renderFinResult(){
+  const r=finCalc();
+  const warn=[];
+  if(r.kbrPlikt)warn.push("⛔ Kontrollbalansräkning kan krävas – eget kapital understiger hälften av aktiekapitalet (ABL 25:13).");
+  if(isFinite(r.soliditet)&&r.soliditet<15)warn.push("⚠ Låg soliditet (<15%) – tunn finansiell buffert.");
+  if(isFinite(r.balanslikviditet)&&r.balanslikviditet<100)warn.push("⚠ Balanslikviditet under 100% – omsättningstillgångarna täcker inte de kortfristiga skulderna.");
+  if(isFinite(r.runway)&&r.runway<6)warn.push(`⚠ Kort runway (~${r.runway.toFixed(1)} mån) vid nuvarande burn.`);
+  if(isFinite(r.vinstmarginal)&&r.vinstmarginal<0)warn.push("⚠ Negativ vinstmarginal – bolaget går med förlust.");
+
+  const kbrCard=r.ak>0?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid ${r.kbrPlikt?"var(--red)":"var(--green)"}"><div style="padding:16px">
+    <div style="font-weight:600;font-size:15px;margin-bottom:6px">Kontrollbalansräkning (KBR)</div>
+    <div style="font-size:13px;line-height:1.7">
+      Kritisk gräns (50% av aktiekapital): <strong>${fmtSEK(r.kbrGrans)}</strong><br>
+      Eget kapital: <strong>${fmtSEK(r.ek)}</strong><br>
+      Marginal till gräns: <strong style="color:${r.kbrMarginal<0?"var(--red)":"var(--green)"}">${fmtSEK(r.kbrMarginal)}</strong>
+    </div>
+    <div style="margin-top:8px;font-weight:600;color:${r.kbrPlikt?"var(--red)":"var(--green)"}">${r.kbrPlikt?"⛔ Under gränsen – KBR-plikt kan ha inträtt":"✓ Över gränsen – ingen KBR-plikt"}</div>
+  </div></div>`:"";
+
+  const kt=(l,v2,extra="")=>`<div class="ii"><label>${l}</label><span>${v2}${extra}</span></div>`;
+  document.getElementById("fin-result").innerHTML=`
+    ${warn.length?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--gold)"><div style="padding:14px"><div style="font-weight:600;margin-bottom:6px">Varningsflaggor</div>${warn.map(w=>`<div style="font-size:13px;line-height:1.7">${e(w)}</div>`).join("")}</div></div>`:""}
+    ${kbrCard}
+    <div class="week-sec"><div style="padding:16px">
+      <div style="font-weight:600;font-size:15px;margin-bottom:10px">Nyckeltal</div>
+      <div class="ig">
+        ${kt("Soliditet",fmtPct(r.soliditet))}
+        ${kt("Skuldsättningsgrad",fmtX(r.skuldsattning)," ggr")}
+        ${kt("Balanslikviditet",fmtPct(r.balanslikviditet))}
+        ${kt("Kassalikviditet",fmtPct(r.kassalikviditet))}
+        ${kt("Räntabilitet eget kapital (ROE)",fmtPct(r.roe))}
+        ${kt("Räntabilitet totalt kapital (ROA)",fmtPct(r.roa))}
+        ${kt("Rörelsemarginal",fmtPct(r.rorelsemarginal))}
+        ${kt("Vinstmarginal",fmtPct(r.vinstmarginal))}
+        ${kt("Omsättningstillväxt",fmtPct(r.tillvaxt))}
+        ${kt("Runway",isFinite(r.runway)?r.runway.toFixed(1)+" mån":"–")}
+        ${kt("P/E (börsvärde/resultat)",fmtX(r.peBors))}
+        ${kt("P/E (pris/EPS)",fmtX(r.peAktie))}
+      </div>
+    </div></div>`;
+}
+
+function renderFinans(){
+  const opts=companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const savedList=finAnalyses.map(a=>{const co=a.company_id?companies.find(c=>c.id===a.company_id):null;return`<div class="fup-row"><div class="fup-info" style="cursor:pointer" onclick="openFinAnalysis('${a.id}')"><div class="fup-name">${e(a.titel||"Namnlös analys")} ↗</div><div class="fup-meta">${co?e(co.namn)+" · ":""}${e((a.updated_at||"").slice(0,10))}</div></div><button class="btn-icon" style="color:var(--red)" onclick="deleteFinAnalysis('${a.id}')">🗑</button></div>`;}).join("");
+  document.getElementById("finans-content").innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:18px;align-items:start" id="fin-layout">
+      <div class="week-sec" style="margin-bottom:0"><div style="padding:16px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <input id="fin-titel" placeholder="Analysens namn (t.ex. Q2-genomgång)" style="flex:1;min-width:160px">
+          <select id="fin-company" style="width:180px"><option value="">Fristående (inget bolag)</option>${opts}</select>
+        </div>
+        <div class="ig">
+          ${FIN_FIELDS.map(f=>`<div class="ii" style="display:block"><label>${f.l}</label><input id="fin-${f.k}" type="text" inputmode="decimal" oninput="renderFinResult()" style="width:100%;margin-top:2px"></div>`).join("")}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-primary btn-sm" onclick="saveFinAnalysis()">💾 Spara analys</button>
+          <button class="btn btn-outline btn-sm" onclick="newFinAnalysis()">Rensa</button>
+        </div>
+      </div></div>
+      <div id="fin-result"></div>
+    </div>
+    ${finAnalyses.length?`<div class="week-sec" style="margin-top:18px"><div class="week-sec-hdr"><h3>Sparade analyser</h3><span style="font-size:12px;color:#888">${finAnalyses.length} st</span></div><div style="padding:6px 14px 14px">${savedList}</div></div>`:""}`;
+  renderFinResult();
+}
+
+function newFinAnalysis(){
+  gotoView("finans");
+  curFinId=null;
+  setTimeout(()=>{
+    const t=document.getElementById("fin-titel");if(t)t.value="";
+    const co=document.getElementById("fin-company");if(co)co.value="";
+    FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value="";});
+    renderFinResult();
+  },0);
+}
+
+function openFinAnalysis(id){
+  const a=finAnalyses.find(x=>x.id===id);if(!a)return;
+  gotoView("finans");
+  curFinId=id;
+  setTimeout(()=>{
+    document.getElementById("fin-titel").value=a.titel||"";
+    document.getElementById("fin-company").value=a.company_id||"";
+    const d=a.data||{};
+    FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value=d[f.k]!=null?d[f.k]:"";});
+    renderFinResult();
+  },0);
+}
+
+async function saveFinAnalysis(){
+  const titel=v("fin-titel")||"Namnlös analys";
+  const company_id=v("fin-company")||null;
+  const data={};FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el&&el.value.trim()!=="")data[f.k]=el.value.trim();});
+  const row={user_id:me.id,titel,company_id,data,updated_at:new Date().toISOString()};
+  const r=curFinId?await sb.from("financial_analyses").update(row).eq("id",curFinId):await sb.from("financial_analyses").insert(row);
+  if(r.error){alert(r.error.message);return;}
+  toast("Analys sparad ✓");
+  await loadFinAnalyses();renderFinans();
+}
+function deleteFinAnalysis(id){
+  confirm2("Ta bort analysen?",async()=>{
+    await sb.from("financial_analyses").delete().eq("id",id);
+    if(curFinId===id)curFinId=null;
+    await loadFinAnalyses();renderFinans();
+  });
+}
+
 
 
 
