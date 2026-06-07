@@ -2994,67 +2994,139 @@ function renderFinResult(){
 
 function renderFinans(){
   const opts=companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
-  const savedList=finAnalyses.map(a=>{const co=a.company_id?companies.find(c=>c.id===a.company_id):null;return`<div class="fup-row"><div class="fup-info" style="cursor:pointer" onclick="openFinAnalysis('${a.id}')"><div class="fup-name">${e(a.titel||"Namnlös analys")} ↗</div><div class="fup-meta">${co?e(co.namn)+" · ":""}${e((a.updated_at||"").slice(0,10))}</div></div><button class="btn-icon" style="color:var(--red)" onclick="deleteFinAnalysis('${a.id}')">🗑</button></div>`;}).join("");
+  const yr=new Date().getFullYear();
+  const yrOpts=[];for(let y=yr+1;y>=yr-8;y--)yrOpts.push(`<option value="${y}">${y}</option>`);
   document.getElementById("finans-content").innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:18px;align-items:start" id="fin-layout">
       <div class="week-sec" style="margin-bottom:0"><div style="padding:16px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <select id="fin-company" onchange="renderFinTrend()" style="flex:1;min-width:160px"><option value="">Välj bolag (eller fristående)</option>${opts}</select>
+        </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-          <input id="fin-titel" placeholder="Analysens namn (t.ex. Q2-genomgång)" style="flex:1;min-width:160px">
-          <select id="fin-company" style="width:180px"><option value="">Fristående (inget bolag)</option>${opts}</select>
+          <select id="fin-ar" style="width:110px">${yrOpts.join("")}</select>
+          <select id="fin-kvartal" style="width:130px"><option value="Helår">Helår</option><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select>
         </div>
         <div class="ig">
           ${FIN_FIELDS.map(f=>`<div class="ii" style="display:block"><label>${f.l}</label><input id="fin-${f.k}" type="text" inputmode="decimal" oninput="renderFinResult()" style="width:100%;margin-top:2px"></div>`).join("")}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn btn-primary btn-sm" onclick="saveFinAnalysis()">💾 Spara analys</button>
-          <button class="btn btn-outline btn-sm" onclick="newFinAnalysis()">Rensa</button>
+          <button class="btn btn-primary btn-sm" onclick="saveFinAnalysis()">💾 Spara period</button>
+          <button class="btn btn-outline btn-sm" onclick="clearFinInputs()">Rensa fält</button>
         </div>
       </div></div>
       <div id="fin-result"></div>
     </div>
-    ${finAnalyses.length?`<div class="week-sec" style="margin-top:18px"><div class="week-sec-hdr"><h3>Sparade analyser</h3><span style="font-size:12px;color:#888">${finAnalyses.length} st</span></div><div style="padding:6px 14px 14px">${savedList}</div></div>`:""}`;
+    <div id="fin-trend" style="margin-top:18px"></div>`;
+  renderFinResult();
+  renderFinTrend();
+}
+
+function clearFinInputs(){
+  curFinId=null;
+  FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value="";});
   renderFinResult();
 }
 
-function newFinAnalysis(){
-  gotoView("finans");
-  curFinId=null;
-  setTimeout(()=>{
-    const t=document.getElementById("fin-titel");if(t)t.value="";
-    const co=document.getElementById("fin-company");if(co)co.value="";
-    FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value="";});
-    renderFinResult();
-  },0);
+function renderFinTrend(){
+  const el=document.getElementById("fin-trend");if(!el)return;
+  const coId=v("fin-company");
+  // hämta sparade perioder för valt bolag (eller fristående)
+  const list=finAnalyses.filter(a=>(coId?a.company_id===coId:!a.company_id))
+    .map(a=>({a,d:a.data||{},period:(a.data&&a.data._period)||a.titel||"?",sort:(a.data&&a.data._sort)||""}))
+    .sort((x,y)=>String(x.sort).localeCompare(String(y.sort)));
+  if(!list.length){el.innerHTML="";return;}
+
+  // beräkna nyckeltal per period
+  const calcFor=d=>{
+    const g=k=>{const v2=parseFloat(String(d[k]||"").replace(/\s/g,"").replace(",","."));return isFinite(v2)?v2:0;};
+    const ak=g("aktiekapital"),ek=g("eget_kapital"),tillg=g("tillgangar"),omsTillg=g("omsattningstillg"),kfsk=g("kortfrist_skulder"),totsk=g("totala_skulder"),likvid=g("likvida_medel"),oms=g("omsattning"),ebit=g("ebit"),ar=g("arets_resultat"),burn=g("manatlig_burn");
+    return{
+      soliditet:tillg>0?(ek/tillg)*100:NaN,
+      balanslikv:kfsk>0?(omsTillg/kfsk)*100:NaN,
+      roe:ek>0?(ar/ek)*100:NaN,
+      rormarg:oms>0?(ebit/oms)*100:NaN,
+      vinstmarg:oms>0?(ar/oms)*100:NaN,
+      runway:burn>0?(likvid/burn):NaN,
+      oms,ek,kbr:ak>0&&ek<ak*0.5
+    };
+  };
+  const rows=list.map(x=>({period:x.period,id:x.a.id,m:calcFor(x.d)}));
+  const metricDefs=[
+    {k:"oms",l:"Omsättning",fmt:v2=>fmtSEK(v2),up:true},
+    {k:"soliditet",l:"Soliditet",fmt:v2=>fmtPct(v2),up:true},
+    {k:"balanslikv",l:"Balanslikviditet",fmt:v2=>fmtPct(v2),up:true},
+    {k:"roe",l:"ROE",fmt:v2=>fmtPct(v2),up:true},
+    {k:"rormarg",l:"Rörelsemarginal",fmt:v2=>fmtPct(v2),up:true},
+    {k:"vinstmarg",l:"Vinstmarginal",fmt:v2=>fmtPct(v2),up:true},
+    {k:"runway",l:"Runway (mån)",fmt:v2=>isFinite(v2)?v2.toFixed(1):"–",up:true}
+  ];
+  const head=`<tr><th>Nyckeltal</th>${rows.map(r=>`<th style="text-align:right">${e(r.period)}</th>`).join("")}${rows.length>1?'<th style="text-align:right">Förändring</th>':""}</tr>`;
+  const body=metricDefs.map(md=>{
+    const cells=rows.map(r=>`<td style="text-align:right">${md.fmt(r.m[md.k])}</td>`).join("");
+    let change="";
+    if(rows.length>1){
+      const first=rows[0].m[md.k],last=rows[rows.length-1].m[md.k];
+      if(isFinite(first)&&isFinite(last)){const diff=last-first;const good=md.up?diff>=0:diff<=0;change=`<td style="text-align:right;color:${diff===0?"#888":good?"var(--green)":"var(--red)"};font-weight:600">${diff>=0?"+":""}${md.fmt?(md.k==="oms"?fmtSEK(diff):(["soliditet","balanslikv","roe","rormarg","vinstmarg"].includes(md.k)?diff.toFixed(1)+" pe":diff.toFixed(1))):diff}</td>`;}
+      else change='<td style="text-align:right;color:#aaa">–</td>';
+    }
+    return`<tr><td style="font-weight:500">${md.l}</td>${cells}${change}</tr>`;
+  }).join("");
+
+  el.innerHTML=`<div class="week-sec"><div class="week-sec-hdr"><h3>📈 Utveckling över perioder</h3><span style="font-size:12px;color:#888">${rows.length} sparade perioder</span></div>
+    <div class="tw" style="padding:10px 14px 14px"><table style="font-size:13px"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    <div style="padding:0 14px 14px;display:flex;gap:6px;flex-wrap:wrap">${list.map(x=>`<span class="badge b-prospekt" style="cursor:pointer" onclick="openFinAnalysis('${x.a.id}')">${e(x.period)} ✎</span> `).join("")}</div>
+  </div>
+  ${renderFinSuggestions(rows[rows.length-1]?.m)}`;
 }
 
+function renderFinSuggestions(m){
+  if(!m)return "";
+  const tips=[];
+  if(m.kbr)tips.push(["⛔","Kontrollbalansräkning","Eget kapital understiger halva aktiekapitalet. Upprätta en kontrollbalansräkning och överväg kapitaltillskott, nyemission eller aktieägartillskott snarast för att undvika personligt betalningsansvar."]);
+  if(isFinite(m.soliditet)&&m.soliditet<20)tips.push(["⚠","Stärk soliditeten","Soliditeten är låg. Överväg att öka eget kapital (vinstkvarhållning, tillskott) eller minska skuldberoendet. Långivare och kunder ser ofta soliditet under 20% som riskfyllt."]);
+  if(isFinite(m.balanslikv)&&m.balanslikv<100)tips.push(["⚠","Förbättra likviditeten","Omsättningstillgångarna täcker inte de kortfristiga skulderna. Se över betalningsvillkor, korta kundfordringar och förläng leverantörsskulder, eller omförhandla kortfristiga lån till långfristiga."]);
+  if(isFinite(m.vinstmarg)&&m.vinstmarg<0)tips.push(["⚠","Vänd förlusten","Negativ vinstmarginal. Kartlägg de största kostnadsposterna, se över prissättning och bruttomarginal, och prioritera lönsamma intäktsströmmar."]);
+  else if(isFinite(m.rormarg)&&m.rormarg<5&&m.rormarg>=0)tips.push(["•","Höj rörelsemarginalen","Tunn rörelsemarginal (<5%). Liten motståndskraft vid intäktsbortfall – arbeta med prissättning, kostnadskontroll och effektivisering."]);
+  if(isFinite(m.runway)&&m.runway<6)tips.push(["⚠","Säkra runway","Mindre än 6 månaders runway vid nuvarande burn. Planera finansiering i god tid, minska burn, eller accelerera intäkter innan kassan tryter."]);
+  if(isFinite(m.roe)&&m.roe<5&&m.roe>=0)tips.push(["•","Förbättra avkastningen","Låg avkastning på eget kapital. Se över kapitaleffektivitet – binds kapital i lågavkastande tillgångar som kan frigöras?"]);
+  if(!tips.length)tips.push(["✓","Stabilt läge","Inga kritiska varningar utifrån de inmatade nyckeltalen. Fortsätt följa utvecklingen per period."]);
+  return `<div class="week-sec" style="margin-top:14px"><div class="week-sec-hdr"><h3>💡 Förbättringsförslag</h3><span style="font-size:12px;color:#888">baserat på senaste perioden</span></div>
+    <div style="padding:6px 16px 16px">${tips.map(([ic,t,d])=>`<div style="padding:10px 0;border-bottom:1px solid var(--cream)"><div style="font-weight:600;font-size:14px">${ic} ${e(t)}</div><div style="font-size:13px;line-height:1.6;color:#555;margin-top:3px">${e(d)}</div></div>`).join("")}</div></div>`;
+}
+
+function newFinAnalysis(){gotoView("finans");setTimeout(clearFinInputs,0);}
 function openFinAnalysis(id){
   const a=finAnalyses.find(x=>x.id===id);if(!a)return;
-  gotoView("finans");
   curFinId=id;
-  setTimeout(()=>{
-    document.getElementById("fin-titel").value=a.titel||"";
-    document.getElementById("fin-company").value=a.company_id||"";
-    const d=a.data||{};
-    FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value=d[f.k]!=null?d[f.k]:"";});
-    renderFinResult();
-  },0);
+  const d=a.data||{};
+  if(a.company_id){const co=document.getElementById("fin-company");if(co)co.value=a.company_id;}
+  if(d._ar){const y=document.getElementById("fin-ar");if(y)y.value=d._ar;}
+  if(d._kvartal){const k=document.getElementById("fin-kvartal");if(k)k.value=d._kvartal;}
+  FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el)el.value=d[f.k]!=null?d[f.k]:"";});
+  renderFinResult();renderFinTrend();
+  window.scrollTo({top:0,behavior:"smooth"});
 }
-
 async function saveFinAnalysis(){
-  const titel=v("fin-titel")||"Namnlös analys";
   const company_id=v("fin-company")||null;
-  const data={};FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el&&el.value.trim()!=="")data[f.k]=el.value.trim();});
-  const row={user_id:me.id,titel,company_id,data,updated_at:new Date().toISOString()};
-  const r=curFinId?await sb.from("financial_analyses").update(row).eq("id",curFinId):await sb.from("financial_analyses").insert(row);
+  const ar=v("fin-ar"),kvartal=v("fin-kvartal")||"Helår";
+  const period=`${kvartal==="Helår"?"":kvartal+" "}${ar}`;
+  const sort=`${ar}-${kvartal==="Helår"?"0":kvartal}`;
+  const data={_period:period,_ar:ar,_kvartal:kvartal,_sort:sort};
+  FIN_FIELDS.forEach(f=>{const el=document.getElementById("fin-"+f.k);if(el&&el.value.trim()!=="")data[f.k]=el.value.trim();});
+  const existing=finAnalyses.find(a=>(company_id?a.company_id===company_id:!a.company_id)&&a.data&&a.data._period===period);
+  const id=curFinId||existing?.id;
+  const row={user_id:me.id,titel:period,company_id,data,updated_at:new Date().toISOString()};
+  const r=id?await sb.from("financial_analyses").update(row).eq("id",id):await sb.from("financial_analyses").insert(row);
   if(r.error){alert(r.error.message);return;}
-  toast("Analys sparad ✓");
-  await loadFinAnalyses();renderFinans();
+  curFinId=null;
+  toast(`Period ${period} sparad ✓`);
+  await loadFinAnalyses();renderFinTrend();
 }
 function deleteFinAnalysis(id){
-  confirm2("Ta bort analysen?",async()=>{
+  confirm2("Ta bort perioden?",async()=>{
     await sb.from("financial_analyses").delete().eq("id",id);
     if(curFinId===id)curFinId=null;
-    await loadFinAnalyses();renderFinans();
+    await loadFinAnalyses();renderFinTrend();
   });
 }
 
