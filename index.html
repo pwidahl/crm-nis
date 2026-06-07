@@ -1748,6 +1748,7 @@ async function openCompanyCard(id){
         ${c.arsredovisning_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(c.arsredovisning_path)}')">Öppna</button>`:""}
         <button class="btn btn-primary btn-sm" onclick="openAnnualUpload('${id}')">${c.arsredovisning_path?"Ladda upp ny":"Ladda upp årsredovisning (PDF)"}</button>
       </div>
+      ${companyFinSummary(id)}
       ${parentCo||subsidiaries.length?`
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏢 Koncernstruktur</div>
@@ -2948,6 +2949,36 @@ function finCalc(){
   const peAktie=eps>0&&pris>0?(pris/eps):NaN;
 
   return{ak,ek,kbrGrans,kbrPlikt,kbrMarginal,soliditet,skuldsattning,kassalikviditet,balanslikviditet,roe,roa,rorelsemarginal,vinstmarginal,tillvaxt,runway,peBors,peAktie};
+}
+
+function companyFinSummary(coId){
+  const list=finAnalyses.filter(a=>a.company_id===coId)
+    .map(a=>({a,sort:(a.data&&a.data._sort)||""}))
+    .sort((x,y)=>String(y.sort).localeCompare(String(x.sort)));
+  if(!list.length){
+    return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--cream);display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:13px;color:#555">📐 Nyckeltal:</span><span style="font-size:13px;color:#aaa">Inga sparade ännu</span><button class="btn btn-outline btn-sm" onclick="closeM('m-card');closeM('m-company');gotoFinForCompany('${coId}')">Lägg till analys</button></div>`;
+  }
+  const latest=list[0].a;const d=latest.data||{};
+  const g=k=>{const v2=parseFloat(String(d[k]||"").replace(/\s/g,"").replace(",","."));return isFinite(v2)?v2:0;};
+  const ak=g("aktiekapital"),ek=g("eget_kapital"),tillg=g("tillgangar"),oms=g("omsattning"),ar=g("arets_resultat");
+  const soliditet=tillg>0?(ek/tillg)*100:NaN;
+  const vinstmarg=oms>0?(ar/oms)*100:NaN;
+  const kbr=ak>0&&ek<ak*0.5;
+  const kt=(l,v2)=>`<div class="ii"><label>${l}</label><span>${v2}</span></div>`;
+  return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">📐 Nyckeltal · senaste (${e(d._period||"")})</div><button class="btn btn-outline btn-xs" onclick="closeM('m-card');closeM('m-company');gotoFinForCompany('${coId}')">Full analys →</button></div>
+    ${kbr?'<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px">⛔ Möjlig KBR-plikt (EK under halva aktiekapitalet)</div>':""}
+    <div class="ig">
+      ${kt("Omsättning",fmtSEK(oms))}
+      ${kt("Soliditet",fmtPct(soliditet))}
+      ${kt("Vinstmarginal",fmtPct(vinstmarg))}
+      ${kt("Sparade perioder",list.length)}
+    </div>
+  </div>`;
+}
+function gotoFinForCompany(coId){
+  gotoView("finans");
+  setTimeout(()=>{const co=document.getElementById("fin-company");if(co){co.value=coId;renderFinTrend();}},0);
 }
 
 function renderFinResult(){
