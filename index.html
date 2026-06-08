@@ -984,7 +984,7 @@ let goals=[];
 let finAnalyses=[];
 let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
 let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
-let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView="dashboard";
+let logCid=null,editLogId=null,noteCid=null,curProjId=null,curView=(()=>{try{return localStorage.getItem("lastView")||"dashboard";}catch{return "dashboard";}})();
 let curSubId=null;
 let leadNavList=[];
 function sigMentionsContact(s){
@@ -1290,7 +1290,9 @@ function toggleNavSec(key){
 }
 
 function gotoView(name){
+  if(!document.getElementById("view-"+name))name="dashboard";
   curView=name;
+  try{localStorage.setItem("lastView",name);}catch{}
   document.querySelectorAll(".view").forEach(v2=>v2.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
