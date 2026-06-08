@@ -892,10 +892,14 @@ textarea{resize:vertical;min-height:68px}
   <div class="modal" style="width:580px">
     <div class="mhdr"><h2>Todo</h2><button class="mclose" onclick="closeM('m-todo')">×</button></div>
     <div class="mbody">
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <input id="todo-input" placeholder="Ny uppgift..." style="flex:1;min-width:140px" onkeydown="if(event.key==='Enter')addTodo()">
         <input id="todo-date" type="date" style="width:150px" title="Deadline (valfritt)">
         <select id="todo-prio" style="width:110px"><option value="Hög">🔴 Hög</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Låg</option></select>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <select id="todo-contact" style="flex:1;min-width:140px"><option value="">Koppla kontakt (valfritt)</option></select>
+        <select id="todo-company" style="flex:1;min-width:140px"><option value="">Koppla bolag (valfritt)</option></select>
         <button class="btn btn-primary" onclick="addTodo()">+ Lägg till</button>
       </div>
       <div id="todo-list"></div>
@@ -903,6 +907,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Exportera till kalender</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
   </div>
 </div>
+
+<div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Redigera todo</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 Hög</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Låg</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><select id="te-company"><option value="">Inget</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()">Spara</button></div></div></div>
 
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
@@ -3796,21 +3802,60 @@ function updateTodoBadge(){
 }
 
 function openTodo(){
+  fillTodoSelects();
   renderTodoList();
   openM('m-todo');
 }
 
+function fillTodoSelects(){
+  const cOpts='<option value="">Koppla kontakt (valfritt)</option>'+contacts.slice().sort((a,b)=>String(a.fornamn).localeCompare(String(b.fornamn),"sv")).map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" – "+e(c.foretag):""}</option>`).join("");
+  const coOpts='<option value="">Koppla bolag (valfritt)</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const tc=document.getElementById("todo-contact");if(tc)tc.innerHTML=cOpts;
+  const tco=document.getElementById("todo-company");if(tco)tco.innerHTML=coOpts;
+}
 async function addTodo(){
   const txt = document.getElementById('todo-input')?.value?.trim();
   if(!txt) return;
   const prioritet=document.getElementById('todo-prio')?.value||'Medium';
   const due=document.getElementById('todo-date')?.value||null;
+  const contact_id=document.getElementById('todo-contact')?.value||null;
+  const company_id=document.getElementById('todo-company')?.value||null;
   document.getElementById('todo-input').value='';
   const d=document.getElementById('todo-date');if(d)d.value='';
-  const r=await sb.from("todos").insert({user_id:me.id,text:txt,prioritet,done:false,due_date:due}).select("*").single();
+  const tc=document.getElementById('todo-contact');if(tc)tc.value='';
+  const tco=document.getElementById('todo-company');if(tco)tco.value='';
+  const r=await sb.from("todos").insert({user_id:me.id,text:txt,prioritet,done:false,due_date:due,contact_id,company_id}).select("*").single();
   if(r.error){alert(r.error.message);return;}
   todos.unshift(r.data);
   updateTodoBadge();renderTodoList();
+}
+
+function openEditTodo(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  fillEditTodoSelects();
+  document.getElementById("te-id").value=t.id;
+  document.getElementById("te-text").value=t.text||"";
+  document.getElementById("te-date").value=t.due_date||"";
+  document.getElementById("te-prio").value=t.prioritet||"Medium";
+  document.getElementById("te-contact").value=t.contact_id||"";
+  document.getElementById("te-company").value=t.company_id||"";
+  openM("m-todo-edit");
+}
+function fillEditTodoSelects(){
+  const cOpts='<option value="">Ingen</option>'+contacts.slice().sort((a,b)=>String(a.fornamn).localeCompare(String(b.fornamn),"sv")).map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" – "+e(c.foretag):""}</option>`).join("");
+  const coOpts='<option value="">Inget</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  document.getElementById("te-contact").innerHTML=cOpts;
+  document.getElementById("te-company").innerHTML=coOpts;
+}
+async function saveTodoEdit(){
+  const id=v("te-id");const t=todos.find(x=>x.id===id);if(!t)return;
+  const text=v("te-text");if(!text){toast("Skriv en uppgift");return;}
+  const upd={text,due_date:v("te-date")||null,prioritet:v("te-prio")||"Medium",contact_id:v("te-contact")||null,company_id:v("te-company")||null};
+  const r=await sb.from("todos").update(upd).eq("id",id);
+  if(r.error){alert(r.error.message);return;}
+  Object.assign(t,upd);
+  closeM("m-todo-edit");toast("Todo uppdaterad ✓");
+  renderTodoList();
 }
 
 async function toggleTodo(id){
@@ -3819,6 +3864,15 @@ async function toggleTodo(id){
   t.done=!t.done;
   updateTodoBadge();renderTodoList();
   await sb.from("todos").update({done:t.done}).eq("id",id);
+  // erbjud att logga som aktivitet om todo bockades AV->PÅ och har koppling
+  if(t.done&&(t.contact_id||t.company_id)){
+    confirm2(`Logga "${t.text}" som genomförd aktivitet?`,async()=>{
+      const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
+      const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
+      await sb.from("activity_log").insert({user_id:me.id,contact_id:t.contact_id||null,kontakt_namn:c?c.fornamn+" "+c.efternamn:"",foretag:co?co.namn:(c?c.foretag:""),typ:"Övrigt",interaktionstyp:"todo",datum:today(),anteckning:t.text,aktivitet_typ:"todo"});
+      await loadLog();toast("Loggat som aktivitet ✓");
+    });
+  }
 }
 
 async function deleteTodo(id){
@@ -3833,14 +3887,19 @@ function renderTodoList(){
   const open=todos.filter(t=>!t.done);
   const done=todos.filter(t=>t.done);
   const prioIcon={Hög:'🔴',Medium:'🟡',Låg:'🟢'};
-  const row=t=>`<div class="task-row" style="${t.done?'opacity:.55':''}">
+  const row=t=>{
+    const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
+    const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
+    const links=[];if(c)links.push(`👤 ${e(c.fornamn)} ${e(c.efternamn)}`);if(co)links.push(`🏢 ${e(co.namn)}`);
+    return `<div class="task-row" style="${t.done?'opacity:.55':''}">
     <div class="cb ${t.done?'done':''}" onclick="toggleTodo('${t.id}')">✓</div>
     <div class="task-main">
       <div class="task-title" style="${t.done?'text-decoration:line-through':''}">${prioIcon[t.prioritet]||'🟡'} ${e(t.text)}</div>
-      <div class="task-sub">${t.due_date?'📅 '+e(t.due_date):e((t.created_at||'').slice(0,10))}</div>
+      <div class="task-sub">${t.due_date?'📅 '+e(t.due_date):e((t.created_at||'').slice(0,10))}${links.length?' · '+links.join(' · '):''}</div>
     </div>
+    <button class="btn-icon" title="Redigera" onclick="openEditTodo('${t.id}')">✎</button>
     <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
-  </div>`;
+  </div>`;};
   const status=todos.length?`<div style="font-size:12px;color:#888;margin-bottom:10px">${open.length} öppna · ${done.length} klara</div>`:"";
   const openHtml=open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos 🎉</p>';
   const toggleBtn=done.length?`<div style="margin:12px 0 6px"><button class="btn btn-outline btn-sm" onclick="showDoneTodos=!showDoneTodos;renderTodoList()">${showDoneTodos?"Dölj klara":`Visa klara (${done.length})`}</button></div>`:"";
