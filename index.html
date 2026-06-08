@@ -926,6 +926,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-dash-cust"><div class="modal" style="width:380px"><div class="mhdr"><h2>Anpassa dashboard</h2><button class="mclose" onclick="closeM('m-dash-cust')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:8px">Bocka i de sektioner du vill se på dashboarden.</p><div id="dash-cust-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-dash-cust')">Avbryt</button><button class="btn btn-primary" onclick="saveDashCustomize()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-schema-task"><div class="modal" style="width:420px"><div class="mhdr"><h2>Uppgift</h2><button class="mclose" onclick="closeM('m-schema-task')">×</button></div><div class="mbody" id="schema-task-body"></div></div></div>
+
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
     <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
@@ -3107,12 +3109,19 @@ function scheduledMap(){
   });
   return{map,overdue};
 }
+function currentScheduledDay(id){
+  // hitta vilken dag uppgiften faktiskt ligger på just nu (schema_datum eller auto-placering)
+  const{map,overdue}=scheduledMap();
+  if(overdue.some(t=>t.id===id))return fmtD(schemaToday());
+  for(const k of Object.keys(map)){if(map[k].some(t=>t.id===id))return k;}
+  return fmtD(schemaToday());
+}
 async function moveSchemaTodo(id,dir){
   const t=todos.find(x=>x.id===id);if(!t)return;
-  // basdatum: nuvarande schema_datum, annars idag
-  let base=t.schema_datum?new Date(t.schema_datum+"T00:00:00"):schemaToday();
+  // utgå från den dag uppgiften FAKTISKT ligger på nu (inte idag)
+  const baseKey=t.schema_datum||currentScheduledDay(id);
+  let base=new Date(baseKey+"T00:00:00");
   base.setDate(base.getDate()+dir);
-  // hoppa över helg
   while(!isWeekday(base))base.setDate(base.getDate()+(dir>=0?1:-1));
   t.schema_datum=fmtD(base);
   renderSchema();
@@ -3123,13 +3132,48 @@ async function unscheduleTodo(id){
   t.schema_datum=null;renderSchema();
   await sb.from("todos").update({schema_datum:null}).eq("id",id);
 }
+function openSchemaTask(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
+  const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
+  const day=t.schema_datum||currentScheduledDay(id);
+  document.getElementById("schema-task-body").innerHTML=`
+    <div style="font-size:17px;font-weight:600;margin-bottom:8px">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>
+    <div class="ig" style="margin-bottom:14px">
+      <div class="ii"><label>Prioritet</label><span>${e(t.prioritet||"Medium")}</span></div>
+      <div class="ii"><label>Deadline</label><span>${t.due_date?e(t.due_date):"–"}</span></div>
+      <div class="ii"><label>Inplanerad dag</label><span>${e(day)}</span></div>
+      ${co?`<div class="ii"><label>Bolag</label><span>${e(co.namn)}</span></div>`:""}
+      ${c?`<div class="ii"><label>Kontakt</label><span>${e(c.fornamn)} ${e(c.efternamn)}</span></div>`:""}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="startSchemaTask('${t.id}')">▶ Starta &amp; logga tid</button>
+      <button class="btn btn-green btn-sm" onclick="finishSchemaTask('${t.id}')">✓ Markera klar</button>
+      <button class="btn btn-outline btn-sm" onclick="closeM('m-schema-task');moveSchemaTodo('${t.id}',-1)">← Dag före</button>
+      <button class="btn btn-outline btn-sm" onclick="closeM('m-schema-task');moveSchemaTodo('${t.id}',1)">Dag efter →</button>
+    </div>`;
+  openM("m-schema-task");
+}
+async function finishSchemaTask(id){
+  closeM("m-schema-task");
+  await toggleTodo(id);
+  renderSchema();
+}
+function startSchemaTask(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  closeM("m-schema-task");
+  // gå till tidrapport och förbered loggning; om kopplad till bolag, försök förfylla
+  gotoView("tidrapport");
+  toast("Tidtagning – välj projekt och starta timern");
+}
+
 
 const PI_MAP={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
 function schemaTaskChip(t,showMove){
   const co=t.company_id?companies.find(c=>c.id===t.company_id):null;
   const od=t.due_date&&t.due_date<fmtD(schemaToday());
   return`<div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border:1px solid var(--cream);border-radius:6px;margin-bottom:4px;background:#fff">
-    <div style="flex:1;min-width:0;cursor:pointer" onclick="openTodo()"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${t.due_date||co?`<div style="font-size:10px;color:${od?"var(--red)":"#888"}">${t.due_date?"📅"+e(t.due_date):""}${co?" 🏢"+e(co.namn):""}</div>`:""}</div>
+    <div style="flex:1;min-width:0;cursor:pointer" onclick="openSchemaTask('${t.id}')"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${t.due_date||co?`<div style="font-size:10px;color:${od?"var(--red)":"#888"}">${t.due_date?"📅"+e(t.due_date):""}${co?" 🏢"+e(co.namn):""}</div>`:""}</div>
     ${showMove?`<button class="btn-icon" title="Dag före" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',-1)" style="font-size:11px">←</button><button class="btn-icon" title="Dag efter" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',1)" style="font-size:11px">→</button>`:""}
   </div>`;
 }
@@ -3152,6 +3196,7 @@ function renderSchema(){
     <button class="btn btn-outline btn-sm" onclick="schemaNav(-1)">←</button>
     <button class="btn btn-outline btn-sm" onclick="schemaAnchor=schemaToday();renderSchema()">Idag</button>
     <button class="btn btn-outline btn-sm" onclick="schemaNav(1)">→</button>
+    <button class="btn btn-warm btn-sm" onclick="renderSchema()" title="Uppdatera schemat med nya/ändrade uppgifter">🔄 Uppdatera</button>
     <div style="flex:1"></div>
     <button class="btn btn-green btn-sm" onclick="exportScheduleICS('today')">📲 Dagens till kalender</button>
     <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">📲 Hela schemat</button>
