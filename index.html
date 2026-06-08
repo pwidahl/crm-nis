@@ -400,6 +400,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
       <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
       <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span>Mål</div>
+      <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span>Prioritering</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none">Bolag &amp; leads <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
@@ -461,6 +462,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
+    <div class="view" id="view-prio"><div id="prio-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
@@ -760,6 +762,7 @@ textarea{resize:vertical;min-height:68px}
           <div class="fl"><label>Kund</label><select id="de-kund" onchange="loadDiaryProjects()"></select></div>
           <div class="fl"><label>Projekt *</label><select id="de-proj" onchange="loadDiaryTasks()"></select></div>
           <div class="fl full"><label>Uppgift</label><select id="de-task"></select></div>
+          <div class="fl full"><label>📋 Bolags-todo (valfritt)</label><select id="de-todo" onchange="pickDiaryTodo()"><option value="">– Ingen –</option></select></div>
           <div class="fl"><label>Kategori</label><select id="de-cat"></select></div>
           <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="de-bill" checked style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="de-bill">Fakturerbar tid</label></div>
         </div>
@@ -1279,7 +1282,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1313,7 +1316,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
   else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1481,7 +1484,21 @@ function renderProjects(){
   const kundMap={};const visibleProjects=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId):projects;
   visibleProjects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
   const month=curMonth();
+  const pq=(window._projQ||"").toLowerCase();const pstatus=window._projStatus||"";
+  Object.keys(kundMap).forEach(kid=>{
+    let pr=kundMap[kid].projs;
+    if(pstatus)pr=pr.filter(p=>p.status===pstatus);
+    if(pq)pr=pr.filter(p=>String(p.namn||"").toLowerCase().includes(pq)||String(kundMap[kid].co?.namn||"").toLowerCase().includes(pq));
+    kundMap[kid].projs=pr;
+  });
+  Object.keys(kundMap).forEach(kid=>{if(!kundMap[kid].projs.length)delete kundMap[kid];});
   document.getElementById("projects-content").innerHTML=`
+    <div class="toolbar" style="flex-wrap:wrap;margin-bottom:14px">
+      <input id="proj-search" placeholder="Sök projekt eller kund..." value="${e(window._projQ||"")}" oninput="window._projQ=this.value;renderProjects();" style="flex:1;min-width:160px;max-width:260px">
+      <select id="proj-status-f" onchange="window._projStatus=this.value;renderProjects();" style="width:150px;flex:0 0 auto"><option value="">Alla statusar</option><option value="Aktiv"${pstatus==="Aktiv"?" selected":""}>Aktiva</option><option value="Pausad"${pstatus==="Pausad"?" selected":""}>Pausade</option><option value="Avslutad"${pstatus==="Avslutad"?" selected":""}>Avslutade</option></select>
+      <button class="btn btn-outline btn-sm" onclick="toggleAllKundCards(true)">Fäll ihop alla</button>
+      <button class="btn btn-outline btn-sm" onclick="toggleAllKundCards(false)">Expandera alla</button>
+    </div>
     <div class="kpi-grid" style="margin-bottom:16px">
       <div class="kpi c-blue"><div class="kpi-n">${projects.length}</div><div class="kpi-l">Totalt projekt</div></div>
       <div class="kpi c-green"><div class="kpi-n">${projects.filter(p=>p.status==="Aktiv").length}</div><div class="kpi-l">Aktiva</div></div>
@@ -1539,6 +1556,7 @@ function renderProjektItem(p,month){
 }
 
 function toggleKundCard(kid){const el=document.getElementById("kund-body-"+kid);if(el)el.classList.toggle("open");}
+function toggleAllKundCards(collapse){document.querySelectorAll(".kund-card-body").forEach(el=>{if(collapse)el.classList.remove("open");else el.classList.add("open");});}
 function toggleProjItem(pid){const el=document.getElementById("proj-body-"+pid);if(el)el.classList.toggle("open");}
 
 // DAGBOK
@@ -1626,7 +1644,9 @@ function selectDiaryType(typ,btn){
   document.getElementById("de-bill").closest(".fl").style.display=isUppdrag?"":"none";
 }
 
-function loadDiaryProjects(){const kid=v("de-kund");const dp=document.getElementById("de-proj");if(!dp)return;const list=projects.filter(p=>!kid||p.company_id===kid);dp.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadDiaryTasks();}
+function loadDiaryProjects(){const kid=v("de-kund");const dp=document.getElementById("de-proj");if(!dp)return;const list=projects.filter(p=>!kid||p.company_id===kid);dp.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadDiaryTasks();loadDiaryTodos();}
+function loadDiaryTodos(){const kid=v("de-kund");const dt=document.getElementById("de-todo");if(!dt)return;const list=todos.filter(t=>!t.done&&t.company_id&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=companies.find(c=>c.id===t.company_id);return`<option value="${t.id}">${e(t.text)}${co&&!kid?" ("+e(co.namn)+")":""}</option>`;}).join("");}
+function pickDiaryTodo(){const id=v("de-todo");if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("de-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("de-kund");if(k&&!k.value){k.value=t.company_id;loadDiaryProjects();}}}
 function loadDiaryTasks(){const pid=v("de-proj");const dt=document.getElementById("de-task");if(!dt)return;dt.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
 
 async function saveDiaryEntry(){
@@ -2973,7 +2993,67 @@ function deleteGoalById(id,fromModal){
   });
 }
 
-// ══ NYCKELTAL & FINANSIELL ANALYS ════════════════════════════
+// ══ PRIORITERINGSVY (rangordna alla öppna todos) ════════════
+function prioSorted(){
+  return todos.filter(t=>!t.done).slice().sort((a,b)=>{
+    const sa=a.sort_order??0,sb=b.sort_order??0;
+    if(sa!==sb)return sa-sb;
+    // sekundärt: deadline, sedan prioritet
+    const da=a.due_date||"9999",db=b.due_date||"9999";
+    if(da!==db)return da<db?-1:1;
+    const pw={Hög:0,Medium:1,Låg:2};return (pw[a.prioritet]??1)-(pw[b.prioritet]??1);
+  });
+}
+function renderPrio(){
+  const list=prioSorted();
+  if(!list.length){document.getElementById("prio-content").innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Inga öppna todos att prioritera. Skapa todos så kan du rangordna dem här.</p></div>';return;}
+  const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
+  document.getElementById("prio-content").innerHTML=`
+    <div class="privacy-note" style="margin-bottom:14px">Rangordna dina öppna uppgifter med pilarna – överst = högst prioritet. Ordningen sparas. <button class="btn btn-outline btn-xs" onclick="autoSortPrio()" style="margin-left:6px">Sortera automatiskt (deadline + prio)</button></div>
+    ${list.map((t,i)=>{
+      const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
+      const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
+      const links=[];if(c)links.push(`👤 ${e(c.fornamn)} ${e(c.efternamn)}`);if(co)links.push(`🏢 ${e(co.namn)}`);
+      const overdue=t.due_date&&t.due_date<today();
+      return`<div class="week-sec" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:#bbb;width:28px;text-align:center">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${pi[t.prioritet]||"🟡"} ${e(t.text)}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">${t.due_date?`<span style="color:${overdue?"var(--red)":"#888"}">📅 ${e(t.due_date)}${overdue?" (försenad)":""}</span>`:"ingen deadline"}${links.length?" · "+links.join(" · "):""}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <button class="btn-icon" title="Upp" onclick="movePrio('${t.id}',-1)" ${i===0?"disabled style=opacity:.3":""}>▲</button>
+          <button class="btn-icon" title="Ner" onclick="movePrio('${t.id}',1)" ${i===list.length-1?"disabled style=opacity:.3":""}>▼</button>
+        </div>
+        <button class="btn-icon" title="Klarmarkera" onclick="toggleTodo('${t.id}');setTimeout(renderPrio,300)">✓</button>
+      </div></div>`;
+    }).join("")}`;
+}
+async function movePrio(id,dir){
+  const list=prioSorted();
+  const idx=list.findIndex(t=>t.id===id);if(idx<0)return;
+  const swap=idx+dir;if(swap<0||swap>=list.length)return;
+  // tilldela sort_order utifrån nuvarande ordning, byt plats på de två
+  [list[idx],list[swap]]=[list[swap],list[idx]];
+  // skriv om sort_order sekventiellt
+  for(let i=0;i<list.length;i++){list[i].sort_order=i;}
+  renderPrio();
+  // spara de två berörda (räcker oftast, men spara alla för säkerhets skull i bakgrunden)
+  await Promise.all(list.map(t=>sb.from("todos").update({sort_order:t.sort_order}).eq("id",t.id)));
+}
+async function autoSortPrio(){
+  // sortera på deadline (tidigast först), sedan prio
+  const open=todos.filter(t=>!t.done).slice().sort((a,b)=>{
+    const da=a.due_date||"9999",db=b.due_date||"9999";if(da!==db)return da<db?-1:1;
+    const pw={Hög:0,Medium:1,Låg:2};return (pw[a.prioritet]??1)-(pw[b.prioritet]??1);
+  });
+  for(let i=0;i<open.length;i++)open[i].sort_order=i;
+  renderPrio();
+  await Promise.all(open.map(t=>sb.from("todos").update({sort_order:t.sort_order}).eq("id",t.id)));
+  toast("Automatiskt sorterat ✓");
+}
+
+
 let curFinId=null;
 const FIN_FIELDS=[
   {k:"aktiekapital",l:"Aktiekapital"},
