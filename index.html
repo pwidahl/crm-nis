@@ -911,6 +911,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Redigera todo</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 Hög</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Låg</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><select id="te-company"><option value="">Inget</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-dash-cust"><div class="modal" style="width:380px"><div class="mhdr"><h2>Anpassa dashboard</h2><button class="mclose" onclick="closeM('m-dash-cust')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:8px">Bocka i de sektioner du vill se på dashboarden.</p><div id="dash-cust-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-dash-cust')">Avbryt</button><button class="btn btn-primary" onclick="saveDashCustomize()">Spara</button></div></div></div>
+
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
     <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
@@ -1332,59 +1334,71 @@ function renderDashboard(){
   // Kompakt KPI-rad
   document.getElementById("dash-kpi").innerHTML=[["Försenade uppfölj.",of2,"c-red","gotoView('followups')"],["Försenade tasks",ot,"c-warm","gotoView('tasks')"],["Nya signaler",ns,"c-gold","gotoView('signals')"],["Aktiva uppdrag",ap,"c-purple","gotoView('projects')"]].map(([l,n,c2,onc])=>`<div class="kpi ${c2}" style="cursor:pointer" onclick="${onc}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
 
-  // ── Listor: bygg in i dash-chain (återanvänder befintlig container) ──
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
+  const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
 
-  // 1) Dagens & försenade uppföljningar
+  // Data per sektion
   const fups=contacts.filter(c=>c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td)
     .sort((a,b)=>String(a.nasta_foljup).localeCompare(String(b.nasta_foljup))).slice(0,6);
-  // 2) Heta leads – nya signaler, känd kontakt först
-  const leads=signals.filter(s=>s.status==="ny").sort((a,b)=>{
+  const leads=signals.filter(s=>s.status==="ny"&&!isFormedlare(s.company_id)).sort((a,b)=>{
     const ka=hasContact(a.company_id)?1:0,kb=hasContact(b.company_id)?1:0;
-    if(ka!==kb)return kb-ka;
-    return (b.signal_styrka||0)-(a.signal_styrka||0);
+    if(ka!==kb)return kb-ka;return (b.signal_styrka||0)-(a.signal_styrka||0);
   }).slice(0,6);
-  // 3) Försenade tasks
   const dtasks=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<=td)
     .sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date))).slice(0,6);
-  // 4) Dagens todo (öppna)
   const dtodos=todos.filter(t=>!t.done).slice(0,6);
-
-  const card=(title,countLabel,onclickAll,rowsHtml,emptyTxt)=>`
-    <div class="week-sec" style="margin-bottom:0">
-      <div class="week-sec-hdr"><h3>${title}</h3><span style="font-size:12px;color:#888">${countLabel}</span>${onclickAll?`<button class="btn btn-outline btn-xs" onclick="${onclickAll}">Visa alla</button>`:""}</div>
-      <div style="padding:4px 0">${rowsHtml||`<div class="week-row" style="cursor:default;color:#aaa;font-size:13px">${emptyTxt}</div>`}</div>
-    </div>`;
+  const needsAll=consultNeeds();const topNeeds=needsAll.slice(0,5);
+  const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
 
   const fupRows=fups.map(c=>{const od=c.nasta_foljup<td;return`<div class="week-row" onclick="openCard('${c.id}')"><div style="flex:1"><div class="week-rn">${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")} · <span class="${od?"overdue":""}">${e(c.nasta_foljup)}</span></div></div><button class="btn btn-warm btn-xs" onclick="event.stopPropagation();openLogModal('${c.id}')">Logga</button></div>`;}).join("");
   const leadRows=leads.map(s=>{const known=hasContact(s.company_id);return`<div class="week-row" onclick="openLead('${s.id}')"><div style="flex:1"><div class="week-rn">${known?'<span title="Känd kontakt">👤 </span>':""}${e(s.companies?.namn||"Bolag")}</div><div class="week-rs">${e((s.rubrik||"").slice(0,60))} · ${"★".repeat(s.signal_styrka||1)}</div></div></div>`;}).join("");
   const taskRows=dtasks.map(t=>{const p=projects.find(x=>x.id===t.project_id);return`<div class="week-row" onclick="gotoView('tasks')"><div style="flex:1"><div class="week-rn">${e(t.title)}</div><div class="week-rs">${e(p?.namn||"")} · <span class="overdue">${e(t.due_date)}</span></div></div></div>`;}).join("");
   const todoRows=dtodos.map(t=>{const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"}[t.prioritet]||"🟡";return`<div class="week-row" onclick="openTodo()"><div style="flex:1"><div class="week-rn">${pi} ${e(t.text)}</div>${t.due_date?`<div class="week-rs">📅 ${e(t.due_date)}</div>`:""}</div></div>`;}).join("");
+  const needRows=topNeeds.length?topNeeds.map(({c,flags,score})=>`<div class="week-row" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${e(c.namn)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):"";
+  const goalInner=goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:12px 14px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(GOAL_TYPES[g.typ]||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px;padding:12px 14px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>';
+
+  // Sektioner i vald ordning
+  const card=(key,title,countLabel,onclickAll,allLabel,rowsHtml,emptyTxt)=>`
+    <div class="dash-sec week-sec" data-sec="${key}" style="margin-bottom:0">
+      <div class="week-sec-hdr"><h3>${title}</h3><span style="font-size:12px;color:#888;margin-left:auto;margin-right:8px">${countLabel}</span>${onclickAll?`<button class="btn btn-outline btn-xs" onclick="${onclickAll}">${allLabel||"Visa alla"}</button>`:""}</div>
+      <div style="padding:4px 0">${rowsHtml||`<div class="week-row" style="cursor:default;color:#aaa;font-size:13px">${emptyTxt}</div>`}</div>
+    </div>`;
+
+  const SECTIONS={
+    fups:()=>card("fups","📞 Att följa upp idag",`${fups.length}`,"gotoView('followups')",null,fupRows,"Inga uppföljningar idag – bra jobbat!"),
+    leads:()=>card("leads","⚡ Heta leads",`${leads.length}`,"gotoView('signals')",null,leadRows,"Inga nya signaler"),
+    konsult:()=>card("konsult","🎯 Potentiellt konsultbehov",`${needsAll.length}`,"gotoView('konsultbehov')","Visa alla",needRows,"Inga indikerade behov ännu."),
+    tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
+    todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
+    goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`
+  };
+  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål"};
+  const order=["fups","leads","konsult","tasks","todo","goals"];
+  const hidden=getDashHidden();
+  const visible=order.filter(k=>!hidden.includes(k));
 
   document.getElementById("dash-chain").innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px">
-      ${card("📞 Att följa upp idag",`${fups.length}`,"gotoView('followups')",fupRows,"Inga uppföljningar idag – bra jobbat!")}
-      ${card("⚡ Heta leads",`${leads.length}`,"gotoView('signals')",leadRows,"Inga nya signaler")}
-      ${card("✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",taskRows,"Inga försenade tasks")}
-      ${card("✅ Todo",`${dtodos.length}`,"openTodo()",todoRows,"Inga öppna todos")}
-    </div>
-    <div class="week-sec">
-      <div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" onclick="gotoView('goals')">Öppna mål</button></div>
-      <div style="padding:14px">${goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(GOAL_TYPES[g.typ]||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>'}</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ Anpassa</button></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;align-items:start">
+      ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Alla sektioner är dolda. Klicka "Anpassa" för att visa några.</p>'}
     </div>`;
-
-  // Konsultbehov-sektion på dashboarden (topp 4)
-  const needsAll=consultNeeds();
-  const topNeeds=needsAll.slice(0,4);
-  const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
-  document.getElementById("dash-chain").innerHTML+=`
-    <div class="week-sec">
-      <div class="week-sec-hdr"><h3>🎯 Potentiellt konsultbehov</h3><button class="btn btn-outline btn-xs" onclick="gotoView('konsultbehov')">Visa alla${needsAll.length?` (${needsAll.length})`:""}</button></div>
-      <div style="padding:14px">${topNeeds.length?topNeeds.map(({c,flags,score})=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream);cursor:pointer" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${e(c.namn)}</div><div style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):'<p style="color:#888;font-size:13px">Inga indikerade behov ännu.</p>'}</div>
-    </div>`;
+  window._dashSecLabels=SEC_LABELS;window._dashOrder=order;
 
   const fupsEl=document.getElementById("dash-fups");if(fupsEl)fupsEl.innerHTML="";
   const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="none";
+}
+
+function getDashHidden(){try{return JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{return [];}}
+function setDashHidden(arr){try{localStorage.setItem("dashHidden",JSON.stringify(arr));}catch{}}
+function openDashCustomize(){
+  const hidden=getDashHidden();const order=window._dashOrder||[];const labels=window._dashSecLabels||{};
+  document.getElementById("dash-cust-body").innerHTML=order.map(k=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream);cursor:pointer"><input type="checkbox" data-sec="${k}" ${hidden.includes(k)?"":"checked"} style="width:auto">${e(labels[k]||k)}</label>`).join("");
+  openM("m-dash-cust");
+}
+function saveDashCustomize(){
+  const boxes=document.querySelectorAll("#dash-cust-body input[type=checkbox]");
+  const hidden=[];boxes.forEach(b=>{if(!b.checked)hidden.push(b.getAttribute("data-sec"));});
+  setDashHidden(hidden);closeM("m-dash-cust");renderDashboard();
 }
 
 // WEEKLY
