@@ -484,6 +484,7 @@ textarea{resize:vertical;min-height:68px}
         <select id="sig-type-f" onchange="renderSignals()"><option value="">Alla typer</option></select>
         <select id="sig-land-f" onchange="renderSignals()"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt">👤 Känd kontakt först</option><option value="datum">📅 Nyast först</option><option value="styrka">★ Starkast först</option><option value="score">📊 AI-score först</option><option value="bolag">🔤 Bolag A–Ö</option></select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto">🤝 Dölj mellanhänder</label>
       </div>
       <div id="signals-content"></div>
     </div>
@@ -1817,11 +1818,14 @@ function renderSignals(){
   }
   const status=v("sig-status-f"),type=v("sig-type-f"),land=v("sig-land-f"),
         coFilter=v("sig-company-f"),q=(v("sig-search-f")||"").toLowerCase();
+  const hideFormedlare=document.getElementById("sig-hide-formedlare")?.checked||false;
   const sortBy=v("sig-sort-f")||"kontakt";
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
+  const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
   let list=signals.filter(s=>{
     const hay=[s.rubrik,s.beskrivning,s.kalla,s.companies?.namn].join(" ").toLowerCase();
     if(focusMode==="company"&&focusCompanyId&&s.company_id!==focusCompanyId)return false;
+    if(hideFormedlare&&isFormedlare(s.company_id))return false;
     return(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!coFilter||s.company_id===coFilter)&&(!q||hay.includes(q));
   });
   const aiScore=cid=>{const c=companies.find(x=>x.id===cid);return c?.ai_score??-1;};
