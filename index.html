@@ -407,6 +407,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span>Signaler<span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
       <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span>Nyckeltal</div>
+      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span>Konsultbehov</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none">Uppdrag &amp; tid <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
     <div class="nav-grp" id="grp-uppdrag">
@@ -460,6 +461,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
+    <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
         <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
@@ -1262,7 +1264,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1294,7 +1296,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
   else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans,konsultbehov:renderKonsultbehov};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1360,7 +1362,16 @@ function renderDashboard(){
       <div style="padding:14px">${goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(GOAL_TYPES[g.typ]||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>'}</div>
     </div>`;
 
-  // dölj den gamla "Kommande uppföljningar"-rubriken och listan (ersatt av korten ovan)
+  // Konsultbehov-sektion på dashboarden (topp 4)
+  const needsAll=consultNeeds();
+  const topNeeds=needsAll.slice(0,4);
+  const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
+  document.getElementById("dash-chain").innerHTML+=`
+    <div class="week-sec">
+      <div class="week-sec-hdr"><h3>🎯 Potentiellt konsultbehov</h3><button class="btn btn-outline btn-xs" onclick="gotoView('konsultbehov')">Visa alla${needsAll.length?` (${needsAll.length})`:""}</button></div>
+      <div style="padding:14px">${topNeeds.length?topNeeds.map(({c,flags,score})=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream);cursor:pointer" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${e(c.namn)}</div><div style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):'<p style="color:#888;font-size:13px">Inga indikerade behov ännu.</p>'}</div>
+    </div>`;
+
   const fupsEl=document.getElementById("dash-fups");if(fupsEl)fupsEl.innerHTML="";
   const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="none";
 }
@@ -3160,6 +3171,62 @@ function deleteFinAnalysis(id){
     await loadFinAnalyses();renderFinTrend();
   });
 }
+
+// ══ KONSULTBEHOV (affärsmöjligheter ur varningar) ════════════
+function consultNeeds(){
+  // Returnerar lista över bolag med indikerat behov, rankade efter allvar.
+  const out=[];
+  companies.forEach(c=>{
+    const flags=[];let score=0;const tjanster=new Set();
+    // 1) Finansiella varningar från senaste sparade period
+    const fin=finAnalyses.filter(a=>a.company_id===c.id).map(a=>({a,sort:(a.data&&a.data._sort)||""})).sort((x,y)=>String(y.sort).localeCompare(String(x.sort)))[0];
+    if(fin){
+      const d=fin.a.data||{};
+      const g=k=>{const v2=parseFloat(String(d[k]||"").replace(/\s/g,"").replace(",","."));return isFinite(v2)?v2:0;};
+      const ak=g("aktiekapital"),ek=g("eget_kapital"),tillg=g("tillgangar"),omsTillg=g("omsattningstillg"),kfsk=g("kortfrist_skulder"),oms=g("omsattning"),ar=g("arets_resultat"),likvid=g("likvida_medel"),burn=g("manatlig_burn");
+      const soliditet=tillg>0?(ek/tillg)*100:NaN;
+      const balanslikv=kfsk>0?(omsTillg/kfsk)*100:NaN;
+      const vinstmarg=oms>0?(ar/oms)*100:NaN;
+      const runway=burn>0?(likvid/burn):NaN;
+      if(ak>0&&ek<ak*0.5){flags.push("⛔ Möjlig KBR-plikt");score+=10;tjanster.add("Interim CFO");tjanster.add("Kontrollbalansräkning");}
+      if(isFinite(soliditet)&&soliditet<20){flags.push(`Låg soliditet (${soliditet.toFixed(0)}%)`);score+=4;tjanster.add("Interim CFO");}
+      if(isFinite(balanslikv)&&balanslikv<100){flags.push("Likviditet under 100%");score+=5;tjanster.add("Likviditetsstyrning");}
+      if(isFinite(vinstmarg)&&vinstmarg<0){flags.push("Negativt resultat");score+=4;tjanster.add("Lönsamhetsanalys");}
+      if(isFinite(runway)&&runway<6){flags.push(`Kort runway (~${runway.toFixed(0)} mån)`);score+=6;tjanster.add("Likviditetsstyrning");tjanster.add("Finansiering");}
+    }
+    // 2) Signal-baserade indikationer (nya signaler)
+    const nya=signals.filter(s=>s.company_id===c.id&&s.status==="ny");
+    if(nya.length){
+      // nyckelord i signaler som indikerar ekonomibehov
+      const kw=["cfo","ekonomichef","controller","redovisning","bokslut","interim","finanschef","omstrukturering","rekonstruktion","kris","varsel","nyemission","kapital"];
+      const hits=nya.filter(s=>{const t=`${s.rubrik||""} ${s.beskrivning||""}`.toLowerCase();return kw.some(k=>t.includes(k));});
+      if(hits.length){flags.push(`${hits.length} signal(er) om ekonomibehov`);score+=3*hits.length;tjanster.add("Interim CFO");}
+      else if(nya.length){flags.push(`${nya.length} nya signaler`);score+=1;}
+    }
+    if(flags.length)out.push({c,flags,score,tjanster:[...tjanster]});
+  });
+  return out.sort((a,b)=>b.score-a.score);
+}
+
+function renderKonsultbehov(){
+  const needs=consultNeeds();
+  if(!needs.length){document.getElementById("konsultbehov-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga indikerade konsultbehov ännu. Spara nyckeltal på bolag eller fånga signaler – bolag med varningar dyker upp här automatiskt.</p></div>';return;}
+  const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
+  document.getElementById("konsultbehov-content").innerHTML=`
+    <div class="privacy-note" style="margin-bottom:14px">Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.</div>
+    ${needs.map(({c,flags,score,tjanster})=>`
+      <div class="week-sec" style="margin-bottom:12px;border-left:4px solid ${sevColor(score)}"><div style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:15px;cursor:pointer;color:var(--accent)" onclick="openCompanyCard('${c.id}')">${FLAG[c.land]||"🌍"} ${e(c.namn)} ↗</div>
+            <div style="font-size:13px;color:#555;margin-top:5px">${flags.map(f=>`<span style="display:inline-block;margin:2px 6px 2px 0">${e(f)}</span>`).join("·  ")}</div>
+            ${tjanster.length?`<div style="margin-top:7px">${tjanster.map(t=>`<span class="badge b-prospekt" style="font-size:10px;margin:1px">${e(t)}</span>`).join("")}</div>`:""}
+          </div>
+          <div style="text-align:center"><div style="font-family:'DM Serif Display',serif;font-size:24px;color:${sevColor(score)}">${score}</div><div style="font-size:10px;color:#888;text-transform:uppercase">behovsindex</div></div>
+        </div>
+      </div></div>`).join("")}`;
+}
+
 
 
 
