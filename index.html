@@ -1809,6 +1809,7 @@ async function archiveCo(id){confirm2("Arkivera bolaget?",async()=>{await sb.fro
 
 // SIGNALS
 function renderSignals(){
+  if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
     <div class="sig-src">
       <h4>🇸🇪 Platsbanken</h4>
@@ -1838,6 +1839,7 @@ function renderSignals(){
         coFilter=v("sig-company-f"),q=(v("sig-search-f")||"").toLowerCase();
   const hideFormedlare=document.getElementById("sig-hide-formedlare")?.checked||false;
   const hideFast=document.getElementById("sig-hide-fast")?.checked||false;
+  try{localStorage.setItem("sigFilters",JSON.stringify({hideFormedlare,hideFast,sortBy:v("sig-sort-f")||"kontakt"}));}catch{}
   const sortBy=v("sig-sort-f")||"kontakt";
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
