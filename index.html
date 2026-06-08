@@ -408,6 +408,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
       <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span>Nyckeltal</div>
       <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span>Konsultbehov</div>
+      <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span>Mellanhänder</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none">Uppdrag &amp; tid <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
     <div class="nav-grp" id="grp-uppdrag">
@@ -462,11 +463,13 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
+    <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
         <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
         <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="">Alla steg</option></select>
         <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        <select id="co-typ-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="">Alla typer</option><option value="direkt">Direktkunder</option><option value="formedlare">Mellanhänder</option></select>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Börsnoterade</label>
       </div>
       <div id="companies-content"></div>
@@ -676,6 +679,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label>Pipeline</label><select id="co-pipe"></select></div>
         <div class="fl full"><label>Moderbolag (koncern)</label><select id="co-parent"><option value="">– Inget (fristående) –</option></select></div>
         <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-bors" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-bors">Börsnoterat bolag</label></div>
+        <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-formedlare" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-formedlare">🤝 Förmedlare / mellanhand (t.ex. rekryteringsbyrå)</label></div>
         <div class="fl full fl-row"><input type="checkbox" id="co-auto-proj" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-auto-proj">Skapa projekt automatiskt när "Vunnet"</label></div>
         <div class="fl full"><label>Anteckningar</label><textarea id="co-notes"></textarea></div>
       </div>
@@ -1264,7 +1268,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1296,7 +1300,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
   else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans,konsultbehov:renderKonsultbehov};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1695,12 +1699,12 @@ function renderCompanies(){
     document.getElementById("companies-content").innerHTML=`<div class="pipe">${PIPELINE.map(p=>{const arr=list2.filter(c=>c.pipeline_status===p);return`<div class="pipe-col"><div class="pipe-head">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${arr.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";return`<div class="pipe-card"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}</div><div class="pipe-meta">AI: ${c.ai_score??"--"} · ${sig>0?`<span style="color:var(--red);font-weight:600">${sig} nya</span>`:"0 nya"} signaler</div></div><div style="display:flex;gap:3px;margin-top:6px;border-top:1px solid var(--cream);padding-top:5px"><button class="btn-icon" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎ Redigera</button><button class="btn-icon" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑 Radera</button></div></div>`;}).join("")}</div>`;}).join("")}</div>`;
     return;
   }
-  const q=(v("co-filter")||"").toLowerCase();const pipe=v("co-pipe-filter");const land=v("co-land-filter");const listed=document.getElementById("co-listed-filter")?.checked||false;
-  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad);});
+  const q=(v("co-filter")||"").toLowerCase();const pipe=v("co-pipe-filter");const land=v("co-land-filter");const typ=v("co-typ-filter");const listed=document.getElementById("co-listed-filter")?.checked||false;
+  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad)&&(!typ||(typ==="formedlare"?c.ar_formedlare:!c.ar_formedlare));});
   const headClass=p=>p==="Vunnet"?"ph-vunnet":p==="Kund"?"ph-kund":p==="Forlorat"?"ph-forlorat":"";
   const moving=movePipeId?companies.find(c=>c.id===movePipeId):null;
   const hint=moving?`<div class="move-hint">↔ Flyttar <strong style="margin:0 4px">${e(moving.namn)}</strong> – tryck på ett steg nedan. <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="cancelMovePipe()">Avbryt</span></div>`:"";
-  document.getElementById("companies-content").innerHTML=hint+`<div class="pipe">${PIPELINE.map(p=>{const arr=list.filter(c=>c.pipeline_status===p);const LIMIT=25;const shown=arr.slice(0,LIMIT);const rest=arr.length-LIMIT;return`<div class="pipe-col ${moving?"move-target":""}" ${moving?`onclick="dropMovePipe('${p}')"`:""}><div class="pipe-head ${headClass(p)}">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${shown.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";const inConcern=c.parent_company_id||companies.some(x=>x.parent_company_id===c.id);const meta=[];if(c.ai_score!=null&&c.ai_score!=="")meta.push(`AI ${c.ai_score}`);if(sig>0)meta.push(`<span style="color:var(--red);font-weight:600">${sig} nya</span>`);return`<div class="pipe-card ${movePipeId===c.id?"move-selected":""}"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:10px;color:var(--gold);margin-left:3px">★</span>':""}${inConcern?'<span title="Del av koncern" style="font-size:10px;margin-left:3px">🏢</span>':""}</div>${meta.length?`<div class="pipe-meta">${meta.join(" · ")}</div>`:""}</div><div class="pc-actions"><button class="btn-icon" title="Flytta steg" onclick="event.stopPropagation();startMovePipe('${c.id}')" style="font-size:11px;flex:1">↔ Flytta</button><button class="btn-icon" title="Redigera" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎</button><button class="btn-icon" title="Radera" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑</button></div></div>`;}).join("")}${rest>0?`<div style="padding:8px;text-align:center;font-size:12px;color:#888">+${rest} till – använd filtret för att hitta specifika bolag</div>`:""}</div>`;}).join("")}</div>`;
+  document.getElementById("companies-content").innerHTML=hint+`<div class="pipe">${PIPELINE.map(p=>{const arr=list.filter(c=>c.pipeline_status===p);const LIMIT=25;const shown=arr.slice(0,LIMIT);const rest=arr.length-LIMIT;return`<div class="pipe-col ${moving?"move-target":""}" ${moving?`onclick="dropMovePipe('${p}')"`:""}><div class="pipe-head ${headClass(p)}">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${shown.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";const inConcern=c.parent_company_id||companies.some(x=>x.parent_company_id===c.id);const meta=[];if(c.ai_score!=null&&c.ai_score!=="")meta.push(`AI ${c.ai_score}`);if(sig>0)meta.push(`<span style="color:var(--red);font-weight:600">${sig} nya</span>`);return`<div class="pipe-card ${movePipeId===c.id?"move-selected":""}"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:10px;color:var(--gold);margin-left:3px">★</span>':""}${c.ar_formedlare?'<span title="Förmedlare/mellanhand" style="font-size:10px;margin-left:3px">🤝</span>':""}${inConcern?'<span title="Del av koncern" style="font-size:10px;margin-left:3px">🏢</span>':""}</div>${meta.length?`<div class="pipe-meta">${meta.join(" · ")}</div>`:""}</div><div class="pc-actions"><button class="btn-icon" title="Flytta steg" onclick="event.stopPropagation();startMovePipe('${c.id}')" style="font-size:11px;flex:1">↔ Flytta</button><button class="btn-icon" title="Redigera" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎</button><button class="btn-icon" title="Radera" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑</button></div></div>`;}).join("")}${rest>0?`<div style="padding:8px;text-align:center;font-size:12px;color:#888">+${rest} till – använd filtret för att hitta specifika bolag</div>`:""}</div>`;}).join("")}</div>`;
 }
 
 let movePipeId=null;
@@ -1718,13 +1722,13 @@ async function dropMovePipe(newStatus){
   await loadAll();
 }
 
-function openNewCompany(prefillNamn=""){editCoid=null;document.getElementById("co-modal-title").textContent="Nytt bolag";["co-namn","co-orgnr","co-bransch","co-stad","co-hemsida","co-notes"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("co-namn").value=prefillNamn;document.getElementById("co-land").value="Sverige";fillSelects();document.getElementById("co-pipe").value="Watchlist";document.getElementById("co-bors").checked=false;document.getElementById("co-auto-proj").checked=false;const cp=document.getElementById("co-parent");if(cp)cp.value="";openM("m-company");}
-function openEditCompany(id){const c=companies.find(x=>x.id===id);if(!c)return;editCoid=id;document.getElementById("co-modal-title").textContent="Redigera bolag";["namn","orgnr","bransch","stad","hemsida"].forEach(f=>{const el=document.getElementById("co-"+f);if(el)el.value=c[f]||"";});document.getElementById("co-land").value=c.land||"Sverige";fillSelects();setTimeout(()=>{document.getElementById("co-pipe").value=c.pipeline_status||"Watchlist";const cp=document.getElementById("co-parent");if(cp)cp.value=c.parent_company_id||"";},0);document.getElementById("co-bors").checked=!!c.borsnoterad;document.getElementById("co-auto-proj").checked=!!c.auto_projekt_vid_vunnet;document.getElementById("co-notes").value=c.anteckningar||"";openM("m-company");}
+function openNewCompany(prefillNamn=""){editCoid=null;document.getElementById("co-modal-title").textContent="Nytt bolag";["co-namn","co-orgnr","co-bransch","co-stad","co-hemsida","co-notes"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("co-namn").value=prefillNamn;document.getElementById("co-land").value="Sverige";fillSelects();document.getElementById("co-pipe").value="Watchlist";document.getElementById("co-bors").checked=false;document.getElementById("co-formedlare").checked=false;document.getElementById("co-auto-proj").checked=false;const cp=document.getElementById("co-parent");if(cp)cp.value="";openM("m-company");}
+function openEditCompany(id){const c=companies.find(x=>x.id===id);if(!c)return;editCoid=id;document.getElementById("co-modal-title").textContent="Redigera bolag";["namn","orgnr","bransch","stad","hemsida"].forEach(f=>{const el=document.getElementById("co-"+f);if(el)el.value=c[f]||"";});document.getElementById("co-land").value=c.land||"Sverige";fillSelects();setTimeout(()=>{document.getElementById("co-pipe").value=c.pipeline_status||"Watchlist";const cp=document.getElementById("co-parent");if(cp)cp.value=c.parent_company_id||"";},0);document.getElementById("co-bors").checked=!!c.borsnoterad;document.getElementById("co-formedlare").checked=!!c.ar_formedlare;document.getElementById("co-auto-proj").checked=!!c.auto_projekt_vid_vunnet;document.getElementById("co-notes").value=c.anteckningar||"";openM("m-company");}
 async function saveCompany(){
   const namn=v("co-namn");if(!namn){toast("Namn krävs");return;}
   const prevStatus=editCoid?companies.find(x=>x.id===editCoid)?.pipeline_status:null;
   const newStatus=document.getElementById("co-pipe").value||"Watchlist";
-  const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null};
+  const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,ar_formedlare:document.getElementById("co-formedlare").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null};
   if(newStatus==="Kund"&&prevStatus!=="Kund")data.kund_datum=today();
   const r=editCoid?await sb.from("companies").update(data).eq("id",editCoid):await sb.from("companies").insert({...data});
   if(r.error){alert(r.error.message);return;}
@@ -1738,7 +1742,7 @@ async function openCompanyCard(id){
   const parentCo=c.parent_company_id?companies.find(x=>x.id===c.parent_company_id):null;
   const subsidiaries=companies.filter(x=>x.parent_company_id===id);
   document.getElementById("co-card-content").innerHTML=`
-    <div class="card-hdr"><h2>${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}</h2><p>${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span></div></div>
+    <div class="card-hdr"><h2>${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}${c.ar_formedlare?'<span style="font-size:13px;margin-left:7px" title="Förmedlare/mellanhand">🤝</span>':""}</h2><p>${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span>${c.ar_formedlare?'<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">🤝 Mellanhand</span>':""}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">Översikt</div><div class="ctab" onclick="cct('co','ai',this)">AI-score</div><div class="ctab" onclick="cct('co','signals',this)">Signaler (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">Kontakter (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">Projekt (${cp.length})</div></div>
     <div class="ctpane active" id="cco-overview">
       ${c.ai_score?`<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:14px;border:1px solid var(--cream)">
@@ -3177,6 +3181,7 @@ function consultNeeds(){
   // Returnerar lista över bolag med indikerat behov, rankade efter allvar.
   const out=[];
   companies.forEach(c=>{
+    if(c.ar_formedlare)return; // mellanhänder har inte eget konsultbehov
     const flags=[];let score=0;const tjanster=new Set();
     // 1) Finansiella varningar från senaste sparade period
     const fin=finAnalyses.filter(a=>a.company_id===c.id).map(a=>({a,sort:(a.data&&a.data._sort)||""})).sort((x,y)=>String(y.sort).localeCompare(String(x.sort)))[0];
@@ -3206,6 +3211,16 @@ function consultNeeds(){
     if(flags.length)out.push({c,flags,score,tjanster:[...tjanster]});
   });
   return out.sort((a,b)=>b.score-a.score);
+}
+
+function renderMellanhander(){
+  const list=companies.filter(c=>c.ar_formedlare).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
+  if(!list.length){document.getElementById("mellanhander-content").innerHTML='<div class="empty"><div class="empty-icon">🤝</div><p>Inga bolag är markerade som förmedlare/mellanhand ännu. Kryssa i "Förmedlare/mellanhand" på ett bolag för att samla dem här.</p></div>';return;}
+  document.getElementById("mellanhander-content").innerHTML=`
+    <div class="privacy-note" style="margin-bottom:14px">Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.</div>
+    <div class="tw"><table><thead><tr><th>Bolag</th><th>Pipeline-steg</th><th>Stad</th><th>Nya signaler</th></tr></thead><tbody>
+    ${list.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openCompanyCard('${c.id}')">${FLAG[c.land]||"🌍"} ${e(c.namn)} ↗</strong></td><td>${e(pipeLabel(c.pipeline_status))}</td><td>${e(c.stad||"–")}</td><td>${sig>0?`<span class="badge b-granskad">${sig}</span>`:'<span style="color:#aaa">0</span>'}</td></tr>`;}).join("")}
+    </tbody></table></div>`;
 }
 
 function renderKonsultbehov(){
