@@ -704,7 +704,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="mbody">
       <div class="fg">
         <div class="fl full"><label>Projektnamn *</label><input id="p-namn"></div>
-        <div class="fl"><label>Kund (bolag)</label><select id="p-coid"></select></div>
+        <div class="fl"><label>Kund (bolag) – valfritt</label><select id="p-coid"><option value="">– Inget / fritt namn –</option></select></div>
+        <div class="fl"><label>Fritt kundnamn (om ej bolag)</label><input id="p-fritt" placeholder="t.ex. Acme AB"></div>
         <div class="fl"><label>Kontakt</label><select id="p-ctid"></select></div>
         <div class="fl"><label>Underkonsult</label><select id="p-subid"></select></div>
         <div class="fl"><label>Typ</label><select id="p-typ"></select></div>
@@ -716,6 +717,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label>Timpris (kr)</label><input id="p-hrrate" type="number"></div>
         <div class="fl"><label>Dagspris (kr)</label><input id="p-dayrate" type="number"></div>
         <div class="fl"><label>Fakturareferens</label><input id="p-invref"></div>
+        <div class="fl full"><label>Kompetenskrav (kommaseparerade, för matchning mot underkonsulter)</label><input id="p-komp" placeholder="t.ex. IFRS, konsolidering, SAP"></div>
         <div class="fl full"><label>Beskrivning</label><textarea id="p-scope"></textarea></div>
         <div class="fl full"><label>Interna anteckningar</label><textarea id="p-notes"></textarea></div>
       </div>
@@ -1489,7 +1491,7 @@ function renderProjects(){
   const today2=new Date();today2.setHours(0,0,0,0);
   // Gruppera projekt per kund
   const kundMap={};const visibleProjects=focusMode==="company"&&focusCompanyId?projects.filter(p=>p.company_id===focusCompanyId):projects;
-  visibleProjects.forEach(p=>{const co=projCompany(p);const key=co?.id||"__ingen__";if(!kundMap[key])kundMap[key]={co,projs:[]};kundMap[key].projs.push(p);});
+  visibleProjects.forEach(p=>{const co=projCompany(p);const key=co?.id||(p.fritt_namn?"fritt:"+p.fritt_namn:"__ingen__");if(!kundMap[key])kundMap[key]={co,fritt:co?null:p.fritt_namn,projs:[]};kundMap[key].projs.push(p);});
   const month=curMonth();
   const pq=(window._projQ||"").toLowerCase();const pstatus=window._projStatus||"";
   Object.keys(kundMap).forEach(kid=>{
@@ -1512,11 +1514,11 @@ function renderProjects(){
       <div class="kpi c-warm"><div class="kpi-n">${projects.reduce((s,p)=>s+projBillableHours(p.id,month),0).toFixed(1)}</div><div class="kpi-l">Fakturerbara timmar</div></div>
       <div class="kpi c-gold"><div class="kpi-n" style="font-size:18px">${money(projects.reduce((s,p)=>s+(projInvoiceAmount(p,month)||0),0))}</div><div class="kpi-l">Fakturaunderlag</div></div>
     </div>
-    ${Object.entries(kundMap).map(([kid,{co,projs}])=>`
+    ${Object.entries(kundMap).map(([kid,{co,fritt,projs}])=>`
       <div class="kund-card">
         <div class="kund-card-hdr" onclick="toggleKundCard('${kid}')">
           <div class="sring sh" style="width:36px;height:36px;font-size:12px;border-width:2px">${projs.filter(p=>p.status==="Aktiv").length}</div>
-          <h3>${co?`${FLAG[co.land]||"🌍"} ${e(co.namn)}`:"Utan kund"}</h3>
+          <h3>${co?`${FLAG[co.land]||"🌍"} ${e(co.namn)}`:(fritt?e(fritt):"Utan kund")}</h3>
           <span style="font-size:12px;color:#888">${projs.length} projekt</span>
           <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openNewProjectForCo('${co?.id||""}')" style="margin-left:8px">+ Projekt</button>
           <span style="color:#aaa;margin-left:8px">▾</span>
@@ -2419,12 +2421,12 @@ function renderStats(){
 
 
 // PROJECT MODAL
-function openNewProject(){editPid=null;fillSelects();document.getElementById("pr-modal-title").textContent="Nytt projekt";["p-namn","p-start","p-end","p-hrrate","p-dayrate","p-invref","p-scope","p-notes","p-esttid"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("p-status").value="Aktiv";document.getElementById("p-typ").value="Controller";document.getElementById("p-ratetype").value="hourly";openM("m-project");}
+function openNewProject(){editPid=null;fillSelects();document.getElementById("pr-modal-title").textContent="Nytt projekt";["p-namn","p-start","p-end","p-hrrate","p-dayrate","p-invref","p-scope","p-notes","p-esttid","p-fritt","p-komp"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("p-status").value="Aktiv";document.getElementById("p-typ").value="Controller";document.getElementById("p-ratetype").value="hourly";openM("m-project");}
 function openNewProjectForCo(coid){openNewProject();setTimeout(()=>{const el=document.getElementById("p-coid");if(el&&coid)el.value=coid;},50);}
-function openEditProject(id){const p=projects.find(x=>x.id===id);if(!p)return;editPid=id;fillSelects();document.getElementById("pr-modal-title").textContent="Redigera projekt";setTimeout(()=>{[["p-namn","namn"],["p-coid","company_id"],["p-ctid","contact_id"],["p-subid","subconsultant_id"],["p-typ","uppdragstyp"],["p-status","status"],["p-start","start_date"],["p-end","end_date"],["p-ratetype","rate_type"],["p-hrrate","hourly_rate"],["p-dayrate","daily_rate"],["p-invref","invoice_reference"],["p-scope","scope"],["p-notes","notes"],["p-esttid","estimerad_tid"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=p[field]||"";});},50);openM("m-project");}
+function openEditProject(id){const p=projects.find(x=>x.id===id);if(!p)return;editPid=id;fillSelects();document.getElementById("pr-modal-title").textContent="Redigera projekt";setTimeout(()=>{[["p-namn","namn"],["p-coid","company_id"],["p-fritt","fritt_namn"],["p-komp","kompetenskrav"],["p-ctid","contact_id"],["p-subid","subconsultant_id"],["p-typ","uppdragstyp"],["p-status","status"],["p-start","start_date"],["p-end","end_date"],["p-ratetype","rate_type"],["p-hrrate","hourly_rate"],["p-dayrate","daily_rate"],["p-invref","invoice_reference"],["p-scope","scope"],["p-notes","notes"],["p-esttid","estimerad_tid"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=p[field]||"";});},50);openM("m-project");}
 async function saveProject(){
   const namn=v("p-namn"),start=v("p-start"),end=v("p-end");if(!namn){toast("Projektnamn krävs");return;}if(start&&end&&start>end){toast("Startdatum måste vara före slutdatum");return;}
-  const data={user_id:me.id,namn,company_id:v("p-coid")||null,contact_id:v("p-ctid")||null,subconsultant_id:v("p-subid")||null,uppdragstyp:v("p-typ"),status:v("p-status")||"Aktiv",start_date:start||null,end_date:end||null,estimerad_tid:numv("p-esttid"),rate_type:v("p-ratetype")||"hourly",hourly_rate:numv("p-hrrate"),daily_rate:numv("p-dayrate"),invoice_reference:v("p-invref"),scope:v("p-scope"),notes:v("p-notes")};
+  const data={user_id:me.id,namn,company_id:v("p-coid")||null,fritt_namn:v("p-fritt")||null,kompetenskrav:v("p-komp")||null,contact_id:v("p-ctid")||null,subconsultant_id:v("p-subid")||null,uppdragstyp:v("p-typ"),status:v("p-status")||"Aktiv",start_date:start||null,end_date:end||null,estimerad_tid:numv("p-esttid"),rate_type:v("p-ratetype")||"hourly",hourly_rate:numv("p-hrrate"),daily_rate:numv("p-dayrate"),invoice_reference:v("p-invref"),scope:v("p-scope"),notes:v("p-notes")};
   const r=editPid?await sb.from("projects").update(data).eq("id",editPid):await sb.from("projects").insert(data);if(r.error){alert(r.error.message);return;}closeM("m-project");toast("Projekt sparat");await loadAll();
 }
 
@@ -2434,16 +2436,21 @@ function openProjectCard(id){
   const pt=tasks.filter(t=>t.project_id===id);const pp=projPeople.filter(x=>x.project_id===id);const cl=closeouts.find(x=>x.project_id===id)||{};
   const month=curMonth();const logged=projLoggedHours(id);const est=Number(p.estimerad_tid)||0;
   document.getElementById("pr-card-content").innerHTML=`
-    <div class="card-hdr"><h2>${e(p.namn)}</h2><p>${e([co?.namn,p.uppdragstyp].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.status)}</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.start_date||"?")} – ${e(p.end_date||"")}</span></div></div>
+    <div class="card-hdr"><h2>${e(p.namn)}</h2><p>${e([projDisplayName(p),p.uppdragstyp].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.status)}</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.start_date||"?")} – ${e(p.end_date||"")}</span></div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('pr','overview',this)">Översikt</div><div class="ctab" onclick="cct('pr','diary',this)">Dagbok</div><div class="ctab" onclick="cct('pr','tasks',this)">Uppgifter (${pt.length})</div><div class="ctab" onclick="cct('pr','people',this)">Personer (${pp.length})</div><div class="ctab" onclick="cct('pr','closing',this)">Avslut</div></div>
     <div class="ctpane active" id="cpro-overview">
       ${est?`<div style="margin-bottom:16px"><p style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Budgetstatus</p>${progressBar(logged,est,280)}</div>`:""}
       <div class="ig">
-        <div class="ii"><label>Kund</label><span>${e(co?.namn||"--")}</span></div>
+        <div class="ii"><label>Kund</label><span>${e(projDisplayName(p))}</span></div>
         <div class="ii"><label>Kontakt</label><span>${ct?e(ct.fornamn+" "+ct.efternamn):"--"}</span></div>
         <div class="ii"><label>Pris</label><span>${p.rate_type==="daily"?e(p.daily_rate||"--")+" kr/dag":p.rate_type==="hourly"?e(p.hourly_rate||"--")+" kr/tim":"Fast"}</span></div>
         <div class="ii"><label>Denna månad</label><span>${projBillableHours(id,month).toFixed(1)}h · ${money(projInvoiceAmount(p,month))}</span></div>
         <div class="ii"><label>Totalt loggat</label><span>${logged.toFixed(1)}h${est?" av "+est+"h":""}</span></div>
+        ${p.kompetenskrav?`<div class="ii"><label>Kompetenskrav</label><span>${e(p.kompetenskrav)}</span></div>`:""}
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
+        <div style="font-size:12px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">★ Passande underkonsulter</div>
+        ${projMatchHtml(p)}
       </div>
     </div>
     <div class="ctpane" id="cpro-diary"><div style="margin-bottom:10px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="openNewDiaryEntryForProject('${id}')">+ Logga tid</button></div><div>${renderDiaryListForProject(id)}</div></div>
@@ -3643,6 +3650,19 @@ function matchScore(subId,sig){
   const hay=`${sig.efterfragar||""} ${sig.rubrik||""} ${sig.beskrivning||""}`.toLowerCase();
   const matched=skills.filter(sk=>hay.includes(sk));
   return{count:matched.length,matched};
+}
+function projDisplayName(p){const co=companies.find(c=>c.id===p?.company_id);return co?co.namn:(p?.fritt_namn||"(utan kund)");}
+function projMatchScore(subId,p){
+  const skills=subSkillList(subId);
+  if(!skills.length)return{count:0,matched:[]};
+  const hay=`${p.kompetenskrav||""} ${p.namn||""} ${p.scope||""}`.toLowerCase();
+  const matched=skills.filter(sk=>hay.includes(sk));
+  return{count:matched.length,matched};
+}
+function projMatchHtml(p){
+  const ranked=subs.map(s=>({s,m:projMatchScore(s.id,p)})).filter(x=>x.m.count>0).sort((a,b)=>b.m.count-a.m.count);
+  if(!ranked.length)return '<p style="font-size:13px;color:#888">Inga matchande underkonsulter utifrån kompetenskrav/beskrivning. Lägg till kompetenskrav på uppdraget eller kompetenser på underkonsulterna.</p>';
+  return ranked.map(({s,m})=>`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1"><div class="week-rn">★ ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${m.matched.map(x=>`<span class="badge b-granskad" style="font-size:10px">${e(x)}</span>`).join(" ")}</div></div><span class="badge b-prospekt">${m.count} match</span></div>`).join("");
 }
 function openSubCard(id){
   const s=subs.find(x=>x.id===id);if(!s)return;curSubId=id;
