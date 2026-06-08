@@ -75,6 +75,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--paper);cursor:p
 .btn-icon{background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:4px;font-size:13px;transition:background .12s}.btn-icon:hover{background:var(--cream)}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.44);z-index:100;align-items:center;justify-content:center}
 .overlay.open{display:flex}
+.seg{display:inline-flex;gap:0}
+.seg .btn{border-radius:0}
+.seg .btn:first-child{border-radius:7px 0 0 7px}
+.seg .btn:last-child{border-radius:0 7px 7px 0}
 .modal{background:#fff;border-radius:10px;width:560px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.22)}
 .modal-lg{width:860px}
 .mhdr{padding:18px 22px 12px;border-bottom:1px solid var(--cream);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
@@ -1380,7 +1384,7 @@ function renderDashboard(){
     tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
     todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
     goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`,
-    schema:()=>`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 0">${scheduleSummaryHtml(true)}</div></div>`
+    schema:()=>{const{map,overdue}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
   const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål",schema:"🗓️ Arbetsschema"};
   const order=["fups","leads","konsult","tasks","todo","schema","goals"];
@@ -3057,51 +3061,151 @@ async function autoSortPrio(){
 }
 
 
-// ══ ARBETSSCHEMA (fördela todos över vardagar) ══════════════
+// ══ ARBETSSCHEMA / KALENDER ══════════════════════════════════
+let schemaView="vecka";let schemaAnchor=null; // anchor = startdatum för vyn
+function schemaToday(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function fmtD(d){return d.toISOString().split("T")[0];}
+function isWeekday(d){const w=d.getDay();return w!==0&&w!==6;}
 function nextWeekdays(n){
-  const days=[];const d=new Date();d.setHours(0,0,0,0);
-  while(days.length<n){const wd=d.getDay();if(wd!==0&&wd!==6)days.push(new Date(d));d.setDate(d.getDate()+1);}
+  const days=[];const d=schemaToday();
+  while(days.length<n){if(isWeekday(d))days.push(new Date(d));d.setDate(d.getDate()+1);}
   return days;
 }
-function buildSchedule(){
-  const fmt=d=>d.toISOString().split("T")[0];
-  const open=todos.filter(t=>!t.done).slice().sort((a,b)=>{
+// placerar todos på dagar: schema_datum styr om satt, annars auto enligt deadline+prio
+function scheduledMap(){
+  const open=todos.filter(t=>!t.done);
+  const map={};const overdue=[];
+  const todayStr=fmtD(schemaToday());
+  // 1) de med schema_datum läggs direkt
+  const auto=[];
+  open.forEach(t=>{
+    if(t.schema_datum){(map[t.schema_datum]=map[t.schema_datum]||[]).push(t);}
+    else auto.push(t);
+  });
+  // 2) auto: försenade (deadline passerad, ej schemalagd) → overdue, annars fördela
+  auto.sort((a,b)=>{
     const da=a.due_date||"9999",db=b.due_date||"9999";if(da!==db)return da<db?-1:1;
     const pw={Hög:0,Medium:1,Låg:2};const pa=pw[a.prioritet]??1,pb=pw[b.prioritet]??1;if(pa!==pb)return pa-pb;
     return (a.sort_order??0)-(b.sort_order??0);
   });
-  const days=nextWeekdays(15);
-  const dayKeys=days.map(fmt);
-  const schedule={};dayKeys.forEach(k=>schedule[k]=[]);
-  const overdue=[];const later=[];
-  const todayStr=today();
-  open.forEach(t=>{
+  const wd=nextWeekdays(20);const wdKeys=wd.map(fmtD);
+  let di=0;
+  auto.forEach(t=>{
     if(t.due_date&&t.due_date<todayStr){overdue.push(t);return;}
     if(t.due_date){
-      const candidates=dayKeys.filter(k=>k<=t.due_date);
-      const target=candidates.length?candidates[candidates.length-1]:(dayKeys.find(k=>k>=t.due_date)||null);
-      if(target&&schedule[target])schedule[target].push(t);else later.push(t);
-    }else{later.push(t);}
+      const cand=wdKeys.filter(k=>k<=t.due_date);
+      const target=cand.length?cand[cand.length-1]:wdKeys[0];
+      (map[target]=map[target]||[]).push(t);
+    }else{const k=wdKeys[di%wdKeys.length];(map[k]=map[k]||[]).push(t);di++;}
   });
-  let di=0;
-  later.forEach(t=>{const k=dayKeys[di%dayKeys.length];schedule[k].push(t);di++;});
-  return{days,dayKeys,schedule,overdue};
+  return{map,overdue};
 }
-function scheduleSummaryHtml(compact){
-  const{days,dayKeys,schedule,overdue}=buildSchedule();
-  const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
-  const dayName=d=>["sön","mån","tis","ons","tor","fre","lör"][d.getDay()];
-  const rowFor=t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('prio')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${pi[t.prioritet]||"🟡"} ${e(t.text)}</div><div class="week-rs">${t.due_date?"📅 "+e(t.due_date):""}${co?(t.due_date?" · ":"")+"🏢 "+e(co.namn):""}</div></div></div>`;};
-  const limit=compact?3:99;
-  const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:10px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>⚠ Försenade (${overdue.length})</h3></div><div style="padding:4px 0">${overdue.slice(0,limit).map(rowFor).join("")}${overdue.length>limit?`<div class="week-row" style="color:#888;font-size:12px">+${overdue.length-limit} till</div>`:""}</div></div>`:"";
-  const dayBlocks=days.map((d,i)=>{const k=dayKeys[i];const items=schedule[k];if(!items.length)return"";const isToday=k===today();return`<div class="week-sec" style="margin-bottom:10px${isToday?";border-left:4px solid var(--accent)":""}"><div class="week-sec-hdr"><h3>${dayName(d)} ${d.getDate()}/${d.getMonth()+1}${isToday?" · idag":""}</h3><span style="font-size:12px;color:#888">${items.length} st</span></div><div style="padding:4px 0">${items.slice(0,limit).map(rowFor).join("")}${items.length>limit?`<div class="week-row" style="color:#888;font-size:12px">+${items.length-limit} till</div>`:""}</div></div>`;}).filter(Boolean);
-  const shown=compact?dayBlocks.slice(0,3):dayBlocks;
-  return overdueBlock+(shown.join("")||'<p style="color:#888;font-size:13px;padding:8px 0">Inga uppgifter att schemalägga.</p>');
+async function moveSchemaTodo(id,dir){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  // basdatum: nuvarande schema_datum, annars idag
+  let base=t.schema_datum?new Date(t.schema_datum+"T00:00:00"):schemaToday();
+  base.setDate(base.getDate()+dir);
+  // hoppa över helg
+  while(!isWeekday(base))base.setDate(base.getDate()+(dir>=0?1:-1));
+  t.schema_datum=fmtD(base);
+  renderSchema();
+  await sb.from("todos").update({schema_datum:t.schema_datum}).eq("id",id);
 }
+async function unscheduleTodo(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.schema_datum=null;renderSchema();
+  await sb.from("todos").update({schema_datum:null}).eq("id",id);
+}
+
+const PI_MAP={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
+function schemaTaskChip(t,showMove){
+  const co=t.company_id?companies.find(c=>c.id===t.company_id):null;
+  const od=t.due_date&&t.due_date<fmtD(schemaToday());
+  return`<div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border:1px solid var(--cream);border-radius:6px;margin-bottom:4px;background:#fff">
+    <div style="flex:1;min-width:0;cursor:pointer" onclick="openTodo()"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${t.due_date||co?`<div style="font-size:10px;color:${od?"var(--red)":"#888"}">${t.due_date?"📅"+e(t.due_date):""}${co?" 🏢"+e(co.namn):""}</div>`:""}</div>
+    ${showMove?`<button class="btn-icon" title="Dag före" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',-1)" style="font-size:11px">←</button><button class="btn-icon" title="Dag efter" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',1)" style="font-size:11px">→</button>`:""}
+  </div>`;
+}
+
 function renderSchema(){
+  if(!schemaAnchor)schemaAnchor=schemaToday();
+  const{map,overdue}=scheduledMap();
+  const todayStr=fmtD(schemaToday());
+  const dayName=d=>["sön","mån","tis","ons","tor","fre","lör"][d.getDay()];
+
+  // Dagens förslag
+  const todayItems=(map[todayStr]||[]);
+  const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>⭐ Dagens förslag</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">Inga uppgifter inplanerade idag 🎉</span>'}</div></div>`;
+
+  const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>⚠ Försenade</h3><span style="font-size:12px;color:#888">${overdue.length} st</span></div><div style="padding:8px 14px">${overdue.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
+
+  // Navigering + vy-växel + export
+  const ctrls=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <div class="seg"><button class="btn btn-sm ${schemaView==="vecka"?"btn-primary":"btn-outline"}" onclick="schemaView='vecka';renderSchema()">Vecka</button><button class="btn btn-sm ${schemaView==="manad"?"btn-primary":"btn-outline"}" onclick="schemaView='manad';renderSchema()">Månad</button></div>
+    <button class="btn btn-outline btn-sm" onclick="schemaNav(-1)">←</button>
+    <button class="btn btn-outline btn-sm" onclick="schemaAnchor=schemaToday();renderSchema()">Idag</button>
+    <button class="btn btn-outline btn-sm" onclick="schemaNav(1)">→</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('today')">📲 Dagens till kalender</button>
+    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">📲 Hela schemat</button>
+  </div>`;
+
+  let grid="";
+  if(schemaView==="vecka"){
+    // veckan som innehåller anchor, mån–sön
+    const start=new Date(schemaAnchor);const off=(start.getDay()+6)%7;start.setDate(start.getDate()-off);
+    const cells=[];for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);cells.push(d);}
+    const wkLabel=`Vecka – ${start.getDate()}/${start.getMonth()+1}`;
+    grid=`<div style="font-weight:600;margin-bottom:8px">${wkLabel}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">${cells.map(d=>{const k=fmtD(d);const items=map[k]||[];const isT=k===todayStr;const we=!isWeekday(d);return`<div class="week-sec" style="margin-bottom:0;${isT?"border-left:3px solid var(--accent);":""}${we?"opacity:.6;":""}"><div style="padding:8px 10px;border-bottom:1px solid var(--cream);font-size:12px;font-weight:600">${dayName(d)} ${d.getDate()}/${d.getMonth()+1}${isT?" · idag":""}</div><div style="padding:8px;min-height:40px">${items.length?items.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#ccc;font-size:11px">–</span>'}</div></div>`;}).join("")}</div>`;
+  }else{
+    // månad som innehåller anchor
+    const y=schemaAnchor.getFullYear(),m=schemaAnchor.getMonth();
+    const first=new Date(y,m,1);const startOff=(first.getDay()+6)%7;
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const monthNames=["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
+    let cells="";
+    ["mån","tis","ons","tor","fre","lör","sön"].forEach(d=>cells+=`<div style="font-size:11px;color:#888;text-align:center;font-weight:600;padding:4px">${d}</div>`);
+    for(let i=0;i<startOff;i++)cells+="<div></div>";
+    for(let day=1;day<=daysInMonth;day++){const d=new Date(y,m,day);const k=fmtD(d);const items=map[k]||[];const isT=k===todayStr;const we=!isWeekday(d);cells+=`<div style="border:1px solid var(--cream);border-radius:6px;min-height:62px;padding:3px;${isT?"outline:2px solid var(--accent);":""}${we?"background:var(--paper);":"background:#fff;"}"><div style="font-size:11px;color:#888;font-weight:600">${day}</div>${items.slice(0,3).map(t=>`<div style="font-size:9px;background:var(--cream);border-radius:3px;padding:1px 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer" onclick="gotoSchemaDay('${k}')" title="${e(t.text)}">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>`).join("")}${items.length>3?`<div style="font-size:9px;color:#888;margin-top:1px">+${items.length-3}</div>`:""}</div>`;}
+    grid=`<div style="font-weight:600;margin-bottom:8px">${monthNames[m]} ${y}</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${cells}</div>`;
+  }
+
   document.getElementById("schema-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Förslag på arbetsschema – dina öppna uppgifter fördelade över kommande vardagar. Uppgifter med deadline placeras senast sin deadline-dag, högst prioriterade först. Försenade visas överst. Justera ordning i <span style="color:var(--accent);cursor:pointer" onclick="gotoView('prio')">Prioritering</span>.</div>
-    ${scheduleSummaryHtml(false)}`;
+    <div class="privacy-note" style="margin-bottom:14px">Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.</div>
+    ${todayBlock}${overdueBlock}${ctrls}${grid}`;
+}
+function schemaNav(dir){
+  if(!schemaAnchor)schemaAnchor=schemaToday();
+  const d=new Date(schemaAnchor);
+  if(schemaView==="vecka")d.setDate(d.getDate()+7*dir);else d.setMonth(d.getMonth()+dir);
+  schemaAnchor=d;renderSchema();
+}
+function gotoSchemaDay(k){schemaView="vecka";schemaAnchor=new Date(k+"T00:00:00");renderSchema();}
+
+function exportScheduleICS(scope){
+  const{map}=scheduledMap();
+  const todayStr=fmtD(schemaToday());
+  let entries=[];
+  if(scope==="today"){entries=(map[todayStr]||[]).map(t=>({t,date:todayStr}));}
+  else{Object.keys(map).forEach(k=>{(map[k]||[]).forEach(t=>entries.push({t,date:k}));});}
+  if(!entries.length){toast("Inget att exportera");return;}
+  const pad=n=>String(n).padStart(2,"0");
+  const dt=ds=>ds.replace(/-/g,"");
+  let ics="BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CRM-NIS//Schema//SV\r\n";
+  entries.forEach(({t,date},i)=>{
+    const co=t.company_id?companies.find(c=>c.id===t.company_id):null;
+    const summary=(PI_MAP[t.prioritet]||"")+" "+t.text+(co?" ("+co.namn+")":"");
+    ics+="BEGIN:VEVENT\r\n";
+    ics+=`UID:crmnis-${t.id}-${i}@crm-nis\r\n`;
+    ics+=`DTSTART;VALUE=DATE:${dt(date)}\r\n`;
+    ics+=`SUMMARY:${summary.replace(/[\r\n,;]/g," ")}\r\n`;
+    if(t.due_date)ics+=`DESCRIPTION:Deadline ${t.due_date}\r\n`;
+    ics+="END:VEVENT\r\n";
+  });
+  ics+="END:VCALENDAR\r\n";
+  const blob=new Blob([ics],{type:"text/calendar"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=scope==="today"?`schema_${todayStr}.ics`:`arbetsschema.ics`;a.click();
+  toast("Kalenderfil nedladdad – öppna den på mobilen för att lägga in i kalendern");
 }
 
 
