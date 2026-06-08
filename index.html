@@ -3716,9 +3716,11 @@ function exportSingleICS(id){const c=contacts.find(x=>x.id===id);if(!c||!c.nasta
 function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{const k=kedja(c.senast_typ);return{date:c.nasta_foljup,title:k[0]+": "+c.fornamn+" "+c.efternamn,desc:k[1]};});if(!events.length){toast("Inga uppföljningar");return;}dlICS(makeICS(events),"uppfoljningar.ics");toast(events.length+" exporterade");}
 
 // INIT
-document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o)o.classList.remove("open");}));
+// Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry"];
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
-document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open"));});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");});});
 
 // ══ SNOOZE ═══════════════════════════════════════════════════
 let snoozeCid=null;
