@@ -401,6 +401,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
       <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span>Mål</div>
       <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span>Prioritering</div>
+      <div class="nav-item" data-v="schema" onclick="gotoView('schema')"><span class="nav-icon">🗓️</span>Arbetsschema</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none">Bolag &amp; leads <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
@@ -463,6 +464,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-prio"><div id="prio-content"></div></div>
+    <div class="view" id="view-schema"><div id="schema-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
@@ -1282,7 +1284,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",schema:"Arbetsschema",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1316,7 +1318,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
   else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -1377,10 +1379,11 @@ function renderDashboard(){
     konsult:()=>card("konsult","🎯 Potentiellt konsultbehov",`${needsAll.length}`,"gotoView('konsultbehov')","Visa alla",needRows,"Inga indikerade behov ännu."),
     tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
     todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
-    goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`
+    goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`,
+    schema:()=>`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 0">${scheduleSummaryHtml(true)}</div></div>`
   };
-  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål"};
-  const order=["fups","leads","konsult","tasks","todo","goals"];
+  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål",schema:"🗓️ Arbetsschema"};
+  const order=["fups","leads","konsult","tasks","todo","schema","goals"];
   const hidden=getDashHidden();
   const visible=order.filter(k=>!hidden.includes(k));
 
@@ -3051,6 +3054,54 @@ async function autoSortPrio(){
   renderPrio();
   await Promise.all(open.map(t=>sb.from("todos").update({sort_order:t.sort_order}).eq("id",t.id)));
   toast("Automatiskt sorterat ✓");
+}
+
+
+// ══ ARBETSSCHEMA (fördela todos över vardagar) ══════════════
+function nextWeekdays(n){
+  const days=[];const d=new Date();d.setHours(0,0,0,0);
+  while(days.length<n){const wd=d.getDay();if(wd!==0&&wd!==6)days.push(new Date(d));d.setDate(d.getDate()+1);}
+  return days;
+}
+function buildSchedule(){
+  const fmt=d=>d.toISOString().split("T")[0];
+  const open=todos.filter(t=>!t.done).slice().sort((a,b)=>{
+    const da=a.due_date||"9999",db=b.due_date||"9999";if(da!==db)return da<db?-1:1;
+    const pw={Hög:0,Medium:1,Låg:2};const pa=pw[a.prioritet]??1,pb=pw[b.prioritet]??1;if(pa!==pb)return pa-pb;
+    return (a.sort_order??0)-(b.sort_order??0);
+  });
+  const days=nextWeekdays(15);
+  const dayKeys=days.map(fmt);
+  const schedule={};dayKeys.forEach(k=>schedule[k]=[]);
+  const overdue=[];const later=[];
+  const todayStr=today();
+  open.forEach(t=>{
+    if(t.due_date&&t.due_date<todayStr){overdue.push(t);return;}
+    if(t.due_date){
+      const candidates=dayKeys.filter(k=>k<=t.due_date);
+      const target=candidates.length?candidates[candidates.length-1]:(dayKeys.find(k=>k>=t.due_date)||null);
+      if(target&&schedule[target])schedule[target].push(t);else later.push(t);
+    }else{later.push(t);}
+  });
+  let di=0;
+  later.forEach(t=>{const k=dayKeys[di%dayKeys.length];schedule[k].push(t);di++;});
+  return{days,dayKeys,schedule,overdue};
+}
+function scheduleSummaryHtml(compact){
+  const{days,dayKeys,schedule,overdue}=buildSchedule();
+  const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
+  const dayName=d=>["sön","mån","tis","ons","tor","fre","lör"][d.getDay()];
+  const rowFor=t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('prio')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${pi[t.prioritet]||"🟡"} ${e(t.text)}</div><div class="week-rs">${t.due_date?"📅 "+e(t.due_date):""}${co?(t.due_date?" · ":"")+"🏢 "+e(co.namn):""}</div></div></div>`;};
+  const limit=compact?3:99;
+  const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:10px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>⚠ Försenade (${overdue.length})</h3></div><div style="padding:4px 0">${overdue.slice(0,limit).map(rowFor).join("")}${overdue.length>limit?`<div class="week-row" style="color:#888;font-size:12px">+${overdue.length-limit} till</div>`:""}</div></div>`:"";
+  const dayBlocks=days.map((d,i)=>{const k=dayKeys[i];const items=schedule[k];if(!items.length)return"";const isToday=k===today();return`<div class="week-sec" style="margin-bottom:10px${isToday?";border-left:4px solid var(--accent)":""}"><div class="week-sec-hdr"><h3>${dayName(d)} ${d.getDate()}/${d.getMonth()+1}${isToday?" · idag":""}</h3><span style="font-size:12px;color:#888">${items.length} st</span></div><div style="padding:4px 0">${items.slice(0,limit).map(rowFor).join("")}${items.length>limit?`<div class="week-row" style="color:#888;font-size:12px">+${items.length-limit} till</div>`:""}</div></div>`;}).filter(Boolean);
+  const shown=compact?dayBlocks.slice(0,3):dayBlocks;
+  return overdueBlock+(shown.join("")||'<p style="color:#888;font-size:13px;padding:8px 0">Inga uppgifter att schemalägga.</p>');
+}
+function renderSchema(){
+  document.getElementById("schema-content").innerHTML=`
+    <div class="privacy-note" style="margin-bottom:14px">Förslag på arbetsschema – dina öppna uppgifter fördelade över kommande vardagar. Uppgifter med deadline placeras senast sin deadline-dag, högst prioriterade först. Försenade visas överst. Justera ordning i <span style="color:var(--accent);cursor:pointer" onclick="gotoView('prio')">Prioritering</span>.</div>
+    ${scheduleSummaryHtml(false)}`;
 }
 
 
