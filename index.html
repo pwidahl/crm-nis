@@ -3073,7 +3073,7 @@ async function autoSortPrio(){
 
 
 // ══ ARBETSSCHEMA / KALENDER ══════════════════════════════════
-let schemaView="vecka";let schemaAnchor=null; // anchor = startdatum för vyn
+let schemaView="vecka";let schemaAnchor=null;let schemaFilterCo="";let schemaFilterProj="";
 function schemaToday(){const d=new Date();d.setHours(0,0,0,0);return d;}
 function fmtD(d){return d.toISOString().split("T")[0];}
 function isWeekday(d){const w=d.getDay();return w!==0&&w!==6;}
@@ -3084,7 +3084,11 @@ function nextWeekdays(n){
 }
 // placerar todos på dagar: schema_datum styr om satt, annars auto enligt deadline+prio
 function scheduledMap(){
-  const open=todos.filter(t=>!t.done);
+  let open=todos.filter(t=>!t.done);
+  if(schemaFilterCo==="__none__")open=open.filter(t=>!t.company_id);
+  else if(schemaFilterCo)open=open.filter(t=>t.company_id===schemaFilterCo);
+  if(schemaFilterProj==="__none__")open=open.filter(t=>!t.project_id);
+  else if(schemaFilterProj)open=open.filter(t=>t.project_id===schemaFilterProj);
   const map={};const overdue=[];
   const todayStr=fmtD(schemaToday());
   // 1) de med schema_datum läggs direkt
@@ -3111,23 +3115,17 @@ function scheduledMap(){
   });
   return{map,overdue};
 }
+async function setSchemaDate(id,dateStr){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.schema_datum=dateStr||null;
+  renderSchema();
+  await sb.from("todos").update({schema_datum:t.schema_datum}).eq("id",id);
+}
 function currentScheduledDay(id){
-  // hitta vilken dag uppgiften faktiskt ligger på just nu (schema_datum eller auto-placering)
   const{map,overdue}=scheduledMap();
   if(overdue.some(t=>t.id===id))return fmtD(schemaToday());
   for(const k of Object.keys(map)){if(map[k].some(t=>t.id===id))return k;}
   return fmtD(schemaToday());
-}
-async function moveSchemaTodo(id,dir){
-  const t=todos.find(x=>x.id===id);if(!t)return;
-  // utgå från den dag uppgiften FAKTISKT ligger på nu (inte idag)
-  const baseKey=t.schema_datum||currentScheduledDay(id);
-  let base=new Date(baseKey+"T00:00:00");
-  base.setDate(base.getDate()+dir);
-  while(!isWeekday(base))base.setDate(base.getDate()+(dir>=0?1:-1));
-  t.schema_datum=fmtD(base);
-  renderSchema();
-  await sb.from("todos").update({schema_datum:t.schema_datum}).eq("id",id);
 }
 async function unscheduleTodo(id){
   const t=todos.find(x=>x.id===id);if(!t)return;
@@ -3139,22 +3137,32 @@ function openSchemaTask(id){
   const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
   const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
   const day=t.schema_datum||currentScheduledDay(id);
+  const projOpts='<option value="">– Inget projekt –</option>'+projects.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(p=>`<option value="${p.id}"${t.project_id===p.id?" selected":""}>${e(p.namn)}</option>`).join("");
   document.getElementById("schema-task-body").innerHTML=`
     <div style="font-size:17px;font-weight:600;margin-bottom:8px">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>
     <div class="ig" style="margin-bottom:14px">
       <div class="ii"><label>Prioritet</label><span>${e(t.prioritet||"Medium")}</span></div>
       <div class="ii"><label>Deadline</label><span>${t.due_date?e(t.due_date):"–"}</span></div>
-      <div class="ii"><label>Inplanerad dag</label><span>${e(day)}</span></div>
       ${co?`<div class="ii"><label>Bolag</label><span>${e(co.namn)}</span></div>`:""}
       ${c?`<div class="ii"><label>Kontakt</label><span>${e(c.fornamn)} ${e(c.efternamn)}</span></div>`:""}
+    </div>
+    <div class="fg" style="margin-bottom:14px">
+      <div class="fl"><label>Inplanerad dag</label><input type="date" id="st-date" value="${e(day)}" onchange="setSchemaDate('${t.id}',this.value)"></div>
+      <div class="fl"><label>Koppla projekt</label><select id="st-proj" onchange="setSchemaProject('${t.id}',this.value)">${projOpts}</select></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary btn-sm" onclick="startSchemaTask('${t.id}')">▶ Starta &amp; logga tid</button>
       <button class="btn btn-green btn-sm" onclick="finishSchemaTask('${t.id}')">✓ Markera klar</button>
-      <button class="btn btn-outline btn-sm" onclick="closeM('m-schema-task');moveSchemaTodo('${t.id}',-1)">← Dag före</button>
-      <button class="btn btn-outline btn-sm" onclick="closeM('m-schema-task');moveSchemaTodo('${t.id}',1)">Dag efter →</button>
+      <button class="btn btn-outline btn-sm" onclick="openEditTodo('${t.id}');closeM('m-schema-task')">✎ Redigera</button>
     </div>`;
   openM("m-schema-task");
+}
+async function setSchemaProject(id,pid){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.project_id=pid||null;
+  await sb.from("todos").update({project_id:t.project_id}).eq("id",id);
+  toast(pid?"Kopplat till projekt ✓":"Projektkoppling borttagen");
+  renderSchema();
 }
 async function finishSchemaTask(id){
   closeM("m-schema-task");
@@ -3171,12 +3179,13 @@ function startSchemaTask(id){
 
 
 const PI_MAP={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
-function schemaTaskChip(t,showMove){
+function schemaTaskChip(t,showDate){
   const co=t.company_id?companies.find(c=>c.id===t.company_id):null;
   const od=t.due_date&&t.due_date<fmtD(schemaToday());
-  return`<div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border:1px solid var(--cream);border-radius:6px;margin-bottom:4px;background:#fff">
+  const day=t.schema_datum||currentScheduledDay(t.id);
+  return`<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--cream);border-radius:6px;margin-bottom:4px;background:#fff">
     <div style="flex:1;min-width:0;cursor:pointer" onclick="openSchemaTask('${t.id}')"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${t.due_date||co?`<div style="font-size:10px;color:${od?"var(--red)":"#888"}">${t.due_date?"📅"+e(t.due_date):""}${co?" 🏢"+e(co.namn):""}</div>`:""}</div>
-    ${showMove?`<button class="btn-icon" title="Dag före" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',-1)" style="font-size:11px">←</button><button class="btn-icon" title="Dag efter" onclick="event.stopPropagation();moveSchemaTodo('${t.id}',1)" style="font-size:11px">→</button>`:""}
+    ${showDate?`<input type="date" value="${e(day)}" onchange="setSchemaDate('${t.id}',this.value)" title="Välj dag" style="font-size:11px;width:130px;padding:2px 4px">`:""}
   </div>`;
 }
 
@@ -3202,6 +3211,11 @@ function renderSchema(){
     <div style="flex:1"></div>
     <button class="btn btn-green btn-sm" onclick="exportScheduleICS('today')">📲 Dagens till kalender</button>
     <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">📲 Hela schemat</button>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <select onchange="schemaFilterCo=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterCo===""?" selected":""}>Alla bolag</option><option value="__none__"${schemaFilterCo==="__none__"?" selected":""}>Utan bolag</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${schemaFilterCo===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+    <select onchange="schemaFilterProj=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterProj===""?" selected":""}>Alla projekt</option><option value="__none__"${schemaFilterProj==="__none__"?" selected":""}>Utan projekt</option>${projects.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(p=>`<option value="${p.id}"${schemaFilterProj===p.id?" selected":""}>${e(p.namn)}</option>`).join("")}</select>
+    ${(schemaFilterCo||schemaFilterProj)?`<button class="btn btn-outline btn-sm" onclick="schemaFilterCo='';schemaFilterProj='';renderSchema()">Rensa filter</button>`:""}
   </div>`;
 
   let grid="";
