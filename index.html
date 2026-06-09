@@ -1936,8 +1936,42 @@ function renderSignals(){
       <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
     </td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>';
 }
-function openNewSignal(){fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";const sf=document.getElementById("sig-fast");if(sf)sf.checked=false;document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url","sig-fritt","sig-efter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});openM("m-signal");}
-async function saveSignal(){const coid=document.getElementById("sig-coid").value,rubrik=v("sig-rubrik");const fritt=v("sig-fritt");if(!rubrik){toast("Rubrik krävs");return;}if(!coid&&!fritt){toast("Välj bolag eller ange fritt kundnamn");return;}const r=await sb.from("company_signals").insert({user_id:me.id,company_id:coid||null,fritt_namn:fritt||null,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),efterfragar:v("sig-efter")||null,kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,ar_fastanstallning:document.getElementById("sig-fast")?.checked||false,status:"ny"});if(r.error){alert(r.error.message);return;}closeM("m-signal");toast("Signal sparad");await loadAll();}
+let editSignalId=null;
+function openNewSignal(){editSignalId=null;fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";const sf=document.getElementById("sig-fast");if(sf)sf.checked=false;document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url","sig-fritt","sig-efter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});const h=document.querySelector("#m-signal .mhdr h2");if(h)h.textContent="Ny signal / lead";openM("m-signal");}
+async function createCompanyFromLead(sigId){
+  const s=signals.find(x=>x.id===sigId);if(!s||!s.fritt_namn)return;
+  confirm2(`Skapa bolaget "${s.fritt_namn}" och koppla leadet dit?`,async()=>{
+    const cr=await sb.from("companies").insert({user_id:me.id,namn:s.fritt_namn,land:"Sverige",pipeline_status:"Watchlist",anteckningar:"Skapad från manuellt lead."}).select("id").single();
+    if(cr.error){alert(cr.error.message);return;}
+    const ur=await sb.from("company_signals").update({company_id:cr.data.id,fritt_namn:null}).eq("id",sigId);
+    if(ur.error){alert(ur.error.message);return;}
+    toast("Bolag skapat och kopplat ✓");
+    closeM("m-lead");await loadAll();
+  });
+}
+function openEditSignal(id){
+  const s=signals.find(x=>x.id===id);if(!s)return;
+  editSignalId=id;fillSelects();
+  document.getElementById("sig-coid").value=s.company_id||"";
+  document.getElementById("sig-fritt").value=s.fritt_namn||"";
+  document.getElementById("sig-typ").value=s.signal_typ||"manuell";
+  document.getElementById("sig-styrka").value=String(s.signal_styrka||1);
+  const sf=document.getElementById("sig-fast");if(sf)sf.checked=!!s.ar_fastanstallning;
+  document.getElementById("sig-datum").value=s.signal_datum||today();
+  document.getElementById("sig-rubrik").value=s.rubrik||"";
+  document.getElementById("sig-beskr").value=s.beskrivning||"";
+  document.getElementById("sig-efter").value=s.efterfragar||"";
+  document.getElementById("sig-kalla").value=s.kalla||"";
+  document.getElementById("sig-url").value=s.kalla_url||"";
+  const h=document.querySelector("#m-signal .mhdr h2");if(h)h.textContent="Redigera lead";
+  closeM("m-lead");openM("m-signal");
+}
+async function saveSignal(){const coid=document.getElementById("sig-coid").value,rubrik=v("sig-rubrik");const fritt=v("sig-fritt");if(!rubrik){toast("Rubrik krävs");return;}if(!coid&&!fritt){toast("Välj bolag eller ange fritt kundnamn");return;}
+  const data={company_id:coid||null,fritt_namn:fritt||null,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),efterfragar:v("sig-efter")||null,kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,ar_fastanstallning:document.getElementById("sig-fast")?.checked||false};
+  const r=editSignalId?await sb.from("company_signals").update(data).eq("id",editSignalId):await sb.from("company_signals").insert({...data,user_id:me.id,status:"ny"});
+  if(r.error){alert(r.error.message);return;}
+  closeM("m-signal");toast(editSignalId?"Lead uppdaterat ✓":"Signal sparad");editSignalId=null;await loadAll();}
+async function saveSignal_OLD_REMOVED(){return;}
 async function setSigStatus(id,status){await sb.from("company_signals").update({status}).eq("id",id);toast("Uppdaterad");await loadAll();}
 function deleteSignal(id){confirm2("Ta bort signalen permanent?",async()=>{const r=await sb.from("company_signals").delete().eq("id",id);if(r.error){alert(r.error.message);return;}toast("Signal raderad");await loadAll();});}
 
@@ -4520,9 +4554,10 @@ function openLead(sigId){
     <div style="background:var(--accent);color:#fff;padding:16px 22px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="flex:1">
-          <h3 style="font-family:'DM Serif Display',serif;font-size:18px">${e(co?.namn||s.companies?.namn||"")}</h3>
+          <h3 style="font-family:'DM Serif Display',serif;font-size:18px">${e(co?.namn||sigName(s))}</h3>
           <p style="opacity:.7;font-size:13px;margin-top:3px">${e([co?.bransch,co?.stad,co?.land].filter(Boolean).join(" · "))}</p>
         </div>
+        <button class="btn btn-outline btn-xs" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="openEditSignal('${s.id}')">✎ Redigera</button>
         <span class="badge" style="background:rgba(255,255,255,.2);color:#fff">${sigLabel(s.signal_typ)}</span>
         ${"★".repeat(s.signal_styrka||1)}
         <span class="badge" style="background:${s.ar_fastanstallning?"rgba(255,255,255,.35)":"rgba(255,255,255,.12)"};color:#fff;cursor:pointer" onclick="toggleFastLead('${s.id}')" title="Klicka för att växla">${s.ar_fastanstallning?"🔒 Fastanställning":"🔓 Markera som fast"}</span>
@@ -4558,7 +4593,7 @@ function openLead(sigId){
             <button class="btn btn-outline btn-sm" onclick="closeM('m-lead');openCompanyCard('${co.id}')">Öppna bolagskort</button>
             <button class="btn btn-primary btn-sm" onclick="movePipeline('${co.id}')">Flytta i pipeline</button>
           </div>
-        `:`<p style="color:#aaa;font-size:13px">Bolag ej kopplat</p><button class="btn btn-primary btn-sm" onclick="closeM('m-lead');openNewCompany('${e(s.companies?.namn||"")}')">+ Skapa bolag</button>`}
+        `:s.fritt_namn?`<p style="color:#aaa;font-size:13px;margin-bottom:8px">Fristående lead (inget bolag): <strong>${e(s.fritt_namn)}</strong></p><button class="btn btn-primary btn-sm" onclick="createCompanyFromLead('${s.id}')">+ Skapa bolag "${e(s.fritt_namn)}"</button><button class="btn btn-outline btn-sm" style="margin-left:6px" onclick="openEditSignal('${s.id}')">Koppla befintligt bolag</button>`:`<p style="color:#aaa;font-size:13px">Bolag ej kopplat</p><button class="btn btn-primary btn-sm" onclick="closeM('m-lead');openNewCompany('${e(s.companies?.namn||"")}')">+ Skapa bolag</button>`}
       </div>
 
       <!-- KONTAKTER -->
