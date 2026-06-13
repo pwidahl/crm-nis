@@ -1359,7 +1359,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -1420,6 +1420,47 @@ function renderDashboard(){
 }
 
 function getDashHidden(){try{return JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{return [];}}
+function nextStepHtml(){
+  const td=today();
+  const cands=[];
+  // försenade uppföljningar (kontakter)
+  contacts.forEach(c=>{
+    if(c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td){
+      const overdueDays=Math.round((new Date(td)-new Date(c.nasta_foljup))/86400000);
+      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:"Logga kontakt",act:`openLogModal('${c.id}')`});
+    }
+  });
+  // försenade tasks
+  tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<td).forEach(t=>{
+    const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
+    cands.push({urg:900+overdueDays,icon:"✓",txt:t.title,sub:`task försenad ${overdueDays} dagar`,btn:"Till tasks",act:`gotoView('tasks')`});
+  });
+  // försenade todos
+  todos.filter(t=>!t.done&&t.due_date&&t.due_date<td).forEach(t=>{
+    const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
+    const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
+    cands.push({urg:800+overdueDays+pw,icon:"✅",txt:t.text,sub:`todo försenad ${overdueDays} dagar`,btn:"Öppna todo",act:`openTodo()`});
+  });
+  // todos med deadline idag (hög prio)
+  todos.filter(t=>!t.done&&t.due_date===td).forEach(t=>{
+    const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
+    cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:"deadline idag",btn:"Öppna todo",act:`openTodo()`});
+  });
+  if(!cands.length){
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#f0f7f0,#fff);border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:12px"><span style="font-size:20px">✨</span><div style="flex:1"><div style="font-weight:600;font-size:14px">Allt under kontroll</div><div style="font-size:12px;color:#888">Inget försenat eller akut just nu – bra jobbat!</div></div></div>`;
+  }
+  cands.sort((a,b)=>b.urg-a.urg);
+  const top=cands[0];
+  return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#fdf3e7,#fff);border:1px solid var(--cream);border-left:4px solid var(--warm);border-radius:var(--r);margin-bottom:12px">
+    <span style="font-size:22px">${top.icon}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--warm);font-weight:600;margin-bottom:2px">Nästa steg${cands.length>1?` · ${cands.length} saker väntar`:""}</div>
+      <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(top.txt)}</div>
+      <div style="font-size:12px;color:#888">${e(top.sub)}</div>
+    </div>
+    <button class="btn btn-warm btn-sm" style="white-space:nowrap" onclick="${top.act}">${e(top.btn)} →</button>
+  </div>`;
+}
 function upcomingBirthdays(within){
   const today=new Date();today.setHours(0,0,0,0);
   const res=[];
