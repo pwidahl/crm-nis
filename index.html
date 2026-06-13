@@ -931,6 +931,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-schema-task"><div class="modal" style="width:420px"><div class="mhdr"><h2>Uppgift</h2><button class="mclose" onclick="closeM('m-schema-task')">×</button></div><div class="mbody" id="schema-task-body"></div></div></div>
 
+<div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()">Spara</button></div></div></div>
+
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
     <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
@@ -1203,7 +1205,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1391,10 +1393,11 @@ function renderDashboard(){
     tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
     todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
     goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`,
-    schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;}
+    schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🔗 Snabblänkar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">+ Lägg till</button></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
-  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål",schema:"🗓️ Arbetsschema"};
-  const order=["fups","leads","konsult","tasks","todo","schema","goals"];
+  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar"};
+  const order=["fups","leads","konsult","tasks","todo","schema","goals","links"];
   const hidden=getDashHidden();
   const visible=order.filter(k=>!hidden.includes(k));
 
@@ -1410,6 +1413,22 @@ function renderDashboard(){
 }
 
 function getDashHidden(){try{return JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{return [];}}
+function openAddQuickLink(){document.getElementById("ql-titel").value="";document.getElementById("ql-url").value="";openM("m-quicklink");}
+async function saveQuickLink(){
+  const titel=v("ql-titel");let url=v("ql-url");
+  if(!titel||!url){toast("Titel och URL krävs");return;}
+  if(!/^https?:\/\//i.test(url))url="https://"+url;
+  const r=await sb.from("quick_links").insert({user_id:me.id,titel,url,sort_order:quickLinks.length}).select("*").single();
+  if(r.error){alert(r.error.message);return;}
+  quickLinks.push(r.data);closeM("m-quicklink");toast("Länk tillagd ✓");renderDashboard();
+}
+function openQuickLink(id){const l=quickLinks.find(x=>x.id===id);if(l)window.open(l.url,"_blank","noopener");}
+function deleteQuickLink(id){
+  confirm2("Ta bort länken?",async()=>{
+    await sb.from("quick_links").delete().eq("id",id);
+    quickLinks=quickLinks.filter(x=>x.id!==id);renderDashboard();toast("Borttagen");
+  });
+}
 function setDashHidden(arr){try{localStorage.setItem("dashHidden",JSON.stringify(arr));}catch{}}
 function openDashCustomize(){
   const hidden=getDashHidden();const order=window._dashOrder||[];const labels=window._dashSecLabels||{};
@@ -4103,7 +4122,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");});});
@@ -4185,6 +4204,11 @@ function doExportContacts(){
 // ══ VECKOPLAN: edit existing entry on click ═══════════════════
 // ══ TODO ═════════════════════════════════════════════════════
 let todos = [];
+let quickLinks = [];
+async function loadQuickLinks(){
+  const r=await sb.from("quick_links").select("*").eq("user_id",me.id).order("sort_order",{ascending:true});
+  quickLinks=r.data||[];
+}
 
 async function loadTodos(){
   const r=await sb.from("todos").select("*").eq("user_id",me.id).order("created_at",{ascending:false});
