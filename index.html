@@ -936,7 +936,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()">Spara</button></div></div></div>
 
-<div class="overlay" id="m-checklist"><div class="modal" style="width:440px"><div class="mhdr"><h2>Checklista – steg</h2><button class="mclose" onclick="closeM('m-checklist')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:10px">Stegen gäller för alla underkonsulter. CV och kompetenser bockas automatiskt; Ponty-steget får en knapp som öppnar Ponty (lägg in Ponty som snabblänk först).</p><div id="cl-steps" style="margin-bottom:14px"></div><div class="fg"><div class="fl full"><label>Nytt steg</label><input id="cl-titel" placeholder="t.ex. Logga i Ponty"></div><div class="fl full"><label>Typ</label><select id="cl-typ"><option value="manuell">Manuell (bockas för hand)</option><option value="cv">CV uppladdat (auto)</option><option value="kompetenser">Kompetenser ifyllda (auto)</option><option value="ponty">Ponty (öppnar Ponty i nytt fönster)</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-checklist')">Stäng</button><button class="btn btn-primary" onclick="addChecklistStep()">+ Lägg till steg</button></div></div></div>
+
 
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
@@ -1401,9 +1401,9 @@ function renderDashboard(){
     schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🔗 Snabblänkar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">+ Lägg till</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     birthdays:()=>{const bd=upcomingBirthdays(60);const inner=bd.length?bd.map(({c,days,date})=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🎂 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")}${c.foretag?" · ":""}${days===0?"<strong style='color:var(--accent)'>idag!</strong>":days===1?"imorgon":"om "+days+" dagar"} (${e(date)})</div></div></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga födelsedagar inom 60 dagar.</p>';return`<div class="dash-sec week-sec" data-sec="birthdays" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎂 Kommande födelsedagar</h3></div><div style="padding:4px 14px">${inner}</div></div>`;},
-    tolog:()=>{if(!checklistSteps.length)return `<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0"><div class="week-sec-hdr"><h3>📋 Att föra in i Ponty</h3></div><div style="padding:4px 14px"><p style="color:#888;font-size:13px">Skapa checklist-steg på en underkonsult först.</p></div></div>`;const incomplete=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,kvar:checklistSteps.filter(st=>!stepIsDone(st,s.id))})).filter(x=>x.kvar.length>0);const inner=incomplete.length?incomplete.slice(0,10).map(({s,kvar})=>`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Kvar: ${kvar.map(k=>e(k.titel)).join(", ")}</div></div></div>`).join("")+(incomplete.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${incomplete.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${incomplete.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Att föra in i Ponty</h3><span style="font-size:12px;color:#888;margin-left:auto">${incomplete.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
+    tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
-  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Att föra in i Ponty",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar"};
+  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar"};
   const order=["fups","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays"];
   const hidden=getDashHidden();
   const visible=order.filter(k=>!hidden.includes(k));
@@ -3779,7 +3779,7 @@ function renderSubconsultants(){
     document.getElementById("subconsultants-content").innerHTML=`<div class="tw"><table><thead><tr><th>Namn</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Kompetenser</th><th></th></tr></thead><tbody>${focusSubs.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button></td></tr>`;}).join("")}</tbody></table></div>`;
     return;
   }
-  const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);});document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Namn</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Leads</th><th>Kompetenser</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";const matchN=signals.filter(sig=>matchScore(s.id,sig).count>0).length;const skBadges=sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`);const skShown=skBadges.slice(0,8).join("");const skRest=skBadges.length>8?`<span id="skmore-${s.id}" style="display:none">${skBadges.slice(8).join("")}</span> <span class="badge" id="skbtn-${s.id}" style="margin:1px;font-size:10px;cursor:pointer;background:var(--accent);color:#fff" onclick="event.stopPropagation();const m=document.getElementById('skmore-${s.id}');const b=document.getElementById('skbtn-${s.id}');if(m.style.display==='none'){m.style.display='inline';b.textContent='− visa färre';}else{m.style.display='none';b.textContent='+${skBadges.length-8} fler';}">+${skBadges.length-8} fler</span>`:"";return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openSubCard('${s.id}')">${e(s.fornamn)} ${e(s.efternamn)} ↗</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${matchN>0?`<span class="badge b-granskad" style="cursor:pointer" onclick="openSubCard('${s.id}')" title="Visa passande leads">${matchN} st</span>`:'<span style="color:#aaa">0</span>'}</td><td style="max-width:420px">${skShown}${skRest}</td><td><button class="btn-icon" title="Öppna kort" onclick="openSubCard('${s.id}')">↗</button><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter</p></div>';}
+  const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);});document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Namn</th><th>Process</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>Leads</th><th>Kompetenser</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";const matchN=signals.filter(sig=>matchScore(s.id,sig).count>0).length;const pr=subStepProgress(s.id);const prColor=pr.totalDone===pr.total?"var(--green)":"var(--gold)";const skBadges=sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`);const skShown=skBadges.slice(0,8).join("");const skRest=skBadges.length>8?`<span id="skmore-${s.id}" style="display:none">${skBadges.slice(8).join("")}</span> <span class="badge" id="skbtn-${s.id}" style="margin:1px;font-size:10px;cursor:pointer;background:var(--accent);color:#fff" onclick="event.stopPropagation();const m=document.getElementById('skmore-${s.id}');const b=document.getElementById('skbtn-${s.id}');if(m.style.display==='none'){m.style.display='inline';b.textContent='− visa färre';}else{m.style.display='none';b.textContent='+${skBadges.length-8} fler';}">+${skBadges.length-8} fler</span>`:"";return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openSubCard('${s.id}')">${e(s.fornamn)} ${e(s.efternamn)} ↗</strong></td><td><span class="badge" style="background:${prColor};color:#fff;font-size:10px" title="Process">${pr.totalDone}/${pr.total}</span></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${matchN>0?`<span class="badge b-granskad" style="cursor:pointer" onclick="openSubCard('${s.id}')" title="Visa passande leads">${matchN} st</span>`:'<span style="color:#aaa">0</span>'}</td><td style="max-width:420px">${skShown}${skRest}</td><td><button class="btn-icon" title="Öppna kort" onclick="openSubCard('${s.id}')">↗</button><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter</p></div>';}
 function openNewSub(){editSubId=null;document.getElementById("sub-modal-title").textContent="Ny underkonsult";["sb-fn","sb-en","sb-epost","sb-tel","sb-linkedin","sb-stad","sb-avfrom","sb-pricefrom","sb-priceto","sb-skills","sb-notes"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("sb-av").value="tillganglig";document.getElementById("sb-level").value="";openM("m-sub");}
 function openEditSub(id){const s=subs.find(x=>x.id===id);if(!s)return;editSubId=id;document.getElementById("sub-modal-title").textContent="Redigera";[["sb-fn","fornamn"],["sb-en","efternamn"],["sb-epost","epost"],["sb-tel","telefon"],["sb-linkedin","linkedin"],["sb-stad","stad"],["sb-av","tillganglighet"],["sb-avfrom","tillganglig_fran"],["sb-pricefrom","dagspris_fran"],["sb-priceto","dagspris_till"],["sb-level","arvodesniva"],["sb-notes","anteckningar"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=s[field]||"";});document.getElementById("sb-skills").value=subSkills.filter(k=>k.subconsultant_id===id).map(k=>k.kompetens).join(", ");openM("m-sub");}
 async function saveSub(){const fn=v("sb-fn"),en=v("sb-en");if(!fn||!en){toast("Namn krävs");return;}const data={user_id:me.id,fornamn:fn,efternamn:en,epost:v("sb-epost"),telefon:v("sb-tel"),linkedin:v("sb-linkedin"),stad:v("sb-stad"),tillganglighet:document.getElementById("sb-av").value,tillganglig_fran:document.getElementById("sb-avfrom").value||null,dagspris_fran:numv("sb-pricefrom"),dagspris_till:numv("sb-priceto"),arvodesniva:document.getElementById("sb-level").value||null,anteckningar:v("sb-notes")};let sid=editSubId,r;if(editSubId)r=await sb.from("subconsultants").update(data).eq("id",editSubId).select("id").single();else r=await sb.from("subconsultants").insert(data).select("id").single();if(r.error){alert(r.error.message);return;}sid=r.data.id;await sb.from("subconsultant_skills").delete().eq("subconsultant_id",sid);const sk=v("sb-skills").split(",").map(x=>x.trim()).filter(Boolean);if(sk.length)await sb.from("subconsultant_skills").insert(sk.map(k=>({user_id:me.id,subconsultant_id:sid,kompetens:k,niva:"avancerad"})));closeM("m-sub");toast("Sparad");await loadAll();}
@@ -4149,7 +4149,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-checklist"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");});});
@@ -4420,59 +4420,59 @@ async function togglePonty(kind,id){
 function pontyBadge(kind,o){
   return `<button class="btn btn-outline btn-sm" onclick="togglePonty('${kind}','${o.id}')" style="${o.i_ponty?'color:var(--green);border-color:var(--green)':'color:var(--gold);border-color:var(--gold)'}">${o.i_ponty?"✓ Införd i Ponty":"⚠ Ej i Ponty"}</button>`;
 }
-// ── Checklista per underkonsult ──
-function stepIsDone(step,subId){
+// ── Fast checklista (5 steg) för alla underkonsulter ──
+const PONTY_STEPS=[
+  {key:"forsta_kontakt",titel:"Första kontakt",typ:"manuell"},
+  {key:"cv",titel:"Spara CV",typ:"cv"},
+  {key:"kompetenser",titel:"Logga kompetenser",typ:"kompetenser"},
+  {key:"lunch",titel:"Lunch/digital träff",typ:"manuell"},
+  {key:"ponty",titel:"Logga i Ponty",typ:"ponty"}
+];
+function stepDoneByKey(key,subId){
   const sub=subs.find(s=>s.id===subId);
-  if(step.typ==="cv")return !!sub?.cv_path;
-  if(step.typ==="kompetenser")return subSkillList(subId).length>0;
-  return checklistDone.some(d=>d.step_id===step.id&&d.subconsultant_id===subId&&d.done);
+  if(key==="cv")return !!sub?.cv_path;
+  if(key==="kompetenser")return subSkillList(subId).length>0;
+  return checklistDone.some(d=>d.step_key===key&&d.subconsultant_id===subId&&d.done);
+}
+function subStepProgress(subId){
+  // högsta sammanhängande klara steg i ordning
+  let done=0;for(const st of PONTY_STEPS){if(stepDoneByKey(st.key,subId))done++;else break;}
+  const totalDone=PONTY_STEPS.filter(st=>stepDoneByKey(st.key,subId)).length;
+  return {seq:done,total:PONTY_STEPS.length,totalDone};
 }
 function pontyLink(){return quickLinks.find(l=>/ponty/i.test(l.titel))||null;}
+function stepBarHtml(subId){
+  return `<div style="display:flex;gap:4px;margin:4px 0">${PONTY_STEPS.map((st,i)=>{const d=stepDoneByKey(st.key,subId);return `<div title="${e(st.titel)}" style="flex:1;height:6px;border-radius:3px;background:${d?'var(--green)':'var(--cream)'}"></div>`;}).join("")}</div>`;
+}
 function checklistHtml(subId){
-  if(!checklistSteps.length)return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Checklista</div><p style="color:#aaa;font-size:13px">Inga steg definierade än. <button class="btn btn-outline btn-xs" onclick="openChecklistSettings()">Skapa steg</button></p></div>`;
-  const done=checklistSteps.filter(st=>stepIsDone(st,subId)).length;
-  const rows=checklistSteps.map(st=>{
-    const d=stepIsDone(st,subId);
+  const {totalDone,total}=subStepProgress(subId);
+  const rows=PONTY_STEPS.map(st=>{
+    const d=stepDoneByKey(st.key,subId);
     const auto=st.typ==="cv"||st.typ==="kompetenser";
     const pl=st.typ==="ponty"?pontyLink():null;
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)">
-      <span style="cursor:${auto?'default':'pointer'};font-size:15px" ${auto?'':`onclick="toggleChecklistStep('${st.id}','${subId}')"`} title="${auto?'Bockas automatiskt':'Klicka för att bocka'}">${d?"✅":"⬜"}</span>
+      <span style="cursor:${auto?'default':'pointer'};font-size:15px" ${auto?'':`onclick="toggleStep('${st.key}','${subId}')"`} title="${auto?'Bockas automatiskt':'Klicka för att bocka'}">${d?"✅":"⬜"}</span>
       <span style="flex:1;font-size:13px;${d?'color:#999':''}">${e(st.titel)}${auto?' <span style="font-size:10px;color:#bbb">(auto)</span>':''}</span>
       ${pl?`<button class="btn btn-warm btn-xs" onclick="window.open('${e(pl.url)}','_blank','noopener')">Öppna Ponty ↗</button>`:""}
       ${st.typ==="ponty"&&!pl?`<span style="font-size:10px;color:var(--gold)">Lägg in Ponty som snabblänk</span>`:""}
     </div>`;
   }).join("");
   return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">📋 Checklista (${done}/${checklistSteps.length})</div><button class="btn-icon" title="Hantera steg" onclick="openChecklistSettings()">⚙</button></div>
-    ${rows}
+    <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">📋 Process – Steg ${totalDone}/${total}</div>
+    ${stepBarHtml(subId)}
+    <div style="margin-top:8px">${rows}</div>
   </div>`;
 }
-async function toggleChecklistStep(stepId,subId){
-  const existing=checklistDone.find(d=>d.step_id===stepId&&d.subconsultant_id===subId);
+async function toggleStep(key,subId){
+  const existing=checklistDone.find(d=>d.step_key===key&&d.subconsultant_id===subId);
   if(existing){
     checklistDone=checklistDone.filter(d=>d!==existing);
     await sb.from("checklist_done").delete().eq("id",existing.id);
   }else{
-    const r=await sb.from("checklist_done").insert({user_id:me.id,subconsultant_id:subId,step_id:stepId,done:true}).select("*").single();
+    const r=await sb.from("checklist_done").insert({user_id:me.id,subconsultant_id:subId,step_key:key,done:true}).select("*").single();
     if(!r.error)checklistDone.push(r.data);
   }
   openSubCard(subId);
-}
-function openChecklistSettings(){
-  document.getElementById("cl-steps").innerHTML=checklistSteps.length?checklistSteps.map(st=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)"><span style="flex:1;font-size:13px">${e(st.titel)} <span style="font-size:10px;color:#bbb">${st.typ!=="manuell"?"("+st.typ+")":""}</span></span><button class="btn-icon" style="color:var(--red)" onclick="deleteChecklistStep('${st.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga steg ännu.</p>';
-  openM("m-checklist");
-}
-async function addChecklistStep(){
-  const titel=v("cl-titel");if(!titel){toast("Skriv ett stegnamn");return;}
-  const typ=v("cl-typ")||"manuell";
-  const r=await sb.from("checklist_steps").insert({user_id:me.id,titel,typ,sort_order:checklistSteps.length}).select("*").single();
-  if(r.error){alert(r.error.message);return;}
-  checklistSteps.push(r.data);document.getElementById("cl-titel").value="";openChecklistSettings();
-}
-async function deleteChecklistStep(id){
-  checklistSteps=checklistSteps.filter(s=>s.id!==id);
-  await sb.from("checklist_steps").delete().eq("id",id);
-  openChecklistSettings();
 }
 function renderTodoList(){
   const el=document.getElementById('todo-list');if(!el)return;
