@@ -2850,24 +2850,35 @@ function deleteKBById(id,fromModal){
 
 // ══ CV / ERFARENHETSBANK ═════════════════════════════════════
 function cvBuildData(){
-  // gruppera projekt per bolag, nyast först inom varje bolag
+  // gruppera projekt per bolag, sedan per roll inom bolaget
   const groups={};
   projects.forEach(p=>{
     const co=projCompany(p);
-    const key=co?.id||"__ingen__";
-    if(!groups[key])groups[key]={kund:co?.namn||"Utan kund",land:co?.land||"",projs:[]};
+    const key=co?.id||(p.fritt_namn?"fritt:"+p.fritt_namn:"__ingen__");
+    if(!groups[key])groups[key]={kund:co?.namn||p.fritt_namn||"Utan kund",land:co?.land||"",items:[]};
     const cl=closeouts.find(x=>x.project_id===p.id)||{};
-    const period=[p.start_date,p.end_date].filter(Boolean).join(" – ")||"Pågående";
-    groups[key].projs.push({
-      namn:p.namn,roll:p.uppdragstyp||"",period,start:p.start_date||"",
+    groups[key].items.push({
+      namn:p.namn,roll:p.uppdragstyp||"Uppdrag",start:p.start_date||"",end:p.end_date||"",
       scope:p.scope||"",delivered:cl.delivered||"",problems:cl.problems_solved||"",
       lessons:cl.lessons_learned||"",status:p.status
     });
   });
-  // sortera projekt inom bolag (nyast först) och bolag efter senaste projekt
   const companyRows=Object.values(groups).map(g=>{
-    g.projs.sort((a,b)=>String(b.start).localeCompare(String(a.start)));
-    g.senaste=g.projs[0]?.start||"";
+    // bolagets samlade period: tidigaste start → senaste slut (eller Pågående)
+    const starts=g.items.map(i=>i.start).filter(Boolean).sort();
+    const ends=g.items.map(i=>i.end).filter(Boolean).sort();
+    const anyOngoing=g.items.some(i=>!i.end||i.status!=="Avslutad");
+    const firstStart=starts[0]||"";
+    const lastEnd=anyOngoing?"Pågående":(ends[ends.length-1]||"");
+    g.period=firstStart?(firstStart+" – "+(lastEnd||"Pågående")):(anyOngoing?"Pågående":"");
+    g.senaste=starts[starts.length-1]||"";
+    // gruppera på roll
+    const roleMap={};
+    g.items.forEach(it=>{const r=it.roll||"Uppdrag";if(!roleMap[r])roleMap[r]={roll:r,tasks:[]};roleMap[r].tasks.push(it);});
+    g.roles=Object.values(roleMap).map(rm=>{
+      rm.tasks.sort((a,b)=>String(b.start).localeCompare(String(a.start)));
+      return rm;
+    });
     return g;
   }).sort((a,b)=>String(b.senaste).localeCompare(String(a.senaste)));
   const roller=[...new Set(projects.map(p=>p.uppdragstyp).filter(Boolean))];
@@ -2891,18 +2902,18 @@ function renderCV(){
 
       ${companyRows.map(g=>`
         <div style="margin-bottom:24px;page-break-inside:avoid">
-          <h2 style="font-family:'DM Serif Display',serif;font-size:19px;border-bottom:1px solid var(--cream);padding-bottom:5px;margin-bottom:12px">${flag(g.land)} ${e(g.kund)}</h2>
-          ${g.projs.map(r=>`
+          <h2 style="font-family:'DM Serif Display',serif;font-size:19px;border-bottom:1px solid var(--cream);padding-bottom:5px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><span>${flag(g.land)} ${e(g.kund)}</span>${g.period?`<span style="font-size:12px;color:#888;font-family:inherit;font-weight:400">${e(g.period)}</span>`:""}</h2>
+          ${g.roles.map(rm=>`
             <div style="margin-bottom:14px;padding-left:4px">
-              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
-                <h3 style="font-size:15px;font-weight:600">${e(r.roll||r.namn)}</h3>
-                <span style="font-size:12px;color:#888;white-space:nowrap">${e(r.period)}</span>
-              </div>
-              ${r.namn&&r.namn!==r.roll?`<div style="font-size:13px;color:#555;margin-top:2px">${e(r.namn)}</div>`:""}
-              ${r.scope?`<div style="font-size:13px;line-height:1.6;margin-top:6px">${e(r.scope)}</div>`:""}
-              ${r.delivered?`<div style="font-size:13px;line-height:1.6;margin-top:6px"><strong>Levererade:</strong> ${e(r.delivered)}</div>`:""}
-              ${r.problems?`<div style="font-size:13px;line-height:1.6;margin-top:4px"><strong>Löste:</strong> ${e(r.problems)}</div>`:""}
-              ${r.lessons?`<div style="font-size:13px;line-height:1.6;margin-top:4px;color:#666"><em>Lärdomar: ${e(r.lessons)}</em></div>`:""}
+              <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">${e(rm.roll)}</h3>
+              ${rm.tasks.map(t=>`
+                <div style="margin:4px 0 8px 0;padding-left:10px;border-left:2px solid var(--cream)">
+                  <div style="font-size:13px;font-weight:600">${e(t.namn)}${t.namn!==rm.roll&&t.status?`<span style="font-weight:400;color:#888;font-size:12px"> · ${e(t.status)}</span>`:""}</div>
+                  ${t.scope?`<div style="font-size:13px;line-height:1.6;margin-top:3px">${e(t.scope)}</div>`:""}
+                  ${t.delivered?`<div style="font-size:13px;line-height:1.6;margin-top:3px"><strong>Levererade:</strong> ${e(t.delivered)}</div>`:""}
+                  ${t.problems?`<div style="font-size:13px;line-height:1.6;margin-top:2px"><strong>Löste:</strong> ${e(t.problems)}</div>`:""}
+                  ${t.lessons?`<div style="font-size:13px;line-height:1.6;margin-top:2px;color:#666"><em>Lärdomar: ${e(t.lessons)}</em></div>`:""}
+                </div>`).join("")}
             </div>`).join("")}
         </div>`).join("")}
     </div>
@@ -2927,14 +2938,16 @@ async function exportCVDocx(){
   body+=`<p><b>Roller:</b> ${roller.map(esc).join(" · ")||"–"}</p>`;
   body+=`<p><b>Kunder (${kunder.length}):</b> ${kunder.map(esc).join(" · ")||"–"}</p><hr>`;
   companyRows.forEach(g=>{
-    body+=`<h2 style="font-size:17px;margin-bottom:4px">${esc(g.kund)}</h2>`;
-    g.projs.forEach(r=>{
-      body+=`<h3 style="font-size:14px;margin-bottom:0">${esc(r.roll||r.namn)}</h3>`;
-      body+=`<p style="color:#666;margin-top:2px"><i>${esc(r.period)}</i>${r.namn&&r.namn!==r.roll?` · ${esc(r.namn)}`:""}</p>`;
-      if(r.scope)body+=`<p>${esc(r.scope)}</p>`;
-      if(r.delivered)body+=`<p><b>Levererade:</b> ${esc(r.delivered)}</p>`;
-      if(r.problems)body+=`<p><b>Löste:</b> ${esc(r.problems)}</p>`;
-      if(r.lessons)body+=`<p><i>Lärdomar: ${esc(r.lessons)}</i></p>`;
+    body+=`<h2 style="font-size:17px;margin-bottom:0">${esc(g.kund)}${g.period?` <span style="font-size:12px;color:#666;font-weight:normal">(${esc(g.period)})</span>`:""}</h2>`;
+    g.roles.forEach(rm=>{
+      body+=`<h3 style="font-size:14px;margin-bottom:2px">${esc(rm.roll)}</h3>`;
+      rm.tasks.forEach(t=>{
+        body+=`<p style="margin:2px 0"><b>${esc(t.namn)}</b>${t.status?` · ${esc(t.status)}`:""}</p>`;
+        if(t.scope)body+=`<p style="margin:2px 0">${esc(t.scope)}</p>`;
+        if(t.delivered)body+=`<p style="margin:2px 0"><b>Levererade:</b> ${esc(t.delivered)}</p>`;
+        if(t.problems)body+=`<p style="margin:2px 0"><b>Löste:</b> ${esc(t.problems)}</p>`;
+        if(t.lessons)body+=`<p style="margin:2px 0"><i>Lärdomar: ${esc(t.lessons)}</i></p>`;
+      });
     });
     body+=`<br>`;
   });
