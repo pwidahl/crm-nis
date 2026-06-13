@@ -936,6 +936,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-checklist"><div class="modal" style="width:440px"><div class="mhdr"><h2>Checklista – steg</h2><button class="mclose" onclick="closeM('m-checklist')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:10px">Stegen gäller för alla underkonsulter. CV och kompetenser bockas automatiskt; Ponty-steget får en knapp som öppnar Ponty (lägg in Ponty som snabblänk först).</p><div id="cl-steps" style="margin-bottom:14px"></div><div class="fg"><div class="fl full"><label>Nytt steg</label><input id="cl-titel" placeholder="t.ex. Logga i Ponty"></div><div class="fl full"><label>Typ</label><select id="cl-typ"><option value="manuell">Manuell (bockas för hand)</option><option value="cv">CV uppladdat (auto)</option><option value="kompetenser">Kompetenser ifyllda (auto)</option><option value="ponty">Ponty (öppnar Ponty i nytt fönster)</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-checklist')">Stäng</button><button class="btn btn-primary" onclick="addChecklistStep()">+ Lägg till steg</button></div></div></div>
+
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
     <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
@@ -1208,7 +1210,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1399,7 +1401,7 @@ function renderDashboard(){
     schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🔗 Snabblänkar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">+ Lägg till</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     birthdays:()=>{const bd=upcomingBirthdays(60);const inner=bd.length?bd.map(({c,days,date})=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🎂 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")}${c.foretag?" · ":""}${days===0?"<strong style='color:var(--accent)'>idag!</strong>":days===1?"imorgon":"om "+days+" dagar"} (${e(date)})</div></div></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga födelsedagar inom 60 dagar.</p>';return`<div class="dash-sec week-sec" data-sec="birthdays" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎂 Kommande födelsedagar</h3></div><div style="padding:4px 14px">${inner}</div></div>`;},
-    tolog:()=>{const noContacts=contacts.filter(c=>!c.i_ponty&&c.ar_aktiv!==false&&c.status!=="Inaktiv");const noSubs=subs.filter(s=>!s.i_ponty&&s.status!=="Arkiverad");const total=noContacts.length+noSubs.length;const rows=[...noSubs.map(s=>`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Underkonsult</div></div><button class="btn-icon" title="Markera införd" onclick="event.stopPropagation();togglePonty('sub','${s.id}')">✓</button></div>`),...noContacts.map(c=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">👤 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"Kontakt")}</div></div><button class="btn-icon" title="Markera införd" onclick="event.stopPropagation();togglePonty('contact','${c.id}')">✓</button></div>`)];const inner=total?rows.slice(0,10).join("")+(total>10?`<div class="week-row" style="color:#888;font-size:12px">+${total-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Allt är infört i Ponty 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${total?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Att föra in i Ponty</h3><span style="font-size:12px;color:#888;margin-left:auto">${total} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
+    tolog:()=>{if(!checklistSteps.length)return `<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0"><div class="week-sec-hdr"><h3>📋 Att föra in i Ponty</h3></div><div style="padding:4px 14px"><p style="color:#888;font-size:13px">Skapa checklist-steg på en underkonsult först.</p></div></div>`;const incomplete=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,kvar:checklistSteps.filter(st=>!stepIsDone(st,s.id))})).filter(x=>x.kvar.length>0);const inner=incomplete.length?incomplete.slice(0,10).map(({s,kvar})=>`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Kvar: ${kvar.map(k=>e(k.titel)).join(", ")}</div></div></div>`).join("")+(incomplete.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${incomplete.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${incomplete.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Att föra in i Ponty</h3><span style="font-size:12px;color:#888;margin-left:auto">${incomplete.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
   const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Att föra in i Ponty",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar"};
   const order=["fups","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays"];
@@ -3834,7 +3836,7 @@ function openSubCard(id){
         ${s.cv_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(s.cv_path)}')">Öppna CV</button>`:""}
         <button class="btn btn-primary btn-sm" onclick="openCvUpload('${id}')">${s.cv_path?"Ladda upp nytt":"Ladda upp CV (PDF)"}</button>
       </div>
-      <div style="margin-top:12px">${pontyBadge("sub",s)}</div>
+      ${checklistHtml(id)}
       ${cardTodoHtml("sub",id)}
     </div>
     <div class="ctpane" id="csub-acts">
@@ -4147,7 +4149,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-checklist"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");});});
@@ -4230,6 +4232,15 @@ function doExportContacts(){
 // ══ TODO ═════════════════════════════════════════════════════
 let todos = [];
 let quickLinks = [];
+let checklistSteps = [];
+let checklistDone = [];
+async function loadChecklist(){
+  const [a,b]=await Promise.all([
+    sb.from("checklist_steps").select("*").eq("user_id",me.id).order("sort_order",{ascending:true}),
+    sb.from("checklist_done").select("*").eq("user_id",me.id)
+  ]);
+  checklistSteps=a.data||[];checklistDone=b.data||[];
+}
 async function loadQuickLinks(){
   const r=await sb.from("quick_links").select("*").eq("user_id",me.id).order("sort_order",{ascending:true});
   quickLinks=r.data||[];
@@ -4408,6 +4419,60 @@ async function togglePonty(kind,id){
 }
 function pontyBadge(kind,o){
   return `<button class="btn btn-outline btn-sm" onclick="togglePonty('${kind}','${o.id}')" style="${o.i_ponty?'color:var(--green);border-color:var(--green)':'color:var(--gold);border-color:var(--gold)'}">${o.i_ponty?"✓ Införd i Ponty":"⚠ Ej i Ponty"}</button>`;
+}
+// ── Checklista per underkonsult ──
+function stepIsDone(step,subId){
+  const sub=subs.find(s=>s.id===subId);
+  if(step.typ==="cv")return !!sub?.cv_path;
+  if(step.typ==="kompetenser")return subSkillList(subId).length>0;
+  return checklistDone.some(d=>d.step_id===step.id&&d.subconsultant_id===subId&&d.done);
+}
+function pontyLink(){return quickLinks.find(l=>/ponty/i.test(l.titel))||null;}
+function checklistHtml(subId){
+  if(!checklistSteps.length)return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Checklista</div><p style="color:#aaa;font-size:13px">Inga steg definierade än. <button class="btn btn-outline btn-xs" onclick="openChecklistSettings()">Skapa steg</button></p></div>`;
+  const done=checklistSteps.filter(st=>stepIsDone(st,subId)).length;
+  const rows=checklistSteps.map(st=>{
+    const d=stepIsDone(st,subId);
+    const auto=st.typ==="cv"||st.typ==="kompetenser";
+    const pl=st.typ==="ponty"?pontyLink():null;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)">
+      <span style="cursor:${auto?'default':'pointer'};font-size:15px" ${auto?'':`onclick="toggleChecklistStep('${st.id}','${subId}')"`} title="${auto?'Bockas automatiskt':'Klicka för att bocka'}">${d?"✅":"⬜"}</span>
+      <span style="flex:1;font-size:13px;${d?'color:#999':''}">${e(st.titel)}${auto?' <span style="font-size:10px;color:#bbb">(auto)</span>':''}</span>
+      ${pl?`<button class="btn btn-warm btn-xs" onclick="window.open('${e(pl.url)}','_blank','noopener')">Öppna Ponty ↗</button>`:""}
+      ${st.typ==="ponty"&&!pl?`<span style="font-size:10px;color:var(--gold)">Lägg in Ponty som snabblänk</span>`:""}
+    </div>`;
+  }).join("");
+  return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">📋 Checklista (${done}/${checklistSteps.length})</div><button class="btn-icon" title="Hantera steg" onclick="openChecklistSettings()">⚙</button></div>
+    ${rows}
+  </div>`;
+}
+async function toggleChecklistStep(stepId,subId){
+  const existing=checklistDone.find(d=>d.step_id===stepId&&d.subconsultant_id===subId);
+  if(existing){
+    checklistDone=checklistDone.filter(d=>d!==existing);
+    await sb.from("checklist_done").delete().eq("id",existing.id);
+  }else{
+    const r=await sb.from("checklist_done").insert({user_id:me.id,subconsultant_id:subId,step_id:stepId,done:true}).select("*").single();
+    if(!r.error)checklistDone.push(r.data);
+  }
+  openSubCard(subId);
+}
+function openChecklistSettings(){
+  document.getElementById("cl-steps").innerHTML=checklistSteps.length?checklistSteps.map(st=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream)"><span style="flex:1;font-size:13px">${e(st.titel)} <span style="font-size:10px;color:#bbb">${st.typ!=="manuell"?"("+st.typ+")":""}</span></span><button class="btn-icon" style="color:var(--red)" onclick="deleteChecklistStep('${st.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga steg ännu.</p>';
+  openM("m-checklist");
+}
+async function addChecklistStep(){
+  const titel=v("cl-titel");if(!titel){toast("Skriv ett stegnamn");return;}
+  const typ=v("cl-typ")||"manuell";
+  const r=await sb.from("checklist_steps").insert({user_id:me.id,titel,typ,sort_order:checklistSteps.length}).select("*").single();
+  if(r.error){alert(r.error.message);return;}
+  checklistSteps.push(r.data);document.getElementById("cl-titel").value="";openChecklistSettings();
+}
+async function deleteChecklistStep(id){
+  checklistSteps=checklistSteps.filter(s=>s.id!==id);
+  await sb.from("checklist_steps").delete().eq("id",id);
+  openChecklistSettings();
 }
 function renderTodoList(){
   const el=document.getElementById('todo-list');if(!el)return;
