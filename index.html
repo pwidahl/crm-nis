@@ -1359,7 +1359,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=[["Försenade uppfölj.",of2,"c-red","gotoView('followups')"],["Försenade tasks",ot,"c-warm","gotoView('tasks')"],["Nya signaler",ns,"c-gold","gotoView('signals')"],["Aktiva uppdrag",ap,"c-purple","gotoView('projects')"]].map(([l,n,c2,onc])=>`<div class="kpi ${c2}" style="cursor:pointer" onclick="${onc}"><div class="kpi-n">${n}</div><div class="kpi-l">${l}</div></div>`).join("");
+  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
