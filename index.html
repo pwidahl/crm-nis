@@ -1391,7 +1391,7 @@ function renderDashboard(){
     tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
     todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
     goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`,
-    schema:()=>{const{map,overdue}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;}
+    schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
   const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",goals:"🎯 Mål",schema:"🗓️ Arbetsschema"};
   const order=["fups","leads","konsult","tasks","todo","schema","goals"];
@@ -3142,15 +3142,16 @@ function scheduledMap(){
   });
   const wd=nextWeekdays(20);const wdKeys=wd.map(fmtD);
   let di=0;
+  const unplanned=[];
   auto.forEach(t=>{
     if(t.due_date&&t.due_date<todayStr){overdue.push(t);return;}
     if(t.due_date){
       const cand=wdKeys.filter(k=>k<=t.due_date);
       const target=cand.length?cand[cand.length-1]:wdKeys[0];
       (map[target]=map[target]||[]).push(t);
-    }else{const k=wdKeys[di%wdKeys.length];(map[k]=map[k]||[]).push(t);di++;}
+    }else{unplanned.push(t);}
   });
-  return{map,overdue};
+  return{map,overdue,unplanned};
 }
 async function setSchemaDate(id,dateStr){
   const t=todos.find(x=>x.id===id);if(!t)return;
@@ -3227,13 +3228,15 @@ function schemaTaskChip(t,showDate){
 
 function renderSchema(){
   if(!schemaAnchor)schemaAnchor=schemaToday();
-  const{map,overdue}=scheduledMap();
+  const{map,overdue,unplanned}=scheduledMap();
   const todayStr=fmtD(schemaToday());
   const dayName=d=>["sön","mån","tis","ons","tor","fre","lör"][d.getDay()];
 
   // Dagens förslag
   const todayItems=(map[todayStr]||[]);
   const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>⭐ Dagens förslag</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">Inga uppgifter inplanerade idag 🎉</span>'}</div></div>`;
+
+  const unplannedBlock=(unplanned&&unplanned.length)?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--gold)"><div class="week-sec-hdr"><h3>📥 Ej inplanerade</h3><span style="font-size:12px;color:#888">${unplanned.length} st – syns inte i kalendern förrän du ger dem en dag</span></div><div style="padding:8px 14px">${unplanned.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
 
   const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>⚠ Försenade</h3><span style="font-size:12px;color:#888">${overdue.length} st</span></div><div style="padding:8px 14px">${overdue.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
 
@@ -3276,7 +3279,7 @@ function renderSchema(){
 
   document.getElementById("schema-content").innerHTML=`
     <div class="privacy-note" style="margin-bottom:14px">Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.</div>
-    ${todayBlock}${overdueBlock}${ctrls}${grid}`;
+    ${todayBlock}${overdueBlock}${unplannedBlock}${ctrls}${grid}`;
 }
 function schemaNav(dir){
   if(!schemaAnchor)schemaAnchor=schemaToday();
