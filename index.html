@@ -643,9 +643,10 @@ textarea{resize:vertical;min-height:68px}
         </div>
         <div class="fl"><label>Org.nr</label><input id="f-orgnr"></div>
         <div class="fl"><label>Roll</label><input id="f-roll"></div>
-        <div class="fl"><label>🎂 Födelsedag</label><input id="f-fodelsedag" type="date"></div>
-        <div class="fl"><label>⚖️ Laglig grund (GDPR)</label><select id="f-laglig"><option value="">– Ej angiven –</option><option value="Berättigat intresse">Berättigat intresse</option><option value="Samtycke">Samtycke</option><option value="Avtal">Avtal</option><option value="Rättslig förpliktelse">Rättslig förpliktelse</option></select></div>
+        <div class="fl"><label>🎂 Födelsedag</label><input id="f-fodelsedag" type="date" onchange="updateGdprHint()"></div>
+        <div class="fl"><label>⚖️ Laglig grund (GDPR)</label><select id="f-laglig" onchange="updateGdprHint()"><option value="">– Ej angiven –</option><option value="Berättigat intresse">Berättigat intresse</option><option value="Samtycke">Samtycke</option><option value="Avtal">Avtal</option><option value="Rättslig förpliktelse">Rättslig förpliktelse</option></select></div>
         <div class="fl"><label>Samtyckesdatum</label><input id="f-samtycke" type="date"></div>
+        <div class="fl full"><div id="gdpr-hint" style="font-size:12px;color:#777;background:var(--paper);border:1px solid var(--cream);border-radius:6px;padding:8px 10px;line-height:1.5">💡 <strong>Berättigat intresse</strong> räcker oftast för yrkesuppgifter (namn, titel, arbetsgivare, jobbmejl). Privata uppgifter som födelsedag eller privat mobil bör vila på <strong>samtycke</strong>. Personen har alltid rätt att få veta och att bli raderad.</div></div>
         <div class="fl"><label>Bransch</label><input id="f-bransch"></div>
         <div class="fl"><label>Stad</label><input id="f-stad"></div>
         <div class="fl"><label>E-post</label><input id="f-epost" type="email"></div>
@@ -2180,8 +2181,8 @@ function renderContacts(){
   }).join("");
 }
 
-function openNewContact(){editCid=null;document.getElementById("ct-modal-title").textContent="Ny kontakt";["f-fn","f-en","f-co","f-orgnr","f-roll","f-fodelsedag","f-laglig","f-samtycke","f-bransch","f-stad","f-epost","f-telefon","f-linkedin","f-notes","f-intro-ledde","f-nasta-foljup"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("f-status").value="Ny kontakt";document.getElementById("f-prio").value="Medium";document.getElementById("f-kniva").value="medel";document.getElementById("f-beslut").checked=false;document.getElementById("f-introduktor").checked=false;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=true;fillSelects();openM("m-contact");}
-function openEditContact(id){const c=contacts.find(x=>x.id===id);if(!c)return;editCid=id;document.getElementById("ct-modal-title").textContent="Redigera kontakt";[["f-fn","fornamn"],["f-en","efternamn"],["f-co","foretag"],["f-orgnr","orgnr"],["f-roll","roll"],["f-bransch","bransch"],["f-stad","stad"],["f-epost","epost"],["f-fodelsedag","fodelsedag"],["f-laglig","laglig_grund"],["f-samtycke","samtycke_datum"],["f-telefon","telefon"],["f-linkedin","linkedin"],["f-notes","anteckningar"],["f-intro-ledde","introduktion_ledde_till"],["f-status","status"],["f-prio","prioritet"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=c[field]||"";});document.getElementById("f-kniva").value=c.kontakt_niva||"medel";document.getElementById("f-beslut").checked=!!c.beslutsfattare;document.getElementById("f-introduktor").checked=!!c.potentiell_introduktor;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=c.ar_aktiv!==false;const nf=document.getElementById("f-nasta-foljup");if(nf)nf.value=c.nasta_foljup||"";fillSelects();setTimeout(()=>{const fa=document.getElementById("f-intro-av");if(fa)fa.value=c.introduktion_av||"";},50);openM("m-contact");}
+function openNewContact(){editCid=null;document.getElementById("ct-modal-title").textContent="Ny kontakt";["f-fn","f-en","f-co","f-orgnr","f-roll","f-fodelsedag","f-laglig","f-samtycke","f-bransch","f-stad","f-epost","f-telefon","f-linkedin","f-notes","f-intro-ledde","f-nasta-foljup"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});const lg=document.getElementById("f-laglig");if(lg)lg.value="Berättigat intresse";document.getElementById("f-status").value="Ny kontakt";document.getElementById("f-prio").value="Medium";document.getElementById("f-kniva").value="medel";document.getElementById("f-beslut").checked=false;document.getElementById("f-introduktor").checked=false;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=true;fillSelects();openM("m-contact");updateGdprHint();}
+function openEditContact(id){const c=contacts.find(x=>x.id===id);if(!c)return;editCid=id;document.getElementById("ct-modal-title").textContent="Redigera kontakt";[["f-fn","fornamn"],["f-en","efternamn"],["f-co","foretag"],["f-orgnr","orgnr"],["f-roll","roll"],["f-bransch","bransch"],["f-stad","stad"],["f-epost","epost"],["f-fodelsedag","fodelsedag"],["f-laglig","laglig_grund"],["f-samtycke","samtycke_datum"],["f-telefon","telefon"],["f-linkedin","linkedin"],["f-notes","anteckningar"],["f-intro-ledde","introduktion_ledde_till"],["f-status","status"],["f-prio","prioritet"]].forEach(([id,field])=>{const el=document.getElementById(id);if(el)el.value=c[field]||"";});document.getElementById("f-kniva").value=c.kontakt_niva||"medel";document.getElementById("f-beslut").checked=!!c.beslutsfattare;document.getElementById("f-introduktor").checked=!!c.potentiell_introduktor;const ak=document.getElementById("f-ar-aktiv");if(ak)ak.checked=c.ar_aktiv!==false;const nf=document.getElementById("f-nasta-foljup");if(nf)nf.value=c.nasta_foljup||"";fillSelects();setTimeout(()=>{const fa=document.getElementById("f-intro-av");if(fa)fa.value=c.introduktion_av||"";},50);openM("m-contact");updateGdprHint();}
 async function saveContact(){
   const fn=v("f-fn"),en=v("f-en");if(!fn||!en){toast("Förnamn och efternamn krävs");return;}
   const orgnr=cleanOrg(v("f-orgnr"));
@@ -4524,6 +4525,18 @@ function gdprDeletePerson(kind,id){
       if(curView==="contacts")renderContacts();else if(curView==="subconsultants")renderSubconsultants();
     }catch(err){alert("Fel vid radering: "+err.message);}
   });
+}
+function updateGdprHint(){
+  const lg=document.getElementById("f-laglig")?.value;
+  const fd=document.getElementById("f-fodelsedag")?.value;
+  const hint=document.getElementById("gdpr-hint");if(!hint)return;
+  if(fd&&lg!=="Samtycke"){
+    hint.style.color="#8a6d00";hint.style.background="#fdf6e3";hint.style.borderColor="var(--gold)";
+    hint.innerHTML='⚠️ Du har fyllt i <strong>födelsedag</strong> (en privat uppgift) men grunden är inte <strong>samtycke</strong>. Överväg att sätta laglig grund till "Samtycke", eller ta bort födelsedagen om personen inte gett sitt godkännande.';
+  }else{
+    hint.style.color="#777";hint.style.background="var(--paper)";hint.style.borderColor="var(--cream)";
+    hint.innerHTML='💡 <strong>Berättigat intresse</strong> räcker oftast för yrkesuppgifter (namn, titel, arbetsgivare, jobbmejl). Privata uppgifter som födelsedag eller privat mobil bör vila på <strong>samtycke</strong>. Personen har alltid rätt att få veta och att bli raderad.';
+  }
 }
 function gdprBadge(kind,o){
   const lg=o.laglig_grund;const sd=o.samtycke_datum;
