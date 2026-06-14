@@ -8,7 +8,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const FROM = 'NIS <onboarding@resend.dev>'; // Resends testavsändare – byt till egen domän senare
+const FROM = 'NIS <samtycke@nicerm.com>'; // verifierad domän i Resend
 const FORETAG = 'NIS';
 
 export default async function handler(req, res) {
@@ -48,20 +48,27 @@ export default async function handler(req, res) {
     if (authError || !authData?.user) return res.status(401).json({ error: 'Ej autentiserad' });
     const userId = authData.user.id;
 
-    const { person_typ, person_id, person_namn, person_epost } = req.body || {};
-    if (!person_typ || !person_id || !person_epost) {
-      return res.status(400).json({ error: 'person_typ, person_id och person_epost krävs' });
+    const { person_typ, person_id, person_namn, person_epost, endast_lank } = req.body || {};
+    if (!person_typ || !person_id) {
+      return res.status(400).json({ error: 'person_typ och person_id krävs' });
     }
-    if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY saknas' });
 
-    // Skapa samtyckespost
+    // Skapa samtyckespost (epost valfri i länk-läge)
     const { data: cr, error: insErr } = await sb.from('consent_requests').insert({
-      user_id: userId, person_typ, person_id, person_namn: person_namn || '', person_epost, status: 'skickad'
+      user_id: userId, person_typ, person_id, person_namn: person_namn || '', person_epost: person_epost || '', status: 'skickad'
     }).select('token').single();
     if (insErr) return res.status(500).json({ error: insErr.message });
 
     const baseUrl = `https://${req.headers.host}`;
     const godkLank = `${baseUrl}/api/send-consent?token=${cr.token}`;
+
+    // Länk-läge: returnera bara länken, skicka inget mejl
+    if (endast_lank) {
+      return res.status(200).json({ message: 'Länk skapad', lank: godkLank });
+    }
+
+    if (!person_epost) return res.status(400).json({ error: 'person_epost krävs för mejlutskick' });
+    if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY saknas' });
 
     const emailHtml = buildEmail(person_namn || '', godkLank);
 
