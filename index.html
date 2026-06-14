@@ -942,6 +942,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()">Spara</button></div></div></div>
 
+<div class="overlay" id="m-linkedin-editor"><div class="modal modal-lg"><div class="mhdr"><h2>💼 Veckans inlägg</h2><button class="mclose" onclick="closeM('m-linkedin-editor')">×</button></div><div class="mbody"><div id="li-editor-content"></div></div></div></div>
+
 
 
 <div class="overlay" id="m-lead">
@@ -3897,101 +3899,166 @@ function renderMellanhander(){
     </tbody></table></div>`;
 }
 
-// ── LinkedIn-inlägg ──
-let linkedinDraft={amne:"",innehall:"",editId:null};
-function thisMonthNews(){
-  const now=new Date();const ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
-  return signals.filter(s=>{
-    const isNews=(s.signal_typ||"").toLowerCase()==="nyhet"||(s.kalla||"").toLowerCase().includes("news")||(s.kalla||"").toLowerCase().includes("nyhet");
-    if(!isNews)return false;
-    const d=s.signal_datum||(s.created_at||"").slice(0,10);
-    return d&&d.startsWith(ym);
-  }).sort((a,b)=>String(b.signal_datum||b.created_at||"").localeCompare(String(a.signal_datum||a.created_at||"")));
+// ── LinkedIn redaktionellt schema ──
+let linkedinDraft={amne:"",innehall:"",editId:null,vecka:"",planerad_datum:"",planerad_tid:"08:00",status:"utkast"};
+let linkedinViewMode="month"; // month | year
+let linkedinRefDate=new Date();
+
+function isoWeek(d){
+  const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dayNum=(date.getUTCDay()+6)%7;
+  date.setUTCDate(date.getUTCDate()-dayNum+3);
+  const firstThursday=new Date(Date.UTC(date.getUTCFullYear(),0,4));
+  const week=1+Math.round(((date-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7);
+  return {year:date.getUTCFullYear(),week};
 }
-function linkedinSuggestions(){
-  // Utgå från denna månads nyheter – varje nyhet blir ett uppslag med läs-länk
-  const news=thisMonthNews();
-  return news.slice(0,12).map(s=>({
-    typ:"Nyhet",
-    amne:s.rubrik||"(nyhet)",
-    uppslag:s.beskrivning?`Utgå från den här nyheten: "${(s.beskrivning||"").slice(0,200)}${(s.beskrivning||"").length>200?"…":""}" – skriv om vad den betyder för ekonomifunktionen och hur bolag kan tänka.`:"Skriv ett inlägg som kommenterar den här nyheten ur ett CFO/ekonomiperspektiv.",
-    datum:s.signal_datum||(s.created_at||"").slice(0,10),
-    url:s.kalla_url||"",
-    kalla:s.kalla||""
-  }));
+function weekKey(d){const w=isoWeek(d);return w.year+"-W"+String(w.week).padStart(2,"0");}
+// tisdag i en given veckas datum (utgår från ett datum i veckan)
+function tuesdayOfWeek(d){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day+1);return x;} // måndag+1=tisdag -> egentligen +1
+function tuesdayDate(anyDateInWeek){const x=new Date(anyDateInWeek);const day=x.getDay();const diff=(2-day+7)%7;/*0=sön..2=tis*/const t=new Date(x);t.setDate(x.getDate()+ (day<=2? (2-day) : (9-day)) );return t;}
+function fmtISO(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+
+// Periodanpassade vinkelförslag utifrån månad
+function angleBank(month){ // month 0-11
+  const marknad=[
+    "En aktuell finansnyhet + din tolkning av vad den betyder för ekonomifunktionen",
+    "Ränteläget/konjunkturen just nu – vad det innebär för likviditet och planering",
+    "Ett ämne som diskuteras i branschen den här veckan – din vinkel"
+  ];
+  const lagar=[
+    "En ny eller kommande lag/regeländring som påverkar ekonomifunktionen",
+    "Hållbarhetsrapportering (CSRD) – vad bolag behöver ha koll på",
+    "Skatte- eller redovisningsnyhet och dess praktiska konsekvenser"
+  ];
+  const saong={
+    0:["Bokslut & årsskifte: vad ekonomifunktionen prioriterar i januari","Nytt år – nya nyckeltal att följa"],
+    1:["Bokslutsarbetet i full gång – vanliga fallgropar","Förbered för revision"],
+    2:["Årsredovisning närmar sig – vad styrelsen vill se","Q1 snart slut – kvartalsuppföljning"],
+    3:["Årsstämmosäsong – ekonomichefens roll","Deklaration & inkomstskatt"],
+    4:["Vårens halvtidsavstämning mot budget","Likviditetsplanering inför sommaren"],
+    5:["Semesterlöneskuld & bemanning över sommaren","Halvårsbokslut närmar sig"],
+    6:["Halvårsrapportering – vad som är viktigast","Lugnare period – dags att se över processer"],
+    7:["Förbered höstens budgetarbete","Återstart efter semestern – ekonomifunktionens checklista"],
+    8:["Budgetsäsong: så bygger man en budget som håller","Prognosarbete inför Q4"],
+    9:["Q3-uppföljning och avstämning mot helår","Planera bokslutet i god tid"],
+    10:["Förbered året-slut och bokslut","Inventering & periodiseringar"],
+    11:["År-slut: checklista för ekonomifunktionen","Reflektion: årets lärdomar för branschen (ej egna uppdrag)"]
+  };
+  return [
+    {kat:"📅 Säsong",tips:saong[month]||[]},
+    {kat:"📰 Marknad & aktuellt",tips:marknad},
+    {kat:"⚖️ Lagar & regler",tips:lagar}
+  ];
 }
+
 function renderLinkedin(){
   const box=document.getElementById("linkedin-content");if(!box)return;
-  const sugg=linkedinSuggestions();
-  const posts=linkedinPosts;
-  const now=new Date();const manadsnamn=now.toLocaleDateString("sv-SE",{month:"long"});
-  const thisWeek=posts.filter(p=>{if(!p.created_at)return false;const d=new Date(p.created_at);return (now-d)/86400000<7;}).length;
-  box.innerHTML=`
-    <div style="background:linear-gradient(135deg,#eaf2fb,#fff);border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">💼</span>
-      <div style="flex:1"><div style="font-weight:600">Veckans LinkedIn</div><div style="font-size:13px;color:#666">${thisWeek>0?`Du har skapat ${thisWeek} inlägg den här veckan ✓`:"Inget inlägg den här veckan än – välj en nyhet nedan och skriv ett!"}</div></div>
-    </div>
+  box.innerHTML=linkedinViewMode==="year"?linkedinYearHtml():linkedinMonthHtml();
+}
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
-      <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nyheter denna månad (${manadsnamn}) – välj en att skriva om</div>
-        ${sugg.length?sugg.map((s,i)=>`<div class="week-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:8px;align-items:flex-start"><strong style="flex:1;font-size:13px;cursor:pointer" onclick="pickLinkedinTopic(${i})">${e(s.amne)}</strong>${s.url?`<a href="${e(s.url)}" target="_blank" rel="noopener" class="btn-icon" title="Läs nyheten">🔗</a>`:""}</div><div style="font-size:11px;color:#aaa;margin-top:2px">${e(s.kalla||"")}${s.datum?" · "+e(s.datum):""}</div><div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-outline btn-xs" onclick="pickLinkedinTopic(${i})">✍️ Skriv om denna</button>${s.url?`<a href="${e(s.url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">Läs nyheten ↗</a>`:""}</div></div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga nyheter den här månaden ännu. Hämta nyheter under Signaler (knappen "Hämta nyheter"), så dyker de upp här.</p>'}
-        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="pickLinkedinTopic(-1)">✍️ Skriv eget ämne</button>
-      </div>
-      <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Skriv inlägg</div>
-        <input id="li-amne" value="${e(linkedinDraft.amne)}" placeholder="Ämne/rubrik" style="width:100%;margin-bottom:8px">
-        <textarea id="li-innehall" placeholder="Skriv ditt LinkedIn-inlägg här..." style="width:100%;min-height:160px;font-family:inherit;font-size:14px;line-height:1.5">${e(linkedinDraft.innehall)}</textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">Spara utkast</button>
-          <button class="btn btn-warm btn-sm" onclick="saveLinkedinPost('publicerad')">Markera publicerad</button>
-          ${linkedinDraft.editId?`<button class="btn btn-outline btn-sm" onclick="resetLinkedinDraft()">Avbryt</button>`:""}
-        </div>
-      </div>
-    </div>
+function postForWeek(wk){return linkedinPosts.find(p=>p.vecka===wk);}
+function statusBadge(st){return {utkast:'<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">Utkast</span>',planerad:'<span class="badge b-ny">Planerad</span>',publicerad:'<span class="badge b-granskad">Publicerad</span>'}[st]||'<span class="badge" style="background:#f3f3f3;color:#aaa">Tom</span>';}
 
-    <div style="margin-top:24px">
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mina inlägg (${posts.length})</div>
-      ${posts.length?posts.map(p=>linkedinPostRow(p)).join(""):'<p style="color:#aaa;font-size:13px">Inga inlägg ännu.</p>'}
+function linkedinMonthHtml(){
+  const ref=linkedinRefDate;const year=ref.getFullYear();const month=ref.getMonth();
+  const manad=ref.toLocaleDateString("sv-SE",{month:"long",year:"numeric"});
+  // veckorna som rör denna månad
+  const first=new Date(year,month,1);const last=new Date(year,month+1,0);
+  const weeks=[];let cur=new Date(first);
+  while(cur<=last){const wk=weekKey(cur);if(!weeks.find(w=>w.key===wk)){const t=tuesdayDate(cur);weeks.push({key:wk,tuesday:t});}cur.setDate(cur.getDate()+7);}
+  // se till sista veckan kommer med
+  const lastWk=weekKey(last);if(!weeks.find(w=>w.key===lastWk))weeks.push({key:lastWk,tuesday:tuesdayDate(last)});
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" onclick="linkedinNav(-1)">←</button><button class="btn btn-outline btn-xs" onclick="linkedinToday()">Idag</button><button class="btn btn-outline btn-xs" onclick="linkedinNav(1)">→</button></div>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1;text-transform:capitalize">${manad}</h3>
+      <div class="seg"><button class="btn btn-xs btn-primary">Månad</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('year')">År</button></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+    ${weeks.map(w=>{const p=postForWeek(w.key);const st=p?p.status:"tom";const tDate=p&&p.planerad_datum?p.planerad_datum:fmtISO(w.tuesday);const tTid=p&&p.planerad_tid?p.planerad_tid.slice(0,5):"08:00";
+      return `<div class="week-row" style="cursor:pointer;align-items:flex-start" onclick="openLinkedinWeek('${w.key}','${fmtISO(w.tuesday)}')">
+        <div style="min-width:90px"><div style="font-size:12px;color:#888">Vecka ${w.key.split("-W")[1]}</div><div style="font-size:11px;color:#aaa">${tDate} ${tTid}</div></div>
+        <div style="flex:1;min-width:0">${p?`<div style="font-weight:600;font-size:13px">${e(p.amne||"(utan rubrik)")}</div><div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:38px;overflow:hidden">${e((p.innehall||"").slice(0,120))}</div>`:'<div style="color:#bbb;font-size:13px">Inget inlägg – klicka för att skriva</div>'}</div>
+        ${statusBadge(st)}
+      </div>`;}).join("")}
     </div>`;
 }
-function linkedinPostRow(p){
-  const statusBadge={utkast:'<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">Utkast</span>',publicerad:'<span class="badge b-granskad">Publicerad</span>'}[p.status]||"";
-  const utfall=p.status==="publicerad"?`<div style="font-size:12px;color:#666;margin-top:4px">👍 ${p.reaktioner??"–"} · 💬 ${p.kommentarer??"–"} · 🎯 ${p.leads_genererade??"–"} leads${p.utfall_notis?` · ${e(p.utfall_notis)}`:""}</div>`:"";
-  return `<div class="week-row" style="flex-direction:column;align-items:stretch">
-    <div style="display:flex;gap:8px;align-items:center"><strong style="flex:1;font-size:13px">${e(p.amne||"(utan ämne)")}</strong>${statusBadge}</div>
-    <div style="font-size:12px;color:#666;margin-top:4px;white-space:pre-wrap;max-height:60px;overflow:hidden">${e((p.innehall||"").slice(0,160))}${(p.innehall||"").length>160?"…":""}</div>
-    ${utfall}
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-xs" onclick="editLinkedinPost('${p.id}')">✎ Redigera</button>
-      ${p.status==="publicerad"?`<button class="btn btn-outline btn-xs" onclick="logLinkedinOutcome('${p.id}')">📊 Logga utfall</button>`:""}
-      <button class="btn btn-outline btn-xs" style="color:var(--red)" onclick="deleteLinkedinPost('${p.id}')">🗑</button>
+
+function linkedinYearHtml(){
+  const year=linkedinRefDate.getFullYear();
+  const months=[];for(let m=0;m<12;m++){months.push(m);}
+  return `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" onclick="linkedinNavYear(-1)">←</button><button class="btn btn-outline btn-xs" onclick="linkedinNavYear(1)">→</button></div>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1">${year}</h3>
+      <div class="seg"><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('month')">Månad</button><button class="btn btn-xs btn-primary">År</button></div>
     </div>
-  </div>`;
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">
+    ${months.map(m=>{
+      const mPosts=linkedinPosts.filter(p=>{const d=p.planerad_datum||p.created_at;return d&&new Date(d).getFullYear()===year&&new Date(d).getMonth()===m;});
+      const pub=mPosts.filter(p=>p.status==="publicerad").length;
+      const mNamn=new Date(year,m,1).toLocaleDateString("sv-SE",{month:"long"});
+      return `<div class="week-row" style="cursor:pointer;flex-direction:column;align-items:stretch;min-height:70px" onclick="linkedinOpenMonth(${m})"><div style="font-weight:600;text-transform:capitalize">${mNamn}</div><div style="font-size:12px;color:#666;margin-top:4px">${mPosts.length} inlägg${pub?` · ${pub} publicerade`:""}</div></div>`;
+    }).join("")}
+    </div>`;
 }
-function pickLinkedinTopic(i){
-  if(i===-1){linkedinDraft={amne:"",innehall:"",editId:null};}
-  else{const s=linkedinSuggestions()[i];if(s)linkedinDraft={amne:s.amne,innehall:s.uppslag+"\n\n",editId:null};}
-  renderLinkedin();
+
+function linkedinSetMode(m){linkedinViewMode=m;renderLinkedin();}
+function linkedinNav(delta){linkedinRefDate=new Date(linkedinRefDate.getFullYear(),linkedinRefDate.getMonth()+delta,1);renderLinkedin();}
+function linkedinNavYear(delta){linkedinRefDate=new Date(linkedinRefDate.getFullYear()+delta,linkedinRefDate.getMonth(),1);renderLinkedin();}
+function linkedinToday(){linkedinRefDate=new Date();renderLinkedin();}
+function linkedinOpenMonth(m){linkedinRefDate=new Date(linkedinRefDate.getFullYear(),m,1);linkedinViewMode="month";renderLinkedin();}
+
+function openLinkedinWeek(wk,tuesdayISO){
+  const p=postForWeek(wk);
+  linkedinDraft=p?{amne:p.amne||"",innehall:p.innehall||"",editId:p.id,vecka:wk,planerad_datum:p.planerad_datum||tuesdayISO,planerad_tid:(p.planerad_tid||"08:00").slice(0,5),status:p.status||"utkast"}:{amne:"",innehall:"",editId:null,vecka:wk,planerad_datum:tuesdayISO,planerad_tid:"08:00",status:"utkast"};
+  const month=new Date(tuesdayISO).getMonth();
+  const bank=angleBank(month);
+  document.getElementById("li-editor-content").innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Vecka ${wk.split("-W")[1]} · ${wk.split("-")[0]}</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:130px"><label style="font-size:11px;color:#888;display:block">Publiceras (datum)</label><input id="li-datum" type="date" value="${e(linkedinDraft.planerad_datum)}" style="width:100%"></div>
+          <div style="min-width:90px"><label style="font-size:11px;color:#888;display:block">Tid</label><input id="li-tid" type="time" value="${e(linkedinDraft.planerad_tid)}" style="width:100%"></div>
+        </div>
+        <input id="li-amne" value="${e(linkedinDraft.amne)}" placeholder="Rubrik/ämne" style="width:100%;margin-bottom:8px">
+        <textarea id="li-innehall" placeholder="Skriv ditt inlägg här – det sparas när du klickar Spara utkast, och du kan fortsätta en annan dag." style="width:100%;min-height:200px;font-family:inherit;font-size:14px;line-height:1.55">${e(linkedinDraft.innehall)}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">Spara utkast</button>
+          <button class="btn btn-outline btn-sm" onclick="saveLinkedinPost('planerad')">Markera planerad</button>
+          <button class="btn btn-warm btn-sm" onclick="saveLinkedinPost('publicerad')">Markera publicerad</button>
+        </div>
+        ${linkedinDraft.editId&&linkedinDraft.status==="publicerad"?`<button class="btn btn-outline btn-xs" style="margin-top:8px" onclick="logLinkedinOutcome('${linkedinDraft.editId}')">📊 Logga utfall</button>`:""}
+        ${linkedinDraft.editId?`<button class="btn btn-outline btn-xs" style="margin-top:8px;color:var(--red)" onclick="deleteLinkedinPost('${linkedinDraft.editId}')">🗑 Radera</button>`:""}
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Idébank – vinklar för perioden</div>
+        ${bank.map(g=>`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${g.kat}</div>${g.tips.map(t=>`<div class="week-row" style="cursor:pointer;padding:7px 10px" onclick="useAngle(${JSON.stringify(t).replace(/"/g,'&quot;')})"><span style="font-size:12px">${e(t)}</span></div>`).join("")}</div>`).join("")}
+        <p style="font-size:11px;color:#aaa;margin-top:6px">Vinklarna är uppslag – du skriver din egen text.</p>
+      </div>
+    </div>`;
+  openM("m-linkedin-editor");
 }
-function resetLinkedinDraft(){linkedinDraft={amne:"",innehall:"",editId:null};renderLinkedin();}
+function useAngle(t){const ta=document.getElementById("li-innehall");if(!ta)return;if(!document.getElementById("li-amne").value)document.getElementById("li-amne").value=t;ta.value=(ta.value?ta.value+"\n\n":"")+"["+t+"]\n";ta.focus();}
+
 async function saveLinkedinPost(status){
   const amne=v("li-amne");const innehall=document.getElementById("li-innehall")?.value||"";
+  const datum=v("li-datum")||null;const tid=v("li-tid")||"08:00";
   if(!amne&&!innehall){toast("Skriv något först");return;}
-  const rec={user_id:me.id,amne,innehall,status};
-  if(status==="publicerad")rec.publicerad_datum=today();
+  const rec={amne,innehall,status,planerad_datum:datum,planerad_tid:tid,vecka:linkedinDraft.vecka};
   let r;
-  if(linkedinDraft.editId){r=await sb.from("linkedin_posts").update({amne,innehall,status,...(status==="publicerad"?{publicerad_datum:today()}:{})}).eq("id",linkedinDraft.editId).select("*").single();}
-  else{r=await sb.from("linkedin_posts").insert(rec).select("*").single();}
+  if(linkedinDraft.editId){r=await sb.from("linkedin_posts").update(rec).eq("id",linkedinDraft.editId).select("*").single();}
+  else{r=await sb.from("linkedin_posts").insert({user_id:me.id,...rec,...(status==="publicerad"?{publicerad_datum:today()}:{})}).select("*").single();}
   if(r.error){alert(r.error.message);return;}
+  if(status==="publicerad"&&linkedinDraft.editId){await sb.from("linkedin_posts").update({publicerad_datum:today()}).eq("id",linkedinDraft.editId);}
   await loadLinkedin();
-  linkedinDraft={amne:"",innehall:"",editId:null};
-  toast(status==="publicerad"?"Markerad som publicerad ✓":"Utkast sparat ✓");
+  closeM("m-linkedin-editor");
+  toast(status==="publicerad"?"Publicerad ✓":status==="planerad"?"Planerad ✓":"Utkast sparat ✓");
   renderLinkedin();
 }
-function editLinkedinPost(id){const p=linkedinPosts.find(x=>x.id===id);if(!p)return;linkedinDraft={amne:p.amne||"",innehall:p.innehall||"",editId:id};renderLinkedin();window.scrollTo(0,0);}
 async function deleteLinkedinPost(id){
-  confirm2("Radera inlägget?",async()=>{linkedinPosts=linkedinPosts.filter(x=>x.id!==id);renderLinkedin();await sb.from("linkedin_posts").delete().eq("id",id);});
+  confirm2("Radera inlägget?",async()=>{linkedinPosts=linkedinPosts.filter(x=>x.id!==id);closeM("m-linkedin-editor");renderLinkedin();await sb.from("linkedin_posts").delete().eq("id",id);await loadLinkedin();});
 }
 function logLinkedinOutcome(id){
   const p=linkedinPosts.find(x=>x.id===id);if(!p)return;
@@ -3999,8 +4066,9 @@ function logLinkedinOutcome(id){
   const komm=prompt("Antal kommentarer?",p.kommentarer??"");if(komm===null)return;
   const leads=prompt("Antal leads det gav?",p.leads_genererade??"");if(leads===null)return;
   const notis=prompt("Kort notis om hur det gick (valfritt):",p.utfall_notis??"");
-  sb.from("linkedin_posts").update({reaktioner:parseInt(reak)||0,kommentarer:parseInt(komm)||0,leads_genererade:parseInt(leads)||0,utfall_notis:notis||null}).eq("id",id).then(async()=>{await loadLinkedin();toast("Utfall loggat ✓");renderLinkedin();});
+  sb.from("linkedin_posts").update({reaktioner:parseInt(reak)||0,kommentarer:parseInt(komm)||0,leads_genererade:parseInt(leads)||0,utfall_notis:notis||null}).eq("id",id).then(async()=>{await loadLinkedin();closeM("m-linkedin-editor");toast("Utfall loggat ✓");renderLinkedin();});
 }
+
 function renderKonsultbehov(){
   const needs=consultNeeds();
   if(!needs.length){document.getElementById("konsultbehov-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga indikerade konsultbehov ännu. Spara nyckeltal på bolag eller fånga signaler – bolag med varningar dyker upp här automatiskt.</p></div>';return;}
@@ -4484,7 +4552,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor"];
 const CARD_MODALS=["m-card","m-company-card","m-sub-card","m-lead"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
