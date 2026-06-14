@@ -3899,47 +3899,43 @@ function renderMellanhander(){
 
 // ── LinkedIn-inlägg ──
 let linkedinDraft={amne:"",innehall:"",editId:null};
-function linkedinSuggestions(){
-  // bygg förslag från senaste signaler: trender (grupperade per typ/bransch) + enskilda starka
-  const recent=signals.filter(s=>s.status!=="ignorerad"&&!(sigIsFast(s)&&s.dold_fast!==false));
-  const sugg=[];
-  // Trender: gruppera på signal_typ
-  const byType={};
-  recent.forEach(s=>{const t=s.signal_typ||s.efterfragar||"ekonomibehov";byType[t]=(byType[t]||0)+1;});
-  Object.entries(byType).filter(([t,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([t,n])=>{
-    sugg.push({typ:"Trend",amne:`Marknadstrend: ${n} bolag visar tecken på ${e(sigLabelText(t))}`,uppslag:`Just nu ser jag ${n} bolag med signaler om ${sigLabelText(t).toLowerCase()}. Skriv om vad som driver detta behov på marknaden och hur bolag kan tänka kring extern ekonomikompetens.`});
-  });
-  // Enskilda starka signaler (styrka 3)
-  recent.filter(s=>(s.signal_styrka||0)>=3).slice(0,3).forEach(s=>{
-    sugg.push({typ:"Uppslag",amne:`${e(sigName(s))}: ${e((s.rubrik||"").slice(0,60))}`,uppslag:`Utgå från den här marknadshändelsen (utan att namnge bolaget om det är känsligt) och skriv om vad den säger om ekonomifunktionens roll i förändring.`});
-  });
-  // Evergreen-teman om få signaler
-  if(sugg.length<3){
-    const ever=[
-      {typ:"Tema",amne:"Därför behöver tillväxtbolag en interim CFO",uppslag:"Skriv om de tre vanligaste lägena då ett bolag tjänar på interim finance-kompetens."},
-      {typ:"Tema",amne:"Månadsbokslut som beslutsunderlag – inte bara en rapport",uppslag:"Dela hur ett vasst månadsbokslut förändrar ledningens beslut."},
-      {typ:"Tema",amne:"Likviditet i osäkra tider",uppslag:"Tre konkreta saker en ekonomichef bör bevaka i kassaflödet just nu."}
-    ];
-    ever.forEach(t=>{if(sugg.length<5)sugg.push(t);});
-  }
-  return sugg;
+function thisMonthNews(){
+  const now=new Date();const ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return signals.filter(s=>{
+    const isNews=(s.signal_typ||"").toLowerCase()==="nyhet"||(s.kalla||"").toLowerCase().includes("news")||(s.kalla||"").toLowerCase().includes("nyhet");
+    if(!isNews)return false;
+    const d=s.signal_datum||(s.created_at||"").slice(0,10);
+    return d&&d.startsWith(ym);
+  }).sort((a,b)=>String(b.signal_datum||b.created_at||"").localeCompare(String(a.signal_datum||a.created_at||"")));
 }
-function sigLabelText(t){const m={finance_hiring:"rekrytering inom ekonomi",restructuring:"omstrukturering",growth:"tillväxt",financial_pressure:"finansiell press",system_change:"systembyte",management_change:"ledningsförändring",ekonomibehov:"ekonomibehov",manuell:"eget uppslag"};return m[t]||t;}
+function linkedinSuggestions(){
+  // Utgå från denna månads nyheter – varje nyhet blir ett uppslag med läs-länk
+  const news=thisMonthNews();
+  return news.slice(0,12).map(s=>({
+    typ:"Nyhet",
+    amne:s.rubrik||"(nyhet)",
+    uppslag:s.beskrivning?`Utgå från den här nyheten: "${(s.beskrivning||"").slice(0,200)}${(s.beskrivning||"").length>200?"…":""}" – skriv om vad den betyder för ekonomifunktionen och hur bolag kan tänka.`:"Skriv ett inlägg som kommenterar den här nyheten ur ett CFO/ekonomiperspektiv.",
+    datum:s.signal_datum||(s.created_at||"").slice(0,10),
+    url:s.kalla_url||"",
+    kalla:s.kalla||""
+  }));
+}
 function renderLinkedin(){
   const box=document.getElementById("linkedin-content");if(!box)return;
   const sugg=linkedinSuggestions();
   const posts=linkedinPosts;
-  const thisWeek=posts.filter(p=>{if(!p.created_at)return false;const d=new Date(p.created_at);const now=new Date();const diff=(now-d)/86400000;return diff<7;}).length;
+  const now=new Date();const manadsnamn=now.toLocaleDateString("sv-SE",{month:"long"});
+  const thisWeek=posts.filter(p=>{if(!p.created_at)return false;const d=new Date(p.created_at);return (now-d)/86400000<7;}).length;
   box.innerHTML=`
     <div style="background:linear-gradient(135deg,#eaf2fb,#fff);border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <span style="font-size:22px">💼</span>
-      <div style="flex:1"><div style="font-weight:600">Veckans LinkedIn</div><div style="font-size:13px;color:#666">${thisWeek>0?`Du har skapat ${thisWeek} inlägg den här veckan ✓`:"Inget inlägg den här veckan än – välj ett ämne nedan och skriv ett!"}</div></div>
+      <div style="flex:1"><div style="font-weight:600">Veckans LinkedIn</div><div style="font-size:13px;color:#666">${thisWeek>0?`Du har skapat ${thisWeek} inlägg den här veckan ✓`:"Inget inlägg den här veckan än – välj en nyhet nedan och skriv ett!"}</div></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
       <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ämnesförslag (från dina signaler)</div>
-        ${sugg.map((s,i)=>`<div class="week-row" style="cursor:pointer;flex-direction:column;align-items:stretch" onclick="pickLinkedinTopic(${i})"><div style="display:flex;gap:8px;align-items:center"><span class="badge" style="font-size:10px;background:var(--paper);border:1px solid var(--cream)">${e(s.typ)}</span><strong style="flex:1;font-size:13px">${e(s.amne)}</strong></div><div style="font-size:12px;color:#666;margin-top:4px">${e(s.uppslag)}</div></div>`).join("")}
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nyheter denna månad (${manadsnamn}) – välj en att skriva om</div>
+        ${sugg.length?sugg.map((s,i)=>`<div class="week-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:8px;align-items:flex-start"><strong style="flex:1;font-size:13px;cursor:pointer" onclick="pickLinkedinTopic(${i})">${e(s.amne)}</strong>${s.url?`<a href="${e(s.url)}" target="_blank" rel="noopener" class="btn-icon" title="Läs nyheten">🔗</a>`:""}</div><div style="font-size:11px;color:#aaa;margin-top:2px">${e(s.kalla||"")}${s.datum?" · "+e(s.datum):""}</div><div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-outline btn-xs" onclick="pickLinkedinTopic(${i})">✍️ Skriv om denna</button>${s.url?`<a href="${e(s.url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">Läs nyheten ↗</a>`:""}</div></div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga nyheter den här månaden ännu. Hämta nyheter under Signaler (knappen "Hämta nyheter"), så dyker de upp här.</p>'}
         <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="pickLinkedinTopic(-1)">✍️ Skriv eget ämne</button>
       </div>
       <div>
