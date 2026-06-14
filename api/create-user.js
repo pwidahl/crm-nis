@@ -1,13 +1,13 @@
 // /api/create-user.js
 // Skapar ett nytt användarkonto. Endast admins får anropa.
-// Body: { access_token, email, password }
+// Body: { access_token, email, password, namn }
 
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { access_token, email, password } = req.body || {};
+  const { access_token, email, password, namn } = req.body || {};
   if (!access_token) return res.status(401).json({ error: 'Saknar access_token' });
   if (!email || !password) return res.status(400).json({ error: 'E-post och lösenord krävs' });
   if (password.length < 8) return res.status(400).json({ error: 'Lösenordet måste vara minst 8 tecken' });
@@ -28,10 +28,10 @@ export default async function handler(req, res) {
   });
   if (createErr) return res.status(400).json({ error: createErr.message });
 
-  const defaultNamn = email.split('@')[0];
+  const visningsnamn = (namn && namn.trim()) ? namn.trim() : email.split('@')[0];
   try {
-    await sb.from('profiles').insert({ id: created.user.id, namn: defaultNamn });
+    await sb.from('profiles').upsert({ id: created.user.id, namn: visningsnamn });
   } catch (e) { /* ignorera */ }
 
-  return res.status(200).json({ email: created.user.email, id: created.user.id });
+  return res.status(200).json({ email: created.user.email, id: created.user.id, namn: visningsnamn });
 }
