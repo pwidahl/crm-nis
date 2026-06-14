@@ -1025,6 +1025,23 @@ let timerInterval=null,timerStart=null,timerRunning=false,searchTimer=null,rtCha
 let curDiaryType="uppdrag";
 
 const PIPELINE=["Watchlist","Intressant","Varm","Mojlighet","Mote","Offert","Vunnet","Kund","Forlorat"];
+const LEAD_PIPELINE=["Signal","Kvalificerad","Kontaktad","Dialog","Uppdrag"];
+const LEAD_PIPE_LABEL={Signal:"📥 Signal",Kvalificerad:"⭐ Kvalificerad",Kontaktad:"📞 Kontaktad",Dialog:"💬 Dialog",Uppdrag:"✅ Uppdrag"};
+// Avgör om en jobbannons-signal troligen är en fast anställning (ej din affär)
+function isLikelyFast(s){
+  const txt=`${s.rubrik||""} ${s.beskrivning||""}`.toLowerCase();
+  // Interim/konsult-ord vinner alltid – då är det INTE fast
+  const interimOrd=["interim","konsult","vikariat","vikarie","tidsbegräns","tidsbegrans","projektanställ","projektanstall","visstid","6 mån","6 manander","sex mån","tillfällig","tillfallig","engagemang","uppdrag"];
+  if(interimOrd.some(o=>txt.includes(o)))return false;
+  const fastOrd=["tillsvidare","fast anställ","fast anstall","fast tjänst","fast tjanst","heltid","permanent","tillsvidareanställ","tillsvidareanstall"];
+  return fastOrd.some(o=>txt.includes(o));
+}
+// Kombinerad: manuellt satt flagga ELLER auto-klassad, men dold_fast-override styr
+function sigIsFast(s){
+  if(s.dold_fast===true)return true;
+  if(s.dold_fast===false&&s.ar_fastanstallning)return true; // manuellt visad men flaggad
+  return s.ar_fastanstallning||isLikelyFast(s);
+}
 const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",annat:"Annat"};
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
@@ -1405,10 +1422,11 @@ function renderDashboard(){
     links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🔗 Snabblänkar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">+ Lägg till</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     birthdays:()=>{const bd=upcomingBirthdays(60);const inner=bd.length?bd.map(({c,days,date})=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🎂 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")}${c.foretag?" · ":""}${days===0?"<strong style='color:var(--accent)'>idag!</strong>":days===1?"imorgon":"om "+days+" dagar"} (${e(date)})</div></div></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga födelsedagar inom 60 dagar.</p>';return`<div class="dash-sec week-sec" data-sec="birthdays" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎂 Kommande födelsedagar</h3></div><div style="padding:4px 14px">${inner}</div></div>`;},
     gdpr:()=>{const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-3);const cut=cutoff.toISOString().slice(0,10);const noBasis=contacts.filter(c=>!c.laglig_grund&&c.ar_aktiv!==false&&c.status!=="Inaktiv");const oldSub=subs.filter(s=>s.status!=="Arkiverad"&&(!s.samtycke_datum||s.samtycke_datum<cut));const items=[...noBasis.map(c=>({n:`${c.fornamn} ${c.efternamn}`,sub:"kontakt – laglig grund saknas",act:`openCard('${c.id}')`})),...oldSub.map(s=>({n:`${s.fornamn} ${s.efternamn}`,sub:s.samtycke_datum?"underkonsult – samtycke >3 år":"underkonsult – samtycke saknas",act:`openSubCard('${s.id}')`}))];const inner=items.length?items.slice(0,10).map(it=>`<div class="week-row" onclick="${it.act}" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">⚖️ ${e(it.n)}</div><div class="week-rs">${e(it.sub)}</div></div></div>`).join("")+(items.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${items.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga GDPR-flaggor 🎉</p>';return`<div class="dash-sec week-sec" data-sec="gdpr" style="margin-bottom:0;${items.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>⚖️ GDPR att se över</h3><span style="font-size:12px;color:#888;margin-left:auto">${items.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    leadsnext:()=>{const open=signals.filter(s=>s.status!=="ignorerad"&&(s.pipeline_steg||"Signal")!=="Uppdrag"&&!(sigIsFast(s)&&s.dold_fast!==false)&&!s.nasta_steg);open.sort((a,b)=>{if((b.signal_styrka||0)!==(a.signal_styrka||0))return(b.signal_styrka||0)-(a.signal_styrka||0);return String(b.created_at||"").localeCompare(String(a.created_at||""));});const inner=open.length?open.slice(0,12).map(s=>`<div class="week-row" onclick="openLead('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${"★".repeat(s.signal_styrka||1)} ${e(sigName(s))}</div><div class="week-rs">${LEAD_PIPE_LABEL[s.pipeline_steg||"Signal"]} · ${e((s.rubrik||"").slice(0,50))}</div></div></div>`).join("")+(open.length>12?`<div class="week-row" style="color:#888;font-size:12px">+${open.length-12} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla leads har nästa steg 🎉</p>';return`<div class="dash-sec week-sec" data-sec="leadsnext" style="margin-bottom:0;${open.length?"border-left:4px solid var(--red)":""}"><div class="week-sec-hdr"><h3>⚠ Leads utan nästa steg</h3><span style="font-size:12px;color:#888;margin-left:auto">${open.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
     tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
-  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över"};
-  const order=["fups","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
+  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
+  const order=["fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
   const hidden=getDashHidden();
   const visible=order.filter(k=>!hidden.includes(k));
 
@@ -1449,6 +1467,12 @@ function nextStepHtml(){
   todos.filter(t=>!t.done&&t.due_date===td).forEach(t=>{
     const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
     cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:"deadline idag",btn:"Öppna todo",act:`openTodo()`});
+  });
+  // leads med försenat nästa steg
+  signals.filter(s=>s.status!=="ignorerad"&&s.nasta_steg&&s.nasta_steg_datum&&s.nasta_steg_datum<=td).forEach(s=>{
+    const overdueDays=Math.round((new Date(td)-new Date(s.nasta_steg_datum))/86400000);
+    const sw=(s.signal_styrka||1)*15;
+    cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:"Öppna lead",act:`openLead('${s.id}')`});
   });
   if(!cands.length){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#f0f7f0,#fff);border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:12px"><span style="font-size:20px">✨</span><div style="flex:1"><div style="font-weight:600;font-size:14px">Allt under kontroll</div><div style="font-size:12px;color:#888">Inget försenat eller akut just nu – bra jobbat!</div></div></div>`;
@@ -1980,6 +2004,10 @@ function renderSignals(){
     if(onlyManual&&(s.kalla||"").toLowerCase()!=="manuell"&&(s.signal_typ||"").toLowerCase()!=="manuell")return false;
     return(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!coFilter||s.company_id===coFilter)&&(!q||hay.includes(q));
   });
+  // Auto-dölj troliga fastanställningar (om inte användaren valt att visa dem)
+  const showFast=window._showFastLeads||false;
+  const fastHidden=list.filter(s=>sigIsFast(s)&&s.dold_fast!==false);
+  if(!showFast)list=list.filter(s=>!(sigIsFast(s)&&s.dold_fast!==false));
   const aiScore=cid=>{const c=companies.find(x=>x.id===cid);return c?.ai_score??-1;};
   // Kolumnsortering (om aktiv) åsidosätter dropdownen
   if(sigColSort.col){
@@ -2009,17 +2037,17 @@ function renderSignals(){
   leadNavList=list.map(s=>s.id);
   const arrow=c=>sigColSort.col===c?(sigColSort.dir==="asc"?" ▲":" ▼"):"";
   const th=(c,l)=>`<th style="cursor:pointer;user-select:none" onclick="sortSignalsCol('${c}')">${l}${arrow(c)}</th>`;
-  document.getElementById("signals-content").innerHTML=list.length?`<div class="tw"><table><thead><tr>${th("rubrik","Signal")}${th("bolag","Bolag")}${th("land","Land")}${th("typ","Typ")}${th("styrka","Styrka")}${th("datum","Publicerat")}${th("inkommen","Inkommen")}${th("status","Status")}<th></th></tr></thead><tbody>${list.map(s=>{const known=hasContact(s.company_id);return`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
-      <strong>${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad" style="margin-right:4px">✍️</span>':""}${s.ar_fastanstallning?'<span title="Fastanställning" style="margin-right:4px">🔒</span>':""}${e(s.rubrik)}</strong>
-      ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:340px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,120))}${(s.beskrivning||"").length>120?"…":""}</div>`:""}
+  const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
+  const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
+  document.getElementById("signals-content").innerHTML=fastBanner+(list.length?`<div class="tw"><table><thead><tr>${th("rubrik","Signal")}${th("bolag","Bolag")}<th>Pipeline</th>${th("styrka","Styrka")}<th>Ålder</th><th>Nästa steg</th>${th("status","Status")}<th></th></tr></thead><tbody>${list.map(s=>{const known=hasContact(s.company_id);const steg=s.pipeline_steg||"Signal";const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();return`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
+      <strong>${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad" style="margin-right:4px">✍️</span>':""}${sigIsFast(s)?'<span title="Trolig fastanställning" style="margin-right:4px">🔒</span>':""}${e(s.rubrik)}</strong>
+      ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:300px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,100))}${(s.beskrivning||"").length>100?"…":""}</div>`:""}
       <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
-    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${(()=>{const m=sigMentionsContact(s);return m?`<span title="Nämner din kontakt: ${e(m.fornamn)} ${e(m.efternamn)}" style="margin-right:4px">📍</span>`:"";})()}${e(sigName(s))}</td><td>${FLAG[s.companies?.land||""]||"🌍"}</td><td>${sigLabel(s.signal_typ)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td>${e(s.signal_datum||"")}</td><td style="font-size:12px;color:#888">${e((s.created_at||"").slice(0,10))}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
+    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
       ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
-      <button class="btn-icon" title="Öppna bolagskort" onclick="openCompanyCard('${s.company_id}')">↗</button>
-      <button class="btn-icon" title="Markera granskad" onclick="setSigStatus('${s.id}','granskad')">✓</button>
-      <button class="btn-icon" title="Ignorera" onclick="setSigStatus('${s.id}','ignorerad')">×</button>
+      <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
       <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
-    </td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>';
+    </td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>');
 }
 let editSignalId=null;
 function openNewSignal(){editSignalId=null;fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";const sf=document.getElementById("sig-fast");if(sf)sf.checked=false;document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url","sig-fritt","sig-efter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});const h=document.querySelector("#m-signal .mhdr h2");if(h)h.textContent="Ny signal / lead";openM("m-signal");}
@@ -4855,6 +4883,23 @@ async function toggleFastLead(id){
   openLead(id);renderSignals();
 }
 
+async function setLeadSteg(sigId,steg){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  s.pipeline_steg=steg;
+  await sb.from("company_signals").update({pipeline_steg:steg}).eq("id",sigId);
+  openLead(sigId);
+  if(curView==="signals")renderSignals();
+}
+async function saveLeadNasta(sigId){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  const ns=v("lead-nasta")||null;const nd=v("lead-nasta-datum")||null;
+  s.nasta_steg=ns;s.nasta_steg_datum=nd;
+  const r=await sb.from("company_signals").update({nasta_steg:ns,nasta_steg_datum:nd}).eq("id",sigId);
+  if(r.error){alert(r.error.message);return;}
+  toast("Nästa steg sparat ✓");
+  if(curView==="signals")renderSignals();
+  if(curView==="dashboard")renderDashboard();
+}
 function openLead(sigId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
@@ -4908,6 +4953,19 @@ function openLead(sigId){
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:11px;color:#888">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</span>
           ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn btn-outline btn-xs">🔗 Öppna källa</a>`:""}
+        </div>
+      </div>
+
+      <!-- PIPELINE & NÄSTA STEG -->
+      <div style="grid-column:1/-1;background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Lead-pipeline</div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+          ${LEAD_PIPELINE.map(st=>{const active=(s.pipeline_steg||"Signal")===st;return`<button class="btn btn-xs ${active?'btn-primary':'btn-outline'}" onclick="setLeadSteg('${s.id}','${st}')">${LEAD_PIPE_LABEL[st]}</button>`;}).join("")}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:2;min-width:160px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Nästa steg</label><input id="lead-nasta" value="${e(s.nasta_steg||"")}" placeholder="t.ex. Ring ekonomichefen" style="width:100%"></div>
+          <div style="flex:1;min-width:110px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Datum</label><input id="lead-nasta-datum" type="date" value="${e(s.nasta_steg_datum||"")}" style="width:100%"></div>
+          <button class="btn btn-primary btn-sm" onclick="saveLeadNasta('${s.id}')">Spara</button>
         </div>
       </div>
 
