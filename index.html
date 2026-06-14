@@ -943,7 +943,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-lead">
   <div class="modal" style="width:720px">
-    <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead')">×</button></div>
+    <div class="mhdr"><h2 id="lead-modal-title">Lead</h2><button class="mclose" onclick="closeM('m-lead');navClear()">×</button></div>
     <div id="lead-modal-content"></div>
   </div>
 </div>
@@ -1063,6 +1063,45 @@ const e=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt
 const toast=msg=>{const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3400);};
 const openM=id=>document.getElementById(id).classList.add("open");
 const closeM=id=>document.getElementById(id).classList.remove("open");
+// ── Navigeringshistorik (bakåt-pil i kort) ──
+let cardHistory=[];      // stack av {type,id,scroll}
+let _navCurrent=null;    // det kort som är öppet just nu {type,id}
+let _navSilent=false;    // true när vi navigerar bakåt (registrera inte)
+const CARD_OPENERS={contact:id=>openCard(id),company:id=>openCompanyCard(id),sub:id=>openSubCard(id),lead:id=>openLead(id)};
+function navRegister(type,id){
+  // anropas i början av varje kort-öppnare
+  if(_navSilent)return;
+  if(_navCurrent&&!(_navCurrent.type===type&&_navCurrent.id===id)){
+    // spara det kort vi lämnar
+    cardHistory.push({..._navCurrent});
+  }else if(!_navCurrent){
+    // vi öppnar ett kort från en lista/vy – spara scrollläge så vi kan tomma stacken tillbaka dit
+    cardHistory.push({type:"view",id:curView,scroll:window.scrollY});
+  }
+  _navCurrent={type,id};
+  if(cardHistory.length>50)cardHistory=cardHistory.slice(-50);
+}
+function navBack(){
+  const prev=cardHistory.pop();
+  if(!prev){closeAllCards();_navCurrent=null;return;}
+  _navSilent=true;
+  closeAllCards();
+  if(prev.type==="view"){
+    _navCurrent=null;
+    if(typeof prev.scroll==="number")setTimeout(()=>window.scrollTo(0,prev.scroll),30);
+  }else{
+    _navCurrent={type:prev.type,id:prev.id};
+    const fn=CARD_OPENERS[prev.type];if(fn)fn(prev.id);
+  }
+  setTimeout(()=>{_navSilent=false;},60);
+}
+function closeAllCards(){["m-card","m-company-card","m-sub-card","m-lead"].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove("open");});}
+function navBackBtn(){
+  if(!cardHistory.length)return "";
+  return `<button onclick="navBack()" title="Tillbaka" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;margin-right:6px">←</button>`;
+}
+// När ett kort stängs manuellt (X eller klick utanför) – nollställ navigering
+function navClear(){_navCurrent=null;cardHistory=[];}
 const today=()=>new Date().toISOString().split("T")[0];
 const curMonth=()=>new Date().toISOString().slice(0,7);
 const v=id=>document.getElementById(id)?.value?.trim()||"";
@@ -1905,11 +1944,11 @@ async function saveCompany(){
 }
 
 async function openCompanyCard(id){
-  const c=companies.find(x=>x.id===id);if(!c)return;const cs=signals.filter(s=>s.company_id===id);const nm=network.filter(n=>n.company_id===id);const cp=projects.filter(p=>p.company_id===id);const fl=FLAG[c.land]||"🌍";
+  const c=companies.find(x=>x.id===id);if(!c)return;navRegister("company",id);const cs=signals.filter(s=>s.company_id===id);const nm=network.filter(n=>n.company_id===id);const cp=projects.filter(p=>p.company_id===id);const fl=FLAG[c.land]||"🌍";
   const parentCo=c.parent_company_id?companies.find(x=>x.id===c.parent_company_id):null;
   const subsidiaries=companies.filter(x=>x.parent_company_id===id);
   document.getElementById("co-card-content").innerHTML=`
-    <div class="card-hdr"><h2>${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}${c.ar_formedlare?'<span style="font-size:13px;margin-left:7px" title="Förmedlare/mellanhand">🤝</span>':""}</h2><p>${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span>${c.ar_formedlare?'<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">🤝 Mellanhand</span>':""}</div></div>
+    <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}${c.ar_formedlare?'<span style="font-size:13px;margin-left:7px" title="Förmedlare/mellanhand">🤝</span>':""}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span>${c.ar_formedlare?'<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">🤝 Mellanhand</span>':""}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">Översikt</div><div class="ctab" onclick="cct('co','ai',this)">AI-score</div><div class="ctab" onclick="cct('co','signals',this)">Signaler (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">Kontakter (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">Projekt (${cp.length})</div></div>
     <div class="ctpane active" id="cco-overview">
       ${c.ai_score?`<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:14px;border:1px solid var(--cream)">
@@ -1943,7 +1982,7 @@ async function openCompanyCard(id){
     <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${e(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
     <div class="ctpane" id="cco-contacts">${nm.length?nm.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openCard('${n.contact_id}')">Öppna</button></div>`).join(""):'<p style="color:#aaa">Inga kopplade kontakter</p>'}</div>
     <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">Inga projekt</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-company-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-company-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
   openM("m-company-card");
 }
 function cct(prefix,tab,el){const cont=el.closest(".modal");cont.querySelectorAll(".ctab").forEach(t=>t.classList.remove("active"));cont.querySelectorAll(".ctpane").forEach(p=>p.classList.remove("active"));el.classList.add("active");const pane=cont.querySelector(`#c${prefix}o-${tab}`)||cont.querySelector(`#c${prefix}-${tab}`);if(pane)pane.classList.add("active");}
@@ -2295,6 +2334,7 @@ function deleteConnection(connId,backToCid){
 
 async function openCard(id){
   const c=contacts.find(x=>x.id===id);if(!c)return;
+  navRegister("contact",id);
   const cLog=actLog.filter(l=>l.contact_id===id).sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const cNotes=notes[id]||[];const sc=calcScore(id);const k=kedja(c.senast_typ);const level=kedjaLevel(c.senast_typ);
   const cConns=connectionsFor(id);
@@ -2302,7 +2342,7 @@ async function openCard(id){
   const co=c.company_id?companies.find(x=>x.id===c.company_id):null;
   const introBy=c.introduktion_av?contacts.find(x=>x.id===c.introduktion_av):null;
   document.getElementById("card-content").innerHTML=`
-    <div class="card-hdr"><h2>${e(c.fornamn)} ${e(c.efternamn)}</h2><p>${e([c.roll,c.foretag].filter(Boolean).join(" – "))}</p><div class="card-hdr-badges"><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span>${co?`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff;cursor:pointer" onclick="closeM('m-card');openCompanyCard('${co.id}')">🏢 ${e(co.namn)}</span>`:""}</div></div>
+    <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${e(c.fornamn)} ${e(c.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.roll,c.foretag].filter(Boolean).join(" – "))}</p><div class="card-hdr-badges"><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span>${co?`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff;cursor:pointer" onclick="openCompanyCard('${co.id}')">🏢 ${e(co.namn)}</span>`:""}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('c','overview',this)">Översikt</div><div class="ctab" onclick="cct('c','score',this)">Relationspoäng</div><div class="ctab" onclick="cct('c','log',this)">Logg (${cLog.length})</div><div class="ctab" onclick="cct('c','notes',this)">Anteckningar (${cNotes.length})</div><div class="ctab" onclick="cct('c','conns',this)">Känner (${cConns.length})</div></div>
     <div class="ctpane active" id="cc-overview">
       <p style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">Relationskedja</p><p style="font-size:13px;margin-bottom:10px">${chain}</p>
@@ -2325,7 +2365,7 @@ async function openCard(id){
     <div class="ctpane" id="cc-log">${cLog.length?cLog.map(l=>`<div class="log-entry"><span style="font-size:12px;color:#888">${e(l.datum||"")}</span><span style="font-size:12px;font-weight:600">${e(l.typ||"")}</span><div><div style="font-size:13px">${e(l.anteckning||"")}</div>${l.nasta_steg?`<div style="font-size:11px;color:#888">→ ${e(l.nasta_steg)}</div>`:""}</div><div><button class="btn-icon" onclick="openLogModal('${l.contact_id}','${l.id}')">✎</button><button class="btn-icon" onclick="deleteLogEntry('${l.id}')">🗑</button></div></div>`).join(""):'<p style="color:#aaa">Ingen logg</p>'}</div>
     <div class="ctpane" id="cc-notes"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNoteModal('${c.id}')">+ Anteckning</button></div>${cNotes.length?cNotes.map(n=>`<div style="display:flex;gap:7px;padding:8px 0;border-bottom:1px solid var(--cream)"><div class="note-chip" style="flex:1"><span class="chip-cat">${e(n.kategori)}</span>${e(n.anteckning)}</div><button class="btn-icon" onclick="deleteNote('${n.id}','${c.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga anteckningar</p>'}</div>
     <div class="ctpane" id="cc-conns"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openConnModal('${c.id}')">+ Lägg till koppling</button></div>${cConns.length?cConns.map(({conn,other})=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream)"><div style="flex:1"><div style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="closeM('m-card');openCard('${other.id}')">${e(other.fornamn)} ${e(other.efternamn)} ↗</div><div style="font-size:11px;color:#888">${e(CONN_TYPES[conn.relation_typ]||conn.relation_typ)}${other.foretag?" · "+e(other.foretag):""}${conn.anteckning?" · "+e(conn.anteckning):""}</div></div><button class="btn-icon" title="Ta bort koppling" onclick="deleteConnection('${conn.id}','${c.id}')" style="color:var(--red)">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga kopplingar ännu. Lägg till vem denna person känner för att spåra vägar in i bolag.</p>'}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-card')">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-card')">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
   openM("m-card");
 }
 
@@ -3897,7 +3937,7 @@ function projMatchHtml(p){
   return ranked.map(({s,m})=>`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1"><div class="week-rn">★ ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${m.matched.map(x=>`<span class="badge b-granskad" style="font-size:10px">${e(x)}</span>`).join(" ")}</div></div><span class="badge b-prospekt">${m.count} match</span></div>`).join("");
 }
 function openSubCard(id){
-  const s=subs.find(x=>x.id===id);if(!s)return;curSubId=id;
+  const s=subs.find(x=>x.id===id);if(!s)return;curSubId=id;navRegister("sub",id);
   const sk=subSkills.filter(k=>k.subconsultant_id===id).map(k=>k.kompetens);
   const acts=subActivity.filter(a=>a.subconsultant_id===id).sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const cos=subCompanies.filter(x=>x.subconsultant_id===id);
@@ -3906,7 +3946,7 @@ function openSubCard(id){
   const projs=projects.filter(p=>p.subconsultant_id===id);
   const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";
   document.getElementById("sub-card-content").innerHTML=`
-    <div class="card-hdr"><h2>★ ${e(s.fornamn)} ${e(s.efternamn)}</h2><p>${e([s.stad,avlbl].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges">${sk.map(x=>`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(x)}</span>`).join("")}</div></div>
+    <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">★ ${e(s.fornamn)} ${e(s.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([s.stad,avlbl].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges">${sk.map(x=>`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(x)}</span>`).join("")}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div><div class="ctab" onclick="cct('sub','leads',this)">Passande leads</div></div>
     <div class="ctpane active" id="csub-overview">
       <div class="ig">
@@ -3954,7 +3994,7 @@ function openSubCard(id){
           <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(sig.status)}</span>
         </div>`).join("");
     })()}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-sub-card')">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-sub-card')">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
   openM("m-sub-card");
 }
 
@@ -4238,9 +4278,10 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
 const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink"];
-document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");}));
+const CARD_MODALS=["m-card","m-company-card","m-sub-card","m-lead"];
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
-document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id))o.classList.remove("open");});});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}});});
 
 // ══ SNOOZE ═══════════════════════════════════════════════════
 let snoozeCid=null;
@@ -4903,6 +4944,7 @@ async function saveLeadNasta(sigId){
 function openLead(sigId){
   const s=signals.find(x=>x.id===sigId);
   if(!s)return;
+  navRegister("lead",sigId);
   const co=companies.find(x=>x.id===s.company_id);
   const companyContacts=contacts.filter(c=>c.company_id===s.company_id);
   // Namnmatchning: kontakter vars för+efternamn nämns i signalens rubrik/beskrivning
@@ -4932,6 +4974,7 @@ function openLead(sigId){
   document.getElementById("lead-modal-content").innerHTML=`
     <div style="background:var(--accent);color:#fff;padding:16px 22px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        ${navBackBtn()}
         <div style="flex:1">
           <h3 style="font-family:'DM Serif Display',serif;font-size:18px">${e(co?.namn||sigName(s))}</h3>
           <p style="opacity:.7;font-size:13px;margin-top:3px">${e([co?.bransch,co?.stad,co?.land].filter(Boolean).join(" · "))}</p>
@@ -5108,7 +5151,7 @@ function openLead(sigId){
       <button class="btn btn-outline btn-sm" onclick="sigStatusThenNext('${s.id}','ignorerad')">Ignorera lead</button>
       <div style="flex:1"></div>
       ${leadNavList.length>1?`<button class="btn btn-outline btn-sm" onclick="leadPrev('${s.id}')" title="Föregående lead">‹ Förra</button><span style="font-size:12px;color:#888;align-self:center">${leadNavList.indexOf(s.id)+1}/${leadNavList.length}</span><button class="btn btn-outline btn-sm" onclick="leadNext('${s.id}')" title="Nästa lead">Nästa ›</button>`:""}
-      <button class="btn btn-outline" onclick="closeM('m-lead')">Stäng</button>
+      <button class="btn btn-outline" onclick="navClear();closeM('m-lead')">Stäng</button>
       <button class="btn btn-warm" onclick="sigStatusThenNext('${s.id}','granskad')">✓ Granskad + nästa</button>
     </div>
   `;
