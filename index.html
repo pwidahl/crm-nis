@@ -415,6 +415,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
       <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span>Nyckeltal</div>
       <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span>Konsultbehov</div>
+      <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
       <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span>Mellanhänder</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none">Uppdrag &amp; tid <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
@@ -469,6 +470,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-prio"><div id="prio-content"></div></div>
+    <div class="view" id="view-linkedin"><div id="linkedin-content"></div></div>
     <div class="view" id="view-schema"><div id="schema-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
@@ -1185,6 +1187,8 @@ async function logout(){await sb.auth.signOut();location.reload();}
 
 let adminIds=[];
 async function loadAdmins(){const r=await sb.from("admins").select("user_id");adminIds=(r.data||[]).map(x=>x.user_id);}
+let linkedinPosts=[];
+async function loadLinkedin(){const r=await sb.from("linkedin_posts").select("*").eq("user_id",me.id).order("created_at",{ascending:false});linkedinPosts=r.data||[];}
 let profilesMap={};
 async function loadProfiles(){const r=await sb.from("profiles").select("id,namn");profilesMap={};(r.data||[]).forEach(p=>{profilesMap[p.id]=p.namn||"Okänd";});}
 function userName(uid){return uid===me?.id?"Du":(profilesMap[uid]||"Annan användare");}
@@ -1336,7 +1340,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist(),loadProfiles()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist(),loadProfiles(),loadLinkedin()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1443,7 +1447,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",schema:"Arbetsschema",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",schema:"Arbetsschema",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare",linkedin:"LinkedIn-inlägg"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -1477,7 +1481,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML='<button class="btn btn-outline" onclick="printCV()">🖨 Skriv ut / PDF</button><button class="btn btn-green" onclick="exportCVDocx()">📄 Word (.docx)</button>';
   else if(name==="goals")tr.innerHTML='<button class="btn btn-primary" onclick="openNewGoal()">+ Nytt mål</button>';
   else if(name==="finans")tr.innerHTML='<button class="btn btn-outline" onclick="newFinAnalysis()">+ Ny analys</button>';
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin};
   renders[name]?.();
 }
 function renderCurrent(){gotoView(curView);}
@@ -3893,6 +3897,114 @@ function renderMellanhander(){
     </tbody></table></div>`;
 }
 
+// ── LinkedIn-inlägg ──
+let linkedinDraft={amne:"",innehall:"",editId:null};
+function linkedinSuggestions(){
+  // bygg förslag från senaste signaler: trender (grupperade per typ/bransch) + enskilda starka
+  const recent=signals.filter(s=>s.status!=="ignorerad"&&!(sigIsFast(s)&&s.dold_fast!==false));
+  const sugg=[];
+  // Trender: gruppera på signal_typ
+  const byType={};
+  recent.forEach(s=>{const t=s.signal_typ||s.efterfragar||"ekonomibehov";byType[t]=(byType[t]||0)+1;});
+  Object.entries(byType).filter(([t,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([t,n])=>{
+    sugg.push({typ:"Trend",amne:`Marknadstrend: ${n} bolag visar tecken på ${e(sigLabelText(t))}`,uppslag:`Just nu ser jag ${n} bolag med signaler om ${sigLabelText(t).toLowerCase()}. Skriv om vad som driver detta behov på marknaden och hur bolag kan tänka kring extern ekonomikompetens.`});
+  });
+  // Enskilda starka signaler (styrka 3)
+  recent.filter(s=>(s.signal_styrka||0)>=3).slice(0,3).forEach(s=>{
+    sugg.push({typ:"Uppslag",amne:`${e(sigName(s))}: ${e((s.rubrik||"").slice(0,60))}`,uppslag:`Utgå från den här marknadshändelsen (utan att namnge bolaget om det är känsligt) och skriv om vad den säger om ekonomifunktionens roll i förändring.`});
+  });
+  // Evergreen-teman om få signaler
+  if(sugg.length<3){
+    const ever=[
+      {typ:"Tema",amne:"Därför behöver tillväxtbolag en interim CFO",uppslag:"Skriv om de tre vanligaste lägena då ett bolag tjänar på interim finance-kompetens."},
+      {typ:"Tema",amne:"Månadsbokslut som beslutsunderlag – inte bara en rapport",uppslag:"Dela hur ett vasst månadsbokslut förändrar ledningens beslut."},
+      {typ:"Tema",amne:"Likviditet i osäkra tider",uppslag:"Tre konkreta saker en ekonomichef bör bevaka i kassaflödet just nu."}
+    ];
+    ever.forEach(t=>{if(sugg.length<5)sugg.push(t);});
+  }
+  return sugg;
+}
+function sigLabelText(t){const m={finance_hiring:"rekrytering inom ekonomi",restructuring:"omstrukturering",growth:"tillväxt",financial_pressure:"finansiell press",system_change:"systembyte",management_change:"ledningsförändring",ekonomibehov:"ekonomibehov",manuell:"eget uppslag"};return m[t]||t;}
+function renderLinkedin(){
+  const box=document.getElementById("linkedin-content");if(!box)return;
+  const sugg=linkedinSuggestions();
+  const posts=linkedinPosts;
+  const thisWeek=posts.filter(p=>{if(!p.created_at)return false;const d=new Date(p.created_at);const now=new Date();const diff=(now-d)/86400000;return diff<7;}).length;
+  box.innerHTML=`
+    <div style="background:linear-gradient(135deg,#eaf2fb,#fff);border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">💼</span>
+      <div style="flex:1"><div style="font-weight:600">Veckans LinkedIn</div><div style="font-size:13px;color:#666">${thisWeek>0?`Du har skapat ${thisWeek} inlägg den här veckan ✓`:"Inget inlägg den här veckan än – välj ett ämne nedan och skriv ett!"}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ämnesförslag (från dina signaler)</div>
+        ${sugg.map((s,i)=>`<div class="week-row" style="cursor:pointer;flex-direction:column;align-items:stretch" onclick="pickLinkedinTopic(${i})"><div style="display:flex;gap:8px;align-items:center"><span class="badge" style="font-size:10px;background:var(--paper);border:1px solid var(--cream)">${e(s.typ)}</span><strong style="flex:1;font-size:13px">${e(s.amne)}</strong></div><div style="font-size:12px;color:#666;margin-top:4px">${e(s.uppslag)}</div></div>`).join("")}
+        <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="pickLinkedinTopic(-1)">✍️ Skriv eget ämne</button>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Skriv inlägg</div>
+        <input id="li-amne" value="${e(linkedinDraft.amne)}" placeholder="Ämne/rubrik" style="width:100%;margin-bottom:8px">
+        <textarea id="li-innehall" placeholder="Skriv ditt LinkedIn-inlägg här..." style="width:100%;min-height:160px;font-family:inherit;font-size:14px;line-height:1.5">${e(linkedinDraft.innehall)}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">Spara utkast</button>
+          <button class="btn btn-warm btn-sm" onclick="saveLinkedinPost('publicerad')">Markera publicerad</button>
+          ${linkedinDraft.editId?`<button class="btn btn-outline btn-sm" onclick="resetLinkedinDraft()">Avbryt</button>`:""}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mina inlägg (${posts.length})</div>
+      ${posts.length?posts.map(p=>linkedinPostRow(p)).join(""):'<p style="color:#aaa;font-size:13px">Inga inlägg ännu.</p>'}
+    </div>`;
+}
+function linkedinPostRow(p){
+  const statusBadge={utkast:'<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">Utkast</span>',publicerad:'<span class="badge b-granskad">Publicerad</span>'}[p.status]||"";
+  const utfall=p.status==="publicerad"?`<div style="font-size:12px;color:#666;margin-top:4px">👍 ${p.reaktioner??"–"} · 💬 ${p.kommentarer??"–"} · 🎯 ${p.leads_genererade??"–"} leads${p.utfall_notis?` · ${e(p.utfall_notis)}`:""}</div>`:"";
+  return `<div class="week-row" style="flex-direction:column;align-items:stretch">
+    <div style="display:flex;gap:8px;align-items:center"><strong style="flex:1;font-size:13px">${e(p.amne||"(utan ämne)")}</strong>${statusBadge}</div>
+    <div style="font-size:12px;color:#666;margin-top:4px;white-space:pre-wrap;max-height:60px;overflow:hidden">${e((p.innehall||"").slice(0,160))}${(p.innehall||"").length>160?"…":""}</div>
+    ${utfall}
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-xs" onclick="editLinkedinPost('${p.id}')">✎ Redigera</button>
+      ${p.status==="publicerad"?`<button class="btn btn-outline btn-xs" onclick="logLinkedinOutcome('${p.id}')">📊 Logga utfall</button>`:""}
+      <button class="btn btn-outline btn-xs" style="color:var(--red)" onclick="deleteLinkedinPost('${p.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+function pickLinkedinTopic(i){
+  if(i===-1){linkedinDraft={amne:"",innehall:"",editId:null};}
+  else{const s=linkedinSuggestions()[i];if(s)linkedinDraft={amne:s.amne,innehall:s.uppslag+"\n\n",editId:null};}
+  renderLinkedin();
+}
+function resetLinkedinDraft(){linkedinDraft={amne:"",innehall:"",editId:null};renderLinkedin();}
+async function saveLinkedinPost(status){
+  const amne=v("li-amne");const innehall=document.getElementById("li-innehall")?.value||"";
+  if(!amne&&!innehall){toast("Skriv något först");return;}
+  const rec={user_id:me.id,amne,innehall,status};
+  if(status==="publicerad")rec.publicerad_datum=today();
+  let r;
+  if(linkedinDraft.editId){r=await sb.from("linkedin_posts").update({amne,innehall,status,...(status==="publicerad"?{publicerad_datum:today()}:{})}).eq("id",linkedinDraft.editId).select("*").single();}
+  else{r=await sb.from("linkedin_posts").insert(rec).select("*").single();}
+  if(r.error){alert(r.error.message);return;}
+  await loadLinkedin();
+  linkedinDraft={amne:"",innehall:"",editId:null};
+  toast(status==="publicerad"?"Markerad som publicerad ✓":"Utkast sparat ✓");
+  renderLinkedin();
+}
+function editLinkedinPost(id){const p=linkedinPosts.find(x=>x.id===id);if(!p)return;linkedinDraft={amne:p.amne||"",innehall:p.innehall||"",editId:id};renderLinkedin();window.scrollTo(0,0);}
+async function deleteLinkedinPost(id){
+  confirm2("Radera inlägget?",async()=>{linkedinPosts=linkedinPosts.filter(x=>x.id!==id);renderLinkedin();await sb.from("linkedin_posts").delete().eq("id",id);});
+}
+function logLinkedinOutcome(id){
+  const p=linkedinPosts.find(x=>x.id===id);if(!p)return;
+  const reak=prompt("Antal reaktioner?",p.reaktioner??"");if(reak===null)return;
+  const komm=prompt("Antal kommentarer?",p.kommentarer??"");if(komm===null)return;
+  const leads=prompt("Antal leads det gav?",p.leads_genererade??"");if(leads===null)return;
+  const notis=prompt("Kort notis om hur det gick (valfritt):",p.utfall_notis??"");
+  sb.from("linkedin_posts").update({reaktioner:parseInt(reak)||0,kommentarer:parseInt(komm)||0,leads_genererade:parseInt(leads)||0,utfall_notis:notis||null}).eq("id",id).then(async()=>{await loadLinkedin();toast("Utfall loggat ✓");renderLinkedin();});
+}
 function renderKonsultbehov(){
   const needs=consultNeeds();
   if(!needs.length){document.getElementById("konsultbehov-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga indikerade konsultbehov ännu. Spara nyckeltal på bolag eller fånga signaler – bolag med varningar dyker upp här automatiskt.</p></div>';return;}
