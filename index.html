@@ -4540,14 +4540,31 @@ function updateGdprHint(){
 }
 function gdprBadge(kind,o){
   const lg=o.laglig_grund;const sd=o.samtycke_datum;
+  const epost=o.epost;
   return `<div style="margin-top:16px;padding:12px 14px;background:var(--paper);border-radius:8px;border:1px solid var(--cream)">
     <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⚖️ GDPR</div>
     <div style="font-size:13px;margin-bottom:8px">Laglig grund: <strong>${lg?e(lg):'<span style="color:var(--gold)">ej angiven</span>'}</strong>${sd?` · Samtycke: ${e(sd)}`:""}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${epost?`<button class="btn btn-warm btn-xs" onclick="sendConsentMail('${kind}','${o.id}')">✉ Skicka samtyckesmejl</button>`:'<span style="font-size:11px;color:var(--gold)">Lägg till e-post för att kunna skicka samtyckesmejl</span>'}
       <button class="btn btn-outline btn-xs" onclick="gdprExportPerson('${kind}','${o.id}')">⬇ Exportera persondata</button>
       <button class="btn btn-outline btn-xs" style="color:var(--red);border-color:var(--red)" onclick="gdprDeletePerson('${kind}','${o.id}')">🗑 Radera all data</button>
     </div>
   </div>`;
+}
+async function sendConsentMail(kind,id){
+  const o=kind==="sub"?subs.find(x=>x.id===id):contacts.find(x=>x.id===id);
+  if(!o)return;
+  if(!o.epost){toast("Personen saknar e-postadress");return;}
+  confirm2(`Skicka ett samtyckesmejl till ${o.fornamn} ${o.efternamn} (${o.epost})?`,async()=>{
+    toast("Skickar...",6000);
+    const token=await getToken();if(!token){toast("Inte inloggad");return;}
+    try{
+      const r=await fetch("/api/send-consent",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({person_typ:kind==="sub"?"sub":"contact",person_id:id,person_namn:`${o.fornamn} ${o.efternamn}`,person_epost:o.epost})});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok){toast(data.error||"Kunde inte skicka");return;}
+      toast("Samtyckesmejl skickat ✓");
+    }catch(err){toast("Fel: "+err.message);}
+  });
 }
 // ── Fast checklista (5 steg) för alla underkonsulter ──
 const PONTY_STEPS=[
