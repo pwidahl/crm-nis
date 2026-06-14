@@ -1191,8 +1191,8 @@ function renderAdminUsers(){
   const sec=document.getElementById("admin-users-sec");if(!sec)return;
   if(!isAdmin()){sec.innerHTML="";return;}
   sec.innerHTML=`<p class="sec-title">Användare (admin)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px">
-    <div class="privacy-note">Skapa ett nytt konto med egen separat CRM. Ange en e-post och ett tillfälligt lösenord (minst 8 tecken) som du delar med personen.</div>
-    <div class="fg" style="margin-top:10px"><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div></div>
+    <div class="privacy-note">Skapa ett nytt konto med egen separat CRM. Ange namn, e-post och ett tillfälligt lösenord (minst 8 tecken) som du delar med personen.</div>
+    <div class="fg" style="margin-top:10px"><div class="fl"><label>Namn</label><input id="newuser-namn" placeholder="t.ex. Anna Svensson"></div><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div></div>
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="createNewUser()">Skapa konto</button>
     <div id="newuser-result" style="margin-top:10px;font-size:13px"></div>
   </div></div>`;
@@ -1200,6 +1200,7 @@ function renderAdminUsers(){
 async function createNewUser(){
   const email=(document.getElementById("newuser-email").value||"").trim();
   const pw=document.getElementById("newuser-pw").value||"";
+  const namn=(document.getElementById("newuser-namn")?.value||"").trim();
   const res=document.getElementById("newuser-result");
   if(!email||!pw){res.innerHTML='<span style="color:var(--red)">Fyll i både e-post och lösenord</span>';return;}
   if(pw.length<8){res.innerHTML='<span style="color:var(--red)">Lösenordet måste vara minst 8 tecken</span>';return;}
@@ -1208,13 +1209,23 @@ async function createNewUser(){
   const token=sess.data.session?.access_token;
   if(!token){res.innerHTML='<span style="color:var(--red)">Du måste vara inloggad</span>';return;}
   try{
-    const r=await fetch("/api/create-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token,email,password:pw})});
+    const r=await fetch("/api/create-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token,email,password:pw,namn})});
     const data=await r.json();
     if(!r.ok){res.innerHTML=`<span style="color:var(--red)">${e(data.error||"Kunde inte skapa konto")}</span>`;return;}
     res.innerHTML=`<span style="color:var(--green)">✓ Konto skapat för ${e(data.email)}. Dela e-post och lösenord med personen – de loggar in på vanliga sättet och får en egen tom CRM.</span>`;
     document.getElementById("newuser-email").value="";
     document.getElementById("newuser-pw").value="";
+    if(document.getElementById("newuser-namn"))document.getElementById("newuser-namn").value="";
+    await loadProfiles();
   }catch(err){res.innerHTML=`<span style="color:var(--red)">Serverfel: ${e(err.message)}</span>`;}
+}
+async function saveMyName(){
+  const namn=(document.getElementById("my-namn")?.value||"").trim();
+  if(!namn){toast("Skriv ett namn");return;}
+  const r=await sb.from("profiles").upsert({id:me.id,namn}).select("*");
+  if(r.error){alert(r.error.message);return;}
+  profilesMap[me.id]=namn;
+  toast("Namn sparat ✓");
 }
 
 async function refreshMfaStatus(){
@@ -1985,10 +1996,23 @@ async function openCompanyCard(id){
     </div>
     <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Ingen score beräknad än")}</p><p style="font-size:12px;color:#888">Lead-score (regelbaserad)</p></div></div></div>
     <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${e(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
-    <div class="ctpane" id="cco-contacts">${nm.length?nm.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openCard('${n.contact_id}')">Öppna</button></div>`).join(""):'<p style="color:#aaa">Inga kopplade kontakter</p>'}</div>
+    <div class="ctpane" id="cco-contacts">${(()=>{
+      const mine=nm.filter(n=>!n.user_id||n.user_id===me.id);
+      let html=mine.length?mine.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join(""):"";
+      return (html||'<p style="color:#aaa">Inga egna kontakter</p>')+'<div id="cco-other-owners"></div>';
+    })()}</div>
     <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">Inga projekt</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-company-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
   openM("m-company-card");
+  loadCompanyContactOwners(id);
+}
+async function loadCompanyContactOwners(coId){
+  const box=document.getElementById("cco-other-owners");if(!box)return;
+  try{
+    const r=await sb.rpc("company_contact_owners",{co_id:coId});
+    if(r.error||!r.data||!r.data.length){box.innerHTML="";return;}
+    box.innerHTML=r.data.map(o=>`<div class="fup-row" style="background:var(--paper)"><div class="fup-info"><strong>👤 ${e(o.agare)} har ${o.antal} kontakt${o.antal>1?"er":""} här</strong><div class="fup-meta">Kontakta ${e(o.agare)} för en introduktion</div></div></div>`).join("");
+  }catch{box.innerHTML="";}
 }
 function cct(prefix,tab,el){const cont=el.closest(".modal");cont.querySelectorAll(".ctab").forEach(t=>t.classList.remove("active"));cont.querySelectorAll(".ctpane").forEach(p=>p.classList.remove("active"));el.classList.add("active");const pane=cont.querySelector(`#c${prefix}o-${tab}`)||cont.querySelector(`#c${prefix}-${tab}`);if(pane)pane.classList.add("active");}
 async function calcAIScore(id){toast("AI-score är ersatt med regelbaserad poäng");}
@@ -2083,11 +2107,11 @@ function renderSignals(){
   const th=(c,l)=>`<th style="cursor:pointer;user-select:none" onclick="sortSignalsCol('${c}')">${l}${arrow(c)}</th>`;
   const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
   const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
-  document.getElementById("signals-content").innerHTML=fastBanner+(list.length?`<div class="tw"><table><thead><tr>${th("rubrik","Signal")}${th("bolag","Bolag")}<th>Pipeline</th>${th("styrka","Styrka")}<th>Ålder</th><th>Nästa steg</th>${th("status","Status")}<th></th></tr></thead><tbody>${list.map(s=>{const known=hasContact(s.company_id);const steg=s.pipeline_steg||"Signal";const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();return`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
+  document.getElementById("signals-content").innerHTML=fastBanner+(list.length?`<div class="tw"><table><thead><tr>${th("rubrik","Signal")}${th("bolag","Bolag")}<th>Pipeline</th><th>Vem</th>${th("styrka","Styrka")}<th>Ålder</th><th>Nästa steg</th>${th("status","Status")}<th></th></tr></thead><tbody>${list.map(s=>{const known=hasContact(s.company_id);const steg=s.pipeline_steg||"Signal";const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();const vem=s.senast_agerad_av?userName(s.senast_agerad_av):userName(s.user_id);return`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
       <strong>${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad" style="margin-right:4px">✍️</span>':""}${sigIsFast(s)?'<span title="Trolig fastanställning" style="margin-right:4px">🔒</span>':""}${e(s.rubrik)}</strong>
       ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:300px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,100))}${(s.beskrivning||"").length>100?"…":""}</div>`:""}
       <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
-    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
+    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td style="font-size:12px;color:#666">${e(vem)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
       ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
       <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
       <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
@@ -4204,7 +4228,7 @@ function showAnnualResult(coId,nyckeltal,text){
 
 
 // SETTINGS
-function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
+function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><div class="fg" style="margin-bottom:10px"><div class="fl"><label>Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
 async function sendTestEmail(){toast("Skickar...",5000);const token=await getToken();if(!token)return;const r=await fetch("/api/test-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));toast(data.message||"Skickat ✓");}
 
@@ -4931,16 +4955,16 @@ async function toggleFastLead(id){
 
 async function setLeadSteg(sigId,steg){
   const s=signals.find(x=>x.id===sigId);if(!s)return;
-  s.pipeline_steg=steg;
-  await sb.from("company_signals").update({pipeline_steg:steg}).eq("id",sigId);
+  s.pipeline_steg=steg;s.senast_agerad_av=me.id;s.senast_agerad_datum=new Date().toISOString();
+  await sb.from("company_signals").update({pipeline_steg:steg,senast_agerad_av:me.id,senast_agerad_datum:s.senast_agerad_datum}).eq("id",sigId);
   openLead(sigId);
   if(curView==="signals")renderSignals();
 }
 async function saveLeadNasta(sigId){
   const s=signals.find(x=>x.id===sigId);if(!s)return;
   const ns=v("lead-nasta")||null;const nd=v("lead-nasta-datum")||null;
-  s.nasta_steg=ns;s.nasta_steg_datum=nd;
-  const r=await sb.from("company_signals").update({nasta_steg:ns,nasta_steg_datum:nd}).eq("id",sigId);
+  s.nasta_steg=ns;s.nasta_steg_datum=nd;s.senast_agerad_av=me.id;s.senast_agerad_datum=new Date().toISOString();
+  const r=await sb.from("company_signals").update({nasta_steg:ns,nasta_steg_datum:nd,senast_agerad_av:me.id,senast_agerad_datum:s.senast_agerad_datum}).eq("id",sigId);
   if(r.error){alert(r.error.message);return;}
   toast("Nästa steg sparat ✓");
   if(curView==="signals")renderSignals();
@@ -5006,7 +5030,7 @@ function openLead(sigId){
 
       <!-- PIPELINE & NÄSTA STEG -->
       <div style="grid-column:1/-1;background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Lead-pipeline</div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Lead-pipeline</div><div style="font-size:11px;color:#888">Ägare: <strong>${e(userName(s.user_id))}</strong>${s.senast_agerad_av?` · senast: ${e(userName(s.senast_agerad_av))} ${s.senast_agerad_datum?"("+e((s.senast_agerad_datum||"").slice(0,10))+")":""}`:""}</div></div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
           ${LEAD_PIPELINE.map(st=>{const active=(s.pipeline_steg||"Signal")===st;return`<button class="btn btn-xs ${active?'btn-primary':'btn-outline'}" onclick="setLeadSteg('${s.id}','${st}')">${LEAD_PIPE_LABEL[st]}</button>`;}).join("")}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
