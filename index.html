@@ -1197,7 +1197,32 @@ function renderAdminUsers(){
     <div class="fg" style="margin-top:10px"><div class="fl"><label>Namn</label><input id="newuser-namn" placeholder="t.ex. Anna Svensson"></div><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div></div>
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="createNewUser()">Skapa konto</button>
     <div id="newuser-result" style="margin-top:10px;font-size:13px"></div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cream)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">Befintliga användare</div><button class="btn btn-outline btn-xs" onclick="loadAdminUserList()">↻ Uppdatera</button></div><div id="admin-user-list"><p style="color:#aaa;font-size:13px">Klicka "Uppdatera" för att hämta listan.</p></div></div>
   </div></div>`;
+}
+async function loadAdminUserList(){
+  const box=document.getElementById("admin-user-list");if(!box)return;
+  box.innerHTML='<p style="color:#888;font-size:13px">Hämtar...</p>';
+  const token=await getToken();if(!token){box.innerHTML='<p style="color:var(--red)">Inte inloggad</p>';return;}
+  try{
+    const r=await fetch("/api/admin-users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token,action:"list"})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok){box.innerHTML=`<p style="color:var(--red)">${e(data.error||"Kunde inte hämta")}</p>`;return;}
+    const users=(data.users||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+    box.innerHTML=users.length?users.map(u=>`<div class="fup-row"><div class="fup-info"><strong>${e(u.namn||"")}</strong>${u.id===me.id?' <span style="font-size:10px;color:var(--accent)">(du)</span>':''}<div class="fup-meta">${e(u.email||"")} · skapad ${e((u.created_at||"").slice(0,10))}</div></div>${u.id!==me.id?`<button class="btn-icon" style="color:var(--red)" title="Radera användare" onclick="adminDeleteUser('${u.id}','${e(u.email||"")}')">🗑</button>`:""}</div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga användare.</p>';
+  }catch(err){box.innerHTML=`<p style="color:var(--red)">Serverfel: ${e(err.message)}</p>`;}
+}
+function adminDeleteUser(id,email){
+  confirm2(`⚠️ Radera användaren ${email} och ALL deras data permanent? Går inte att ångra.`,async()=>{
+    const token=await getToken();if(!token)return;
+    try{
+      const r=await fetch("/api/admin-users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token,action:"delete",target_id:id})});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok){toast(data.error||"Kunde inte radera");return;}
+      toast("Användare raderad");
+      loadAdminUserList();await loadProfiles();
+    }catch(err){toast("Fel: "+err.message);}
+  });
 }
 async function createNewUser(){
   const email=(document.getElementById("newuser-email").value||"").trim();
