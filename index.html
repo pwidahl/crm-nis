@@ -283,6 +283,7 @@ textarea{resize:vertical;min-height:68px}
       <button class="btn btn-primary" onclick="verifyMfaLogin()">Verifiera kod</button>
     </div>
     <p id="l-err" class="login-err"></p>
+    <p style="text-align:center;margin-top:10px"><a href="#" onclick="forgotPassword();return false" style="font-size:13px;color:var(--accent)">Glömt lösenord?</a></p>
   </div>
 </div>
 
@@ -1151,6 +1152,7 @@ function calcScore(cid){
 }
 
 // AUTH
+async function forgotPassword(){const email=document.getElementById("l-email").value.trim();const err=document.getElementById("l-err");if(!email){err.textContent="Skriv din e-post i fältet ovan först, klicka sedan Glömt lösenord.";return;}err.textContent="Skickar återställningslänk...";const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(r.error){err.textContent=r.error.message;return;}err.innerHTML='<span style="color:var(--green)">Om e-posten finns har vi skickat en återställningslänk. Kolla inkorgen (och skräpkorgen).</span>';}
 async function doLogin(){const email=document.getElementById("l-email").value.trim(),pw=document.getElementById("l-pw").value;const err=document.getElementById("l-err");err.textContent="Loggar in...";const r=await sb.auth.signInWithPassword({email,password:pw});if(r.error){err.textContent=r.error.message;return;}
   // Kolla om 2FA krävs
   const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -1227,6 +1229,32 @@ async function saveMyName(){
   profilesMap[me.id]=namn;
   toast("Namn sparat ✓");
 }
+async function changePassword(){
+  const pw=document.getElementById("pw-new")?.value||"";
+  const pw2=document.getElementById("pw-new2")?.value||"";
+  const res=document.getElementById("pw-result");
+  if(pw.length<8){res.innerHTML='<span style="color:var(--red)">Minst 8 tecken</span>';return;}
+  if(pw!==pw2){res.innerHTML='<span style="color:var(--red)">Lösenorden matchar inte</span>';return;}
+  res.textContent="Byter...";
+  const r=await sb.auth.updateUser({password:pw});
+  if(r.error){res.innerHTML=`<span style="color:var(--red)">${e(r.error.message)}</span>`;return;}
+  document.getElementById("pw-new").value="";document.getElementById("pw-new2").value="";
+  res.innerHTML='<span style="color:var(--green)">✓ Lösenord bytt</span>';
+}
+function deleteMyAccount(){
+  confirm2("⚠️ Radera ditt konto och ALL din data permanent? Detta går inte att ångra.",async()=>{
+    confirm2("Är du HELT säker? All din data försvinner för alltid.",async()=>{
+      const token=await getToken();if(!token){toast("Inte inloggad");return;}
+      try{
+        const r=await fetch("/api/delete-account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token})});
+        const data=await r.json().catch(()=>({}));
+        if(!r.ok){toast(data.error||"Kunde inte radera");return;}
+        toast("Kontot raderat");
+        setTimeout(()=>logout(),1500);
+      }catch(err){toast("Fel: "+err.message);}
+    });
+  });
+}
 
 async function refreshMfaStatus(){
   renderAdminUsers();
@@ -1288,6 +1316,21 @@ async function loadAll(){
   fillTimerSelects();
   if(!rtChannel)setupRT();
   renderCurrent();
+  check2FAReminder();
+}
+async function check2FAReminder(){
+  try{
+    const f=await sb.auth.mfa.listFactors();
+    const hasMfa=(f.data?.totp||[]).some(x=>x.status==="verified");
+    let banner=document.getElementById("mfa-reminder");
+    if(hasMfa){if(banner)banner.remove();return;}
+    if(!banner){
+      banner=document.createElement("div");banner.id="mfa-reminder";
+      banner.style.cssText="background:#fdf3e7;border-bottom:1px solid var(--gold);padding:10px 18px;font-size:13px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50";
+      banner.innerHTML='<span style="flex:1">🔒 För säkerhetens skull bör du aktivera tvåstegsverifiering (2FA) på ditt konto.</span><button class="btn btn-warm btn-xs" onclick="gotoView(\'settings\')">Aktivera nu</button>';
+      document.body.insertBefore(banner,document.body.firstChild);
+    }
+  }catch{}
 }
 async function loadContacts(){const r=await sb.from("contacts").select("*").is("arkiverad_vid",null).order("created_at",{ascending:false});contacts=r.data||[];}
 async function loadLog(){const r=await sb.from("activity_log").select("*").order("datum",{ascending:false}).limit(600);actLog=r.data||[];}
@@ -4228,7 +4271,9 @@ function showAnnualResult(coId,nyckeltal,text){
 
 
 // SETTINGS
-function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><div class="fg" style="margin-bottom:10px"><div class="fl"><label>Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
+function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><div class="fg" style="margin-bottom:10px"><div class="fl"><label>Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Byt lösenord</div><div class="fg"><div class="fl"><label>Nytt lösenord (minst 8 tecken)</label><input id="pw-new" type="password" autocomplete="new-password"></div><div class="fl"><label>Upprepa</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="changePassword()">Byt lösenord</button><div id="pw-result" style="margin-top:8px;font-size:13px"></div></div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()">Radera mitt konto</button></div></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
 async function sendTestEmail(){toast("Skickar...",5000);const token=await getToken();if(!token)return;const r=await fetch("/api/test-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));toast(data.message||"Skickat ✓");}
 
