@@ -1183,6 +1183,9 @@ async function logout(){await sb.auth.signOut();location.reload();}
 
 let adminIds=[];
 async function loadAdmins(){const r=await sb.from("admins").select("user_id");adminIds=(r.data||[]).map(x=>x.user_id);}
+let profilesMap={};
+async function loadProfiles(){const r=await sb.from("profiles").select("id,namn");profilesMap={};(r.data||[]).forEach(p=>{profilesMap[p.id]=p.namn||"Okänd";});}
+function userName(uid){return uid===me?.id?"Du":(profilesMap[uid]||"Annan användare");}
 function isAdmin(){return me&&adminIds.includes(me.id);}
 function renderAdminUsers(){
   const sec=document.getElementById("admin-users-sec");if(!sec)return;
@@ -1269,7 +1272,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist()]);
+  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist(),loadProfiles()]);
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
@@ -1934,9 +1937,10 @@ async function saveCompany(){
   const namn=v("co-namn");if(!namn){toast("Namn krävs");return;}
   const prevStatus=editCoid?companies.find(x=>x.id===editCoid)?.pipeline_status:null;
   const newStatus=document.getElementById("co-pipe").value||"Watchlist";
-  const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,ar_formedlare:document.getElementById("co-formedlare").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null};
+  const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,ar_formedlare:document.getElementById("co-formedlare").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null,senast_andrad_av:me.id,senast_andrad_datum:new Date().toISOString()};
   if(newStatus==="Kund"&&prevStatus!=="Kund")data.kund_datum=today();
-  const r=editCoid?await sb.from("companies").update(data).eq("id",editCoid):await sb.from("companies").insert({...data});
+  let updData={...data};delete updData.user_id; // bevara ursprunglig ägare vid redigering
+  const r=editCoid?await sb.from("companies").update(updData).eq("id",editCoid):await sb.from("companies").insert({...data});
   if(r.error){alert(r.error.message);return;}
   // Auto-skapa projekt vid Vunnet
   if(newStatus==="Vunnet"&&prevStatus!=="Vunnet"&&data.auto_projekt_vid_vunnet){const cid=editCoid||(await sb.from("companies").select("id").eq("namn",namn).eq("user_id",me.id).maybeSingle()).data?.id;if(cid){await sb.from("projects").insert({user_id:me.id,company_id:cid,namn:`Uppdrag ${namn}`,status:"Planering",pipeline_status:"Aktiv"});toast("Projekt skapades automatiskt för "+namn);}}
@@ -1957,6 +1961,7 @@ async function openCompanyCard(id){
       </div>`:""}
       <div class="ig">
         <div class="ii"><label>Org.nr</label><span>${e(c.orgnr||"--")}</span></div>
+        <div class="ii"><label>Ägare</label><span>${e(userName(c.user_id))}${c.senast_andrad_av&&c.senast_andrad_av!==c.user_id?` · ändrad av ${e(userName(c.senast_andrad_av))}`:""}</span></div>
         <div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div>
         <div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div>
         <div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div>
@@ -5001,8 +5006,7 @@ function openLead(sigId){
 
       <!-- PIPELINE & NÄSTA STEG -->
       <div style="grid-column:1/-1;background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Lead-pipeline</div>
-        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Lead-pipeline</div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
           ${LEAD_PIPELINE.map(st=>{const active=(s.pipeline_steg||"Signal")===st;return`<button class="btn btn-xs ${active?'btn-primary':'btn-outline'}" onclick="setLeadSteg('${s.id}','${st}')">${LEAD_PIPE_LABEL[st]}</button>`;}).join("")}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -5011,6 +5015,9 @@ function openLead(sigId){
           <button class="btn btn-primary btn-sm" onclick="saveLeadNasta('${s.id}')">Spara</button>
         </div>
       </div>
+
+      <!-- UNDERKONSULT-MATCHNING (tvärs användare) -->
+      <div id="lead-sub-match" style="grid-column:1/-1"></div>
 
       <!-- BOLAGSINFO -->
       <div>
@@ -5156,6 +5163,25 @@ function openLead(sigId){
     </div>
   `;
   openM("m-lead");
+  loadLeadSubMatches(s);
+}
+async function loadLeadSubMatches(s){
+  const box=document.getElementById("lead-sub-match");if(!box)return;
+  // Sökord: använd efterfrågad roll eller nyckelord ur rubriken
+  const sok=(s.efterfragar||s.rubrik||"").trim();
+  if(!sok){box.innerHTML="";return;}
+  // Plocka ut troliga rollord ur texten för bättre träff
+  const roller=["controller","cfo","ekonomichef","redovisning","redovisningschef","business controller","koncernredovisning","interim","ekonom"];
+  const lc=sok.toLowerCase();
+  const term=roller.find(r=>lc.includes(r))||sok.split(/\s+/)[0];
+  try{
+    const r=await sb.rpc("lead_sub_matches",{sokord:term});
+    if(r.error||!r.data||!r.data.length){box.innerHTML="";return;}
+    box.innerHTML=`<div style="background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream);border-left:4px solid var(--gold)">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⭐ Underkonsulter som kan matcha (sökord: "${e(term)}")</div>
+      ${r.data.map(m=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--cream)"><strong>${e(m.agare)}</strong> har ${m.antal} konsult${m.antal>1?"er":""} – <span style="color:#666">${e(m.kompetenser||"")}</span>${m.agare!=="Du"?` · <span style="color:var(--accent)">be om intro</span>`:""}</div>`).join("")}
+    </div>`;
+  }catch{box.innerHTML="";}
 }
 
 async function sigStatusThenNext(sigId,status){
