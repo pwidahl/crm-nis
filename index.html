@@ -661,16 +661,16 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="f_telefon">Telefon</label><input id="f-telefon"></div>
         <div class="fl"><label data-i18n="f_linkedin">LinkedIn</label><input id="f-linkedin"></div>
         <div class="fl"><label data-i18n="f_status_relation">Status / Relation</label><select id="f-status">
-          <option value="Ny kontakt">🔵 Ny kontakt</option>
-          <option value="Aktiv relation">🟢 Aktiv relation</option>
-          <option value="Varm – möte bokat">🟠 Varm – möte bokat</option>
-          <option value="Kund">⭐ Kund</option>
-          <option value="Introduktör">🤝 Introduktör</option>
-          <option value="Kollega / nätverk">👥 Kollega / nätverk</option>
-          <option value="Tidigare kund">📁 Tidigare kund</option>
-          <option value="Vilande">💤 Vilande</option>
-          <option value="Prospekt">📋 Prospekt</option>
-          <option value="Inaktiv">⛔ Inaktiv</option>
+          <option value="Ny kontakt" data-i18n="fs_ny">🔵 Ny kontakt</option>
+          <option value="Aktiv relation" data-i18n="fs_aktiv">🟢 Aktiv relation</option>
+          <option value="Varm – möte bokat" data-i18n="fs_varm">🟠 Varm – möte bokat</option>
+          <option value="Kund" data-i18n="fs_kund">⭐ Kund</option>
+          <option value="Introduktör" data-i18n="fs_intro">🤝 Introduktör</option>
+          <option value="Kollega / nätverk" data-i18n="fs_kollega">👥 Kollega / nätverk</option>
+          <option value="Tidigare kund" data-i18n="fs_tidigare">📁 Tidigare kund</option>
+          <option value="Vilande" data-i18n="fs_vilande">💤 Vilande</option>
+          <option value="Prospekt" data-i18n="fs_prospekt">📋 Prospekt</option>
+          <option value="Inaktiv" data-i18n="fs_inaktiv">⛔ Inaktiv</option>
         </select></div>
         <div class="fl"><label>Prioritet</label><select id="f-prio"><option>Hög</option><option selected>Medium</option><option>Låg</option></select></div>
         <div class="fl"><label>Kontaktnivå</label><select id="f-kniva"><option value="medel">Medel (120 dagar)</option><option value="stark">Stark (60 dagar)</option><option value="strategisk">Strategisk</option></select></div>
@@ -684,7 +684,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl full"><label data-i18n="f_anteckningar">Anteckningar</label><textarea id="f-notes"></textarea></div>
       </div>
     </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-contact')">Avbryt</button><button class="btn btn-primary" onclick="saveContact()">Spara kontakt</button></div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-contact')"data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveContact()"data-i18n="btn_spara_kontakt">Spara kontakt</button></div>
   </div>
 </div>
 
@@ -1097,7 +1097,8 @@ const I18N={
     f_fornamn:"Förnamn *",f_efternamn:"Efternamn *",f_foretag:"Företag",f_orgnr:"Org.nr",f_roll:"Roll",f_fodelsedag:"🎂 Födelsedag",
     f_laglig:"⚖️ Laglig grund (GDPR)",f_kcc:"⭐ KCC-nivå",f_samtycke:"Samtyckesdatum",f_bransch:"Bransch",f_stad:"Stad",
     f_epost:"E-post",f_telefon:"Telefon",f_linkedin:"LinkedIn",f_status_relation:"Status / Relation",f_anteckningar:"Anteckningar",
-    btn_spara:"Spara",btn_avbryt:"Avbryt",btn_spara_kontakt:"Spara kontakt",ej_kcc:"– Ej KCC –",kcc_guld:"⭐ Guld",kcc_silver:"☆ Silver"
+    btn_spara:"Spara",btn_avbryt:"Avbryt",btn_spara_kontakt:"Spara kontakt",ej_kcc:"– Ej KCC –",kcc_guld:"⭐ Guld",kcc_silver:"☆ Silver",
+    fs_ny:"🔵 Ny kontakt",fs_aktiv:"🟢 Aktiv relation",fs_varm:"🟠 Varm – möte bokat",fs_kund:"⭐ Kund",fs_intro:"🤝 Introduktör",fs_kollega:"👥 Kollega / nätverk",fs_tidigare:"📁 Tidigare kund",fs_vilande:"💤 Vilande",fs_prospekt:"📋 Prospekt",fs_inaktiv:"⛔ Inaktiv"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1122,7 +1123,8 @@ const I18N={
     f_fornamn:"First name *",f_efternamn:"Last name *",f_foretag:"Company",f_orgnr:"Reg. no.",f_roll:"Role",f_fodelsedag:"🎂 Birthday",
     f_laglig:"⚖️ Legal basis (GDPR)",f_kcc:"⭐ KCC level",f_samtycke:"Consent date",f_bransch:"Industry",f_stad:"City",
     f_epost:"Email",f_telefon:"Phone",f_linkedin:"LinkedIn",f_status_relation:"Status / Relationship",f_anteckningar:"Notes",
-    btn_spara:"Save",btn_avbryt:"Cancel",btn_spara_kontakt:"Save contact",ej_kcc:"– Not KCC –",kcc_guld:"⭐ Gold",kcc_silver:"☆ Silver"
+    btn_spara:"Save",btn_avbryt:"Cancel",btn_spara_kontakt:"Save contact",ej_kcc:"– Not KCC –",kcc_guld:"⭐ Gold",kcc_silver:"☆ Silver",
+    fs_ny:"🔵 New contact",fs_aktiv:"🟢 Active relationship",fs_varm:"🟠 Warm – meeting booked",fs_kund:"⭐ Client",fs_intro:"🤝 Introducer",fs_kollega:"👥 Colleague / network",fs_tidigare:"📁 Former client",fs_vilande:"💤 Dormant",fs_prospekt:"📋 Prospect",fs_inaktiv:"⛔ Inactive"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
