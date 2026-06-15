@@ -1124,7 +1124,9 @@ const I18N={
     set_ditt_namn:"Ditt namn (visas för kollegor)",set_spara_namn:"Spara namn",set_logga_ut:"Logga ut",
     set_byt_losen:"Byt lösenord",set_nytt_losen:"Nytt lösenord (minst 8 tecken)",set_upprepa:"Upprepa",
     set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_radera_mitt:"Radera mitt konto",
-    set_veckobrev_aktivt:"Veckobrev aktivt",set_veckodag:"Veckodag",set_veckobrev_till:"Veckobrev till",set_uppf_pamin:"Uppföljningspåminnelser",set_pamin_epost:"Påminnelse e-post",set_dagar_forvag:"Dagar i förväg",set_skicka_test:"Skicka testmejl",set_kontrollerar:"Kontrollerar status..."
+    set_veckobrev_aktivt:"Veckobrev aktivt",set_veckodag:"Veckodag",set_veckobrev_till:"Veckobrev till",set_uppf_pamin:"Uppföljningspåminnelser",set_pamin_epost:"Påminnelse e-post",set_dagar_forvag:"Dagar i förväg",set_skicka_test:"Skicka testmejl",set_kontrollerar:"Kontrollerar status...",
+    kcc_totalt:"KCC totalt",kcc_guld_l:"Guld",kcc_silver_l:"Silver",kcc_kontakter:"KCC-kontakter",kcc_underkonsulter:"KCC-underkonsulter",
+    kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1169,7 +1171,9 @@ const I18N={
     set_ditt_namn:"Your name (shown to colleagues)",set_spara_namn:"Save name",set_logga_ut:"Log out",
     set_byt_losen:"Change password",set_nytt_losen:"New password (min 8 characters)",set_upprepa:"Repeat",
     set_radera_konto:"Delete account",set_radera_info:"Deletes your account and all your data permanently. Cannot be undone.",set_radera_mitt:"Delete my account",
-    set_veckobrev_aktivt:"Weekly digest active",set_veckodag:"Weekday",set_veckobrev_till:"Weekly digest to",set_uppf_pamin:"Follow-up reminders",set_pamin_epost:"Reminder email",set_dagar_forvag:"Days in advance",set_skicka_test:"Send test email",set_kontrollerar:"Checking status..."
+    set_veckobrev_aktivt:"Weekly digest active",set_veckodag:"Weekday",set_veckobrev_till:"Weekly digest to",set_uppf_pamin:"Follow-up reminders",set_pamin_epost:"Reminder email",set_dagar_forvag:"Days in advance",set_skicka_test:"Send test email",set_kontrollerar:"Checking status...",
+    kcc_totalt:"KCC total",kcc_guld_l:"Gold",kcc_silver_l:"Silver",kcc_kontakter:"KCC contacts",kcc_underkonsulter:"KCC subconsultants",
+    kcc_inga_kontakter:"No KCC contacts yet. Mark a contact as KCC in its form.",kcc_inga_subs:"No KCC subconsultants yet.",kcc_kontakt:"Contact",kcc_underkonsult_l:"Subconsultant"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -4082,17 +4086,17 @@ function renderKcc(){
   const guld=kccC.filter(c=>c.kcc_niva==="Guld").length+kccS.filter(s=>s.kcc_niva==="Guld").length;
   const silver=total-guld;
   const nivaSort=(a,b)=>(a.kcc_niva==="Guld"?0:1)-(b.kcc_niva==="Guld"?0:1);
-  const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||"Kontakt"}</div></div><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></div>`;
-  const sRow=s=>`<div class="week-row" style="cursor:pointer" onclick="openSubCard('${s.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Underkonsult${s.stad?" · "+e(s.stad):""}</div></div></div>`;
+  const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||t("kcc_kontakt")}</div></div><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></div>`;
+  const sRow=s=>`<div class="week-row" style="cursor:pointer" onclick="openSubCard('${s.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${t("kcc_underkonsult_l")}${s.stad?" · "+e(s.stad):""}</div></div></div>`;
   box.innerHTML=`
     <div style="display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap">
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600">${total}</div><div style="font-size:12px;color:#888">KCC totalt</div></div>
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#d4af37">⭐ ${guld}</div><div style="font-size:12px;color:#888">Guld</div></div>
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#9aa">☆ ${silver}</div><div style="font-size:12px;color:#888">Silver</div></div>
+      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600">${total}</div><div style="font-size:12px;color:#888">${t("kcc_totalt")}</div></div>
+      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#d4af37">⭐ ${guld}</div><div style="font-size:12px;color:#888">${t("kcc_guld_l")}</div></div>
+      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#9aa">☆ ${silver}</div><div style="font-size:12px;color:#888">${t("kcc_silver_l")}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
-      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">KCC-kontakter (${kccC.length})</div>${kccC.length?[...kccC].sort(nivaSort).map(cRow).join(""):'<p style="color:#aaa;font-size:13px">Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.</p>'}</div>
-      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">KCC-underkonsulter (${kccS.length})</div>${kccS.length?[...kccS].sort(nivaSort).map(sRow).join(""):'<p style="color:#aaa;font-size:13px">Inga KCC-underkonsulter ännu.</p>'}</div>
+      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${t("kcc_kontakter")} (${kccC.length})</div>${kccC.length?[...kccC].sort(nivaSort).map(cRow).join(""):`<p style="color:#aaa;font-size:13px">${t("kcc_inga_kontakter")}</p>`}</div>
+      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${t("kcc_underkonsulter")} (${kccS.length})</div>${kccS.length?[...kccS].sort(nivaSort).map(sRow).join(""):`<p style="color:#aaa;font-size:13px">${t("kcc_inga_subs")}</p>`}</div>
     </div>`;
 }
 function renderLinkedin(){
