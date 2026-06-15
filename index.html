@@ -467,7 +467,7 @@ textarea{resize:vertical;min-height:68px}
   </div>
 
   <div class="content">
-    <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title">Kommande uppföljningar</p><div id="dash-fups"></div></div>
+    <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title" data-i18n="dash_kommande_uppf">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-prio"><div id="prio-content"></div></div>
@@ -513,9 +513,9 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <div class="view" id="view-contacts">
       <div class="toolbar">
-        <input id="ct-filter" placeholder="Filtrera kontakter..." oninput="renderContacts()" style="flex:1;max-width:280px">
-        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="">Alla (aktiva + inaktiva)</option><option value="aktiv">Aktiva</option><option value="inaktiv">Inaktiva / vilande</option></select>
-        <button class="btn btn-outline btn-sm" id="ct-kcc-btn" onclick="window._kccOnly=!window._kccOnly;document.getElementById('ct-kcc-btn').classList.toggle('btn-primary',window._kccOnly);renderContacts()">⭐ Endast KCC</button>
+        <input id="ct-filter" data-i18n-ph="ct_filter" placeholder="Filtrera kontakter..." oninput="renderContacts()" style="flex:1;max-width:280px">
+        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="" data-i18n="ct_alla_aktiva">Alla (aktiva + inaktiva)</option><option value="aktiv" data-i18n="ct_aktiva">Aktiva</option><option value="inaktiv" data-i18n="ct_inaktiva">Inaktiva / vilande</option></select>
+        <button class="btn btn-outline btn-sm" id="ct-kcc-btn" data-i18n="ct_endast_kcc" onclick="window._kccOnly=!window._kccOnly;document.getElementById('ct-kcc-btn').classList.toggle('btn-primary',window._kccOnly);renderContacts()">⭐ Endast KCC</button>
         <select id="ct-status-f" onchange="renderContacts()">
           <option value="">Alla statusar</option>
           <option>Ny kontakt</option><option>Aktiv relation</option>
@@ -1084,7 +1084,13 @@ const I18N={
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
-    sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk"
+    sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk",
+    dash_kommande_uppf:"Kommande uppföljningar",dash_oppna_mal:"Öppna mål",dash_hela_schemat:"Hela schemat",
+    dash_lagg_till:"+ Lägg till",dash_anpassa:"⚙ Anpassa",dash_mal:"🎯 Mål & målsättningar",
+    dash_schema:"🗓️ Dagens arbetsschema",dash_lankar:"🔗 Snabblänkar",dash_fodelsedagar:"🎂 Kommande födelsedagar",
+    dash_gdpr:"⚖️ GDPR att se över",dash_leadsnext:"⚠ Leads utan nästa steg",dash_allt_kontroll:"Allt under kontroll",
+    ct_filter:"Filtrera kontakter...",ct_alla_aktiva:"Alla (aktiva + inaktiva)",ct_aktiva:"Aktiva",ct_inaktiva:"Inaktiva / vilande",
+    ct_endast_kcc:"⭐ Endast KCC",ct_alla_status:"Alla statusar",ct_ny_kontakt:"Ny kontakt"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1096,13 +1102,20 @@ const I18N={
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
-    sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language"
+    sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language",
+    dash_kommande_uppf:"Upcoming follow-ups",dash_oppna_mal:"Open goals",dash_hela_schemat:"Full schedule",
+    dash_lagg_till:"+ Add",dash_anpassa:"⚙ Customize",dash_mal:"🎯 Goals & targets",
+    dash_schema:"🗓️ Today's work schedule",dash_lankar:"🔗 Quick links",dash_fodelsedagar:"🎂 Upcoming birthdays",
+    dash_gdpr:"⚖️ GDPR to review",dash_leadsnext:"⚠ Leads without next step",dash_allt_kontroll:"All under control",
+    ct_filter:"Filter contacts...",ct_alla_aktiva:"All (active + inactive)",ct_aktiva:"Active",ct_inaktiva:"Inactive / dormant",
+    ct_endast_kcc:"⭐ KCC only",ct_alla_status:"All statuses",ct_ny_kontakt:"New contact"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
 function setLang(l){LANG=l;localStorage.setItem("lang",l);applyStaticI18n();renderCurrent();}
 function applyStaticI18n(){
   document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));});
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{el.setAttribute("placeholder",t(el.getAttribute("data-i18n-ph")));});
   document.documentElement.lang=LANG;
 }
 const openM=id=>document.getElementById(id).classList.add("open");
@@ -1586,9 +1599,9 @@ function renderDashboard(){
     konsult:()=>card("konsult","🎯 Potentiellt konsultbehov",`${needsAll.length}`,"gotoView('konsultbehov')","Visa alla",needRows,"Inga indikerade behov ännu."),
     tasks:()=>card("tasks","✓ Försenade tasks",`${dtasks.length}`,"gotoView('tasks')",null,taskRows,"Inga försenade tasks"),
     todo:()=>card("todo","✅ Todo",`${dtodos.length}`,"openTodo()",null,todoRows,"Inga öppna todos"),
-    goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎯 Mål &amp; målsättningar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">Öppna mål</button></div>${goalInner}</div>`,
-    schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🗓️ Dagens arbetsschema</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">Hela schemat</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
-    links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🔗 Snabblänkar</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">+ Lägg till</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>${t("dash_mal")}</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">${t("dash_oppna_mal")}</button></div>${goalInner}</div>`,
+    schema:()=>{const{map,overdue,unplanned}=scheduledMap();const todayStr=fmtD(schemaToday());const ti=map[todayStr]||[];const inner=`${overdue.length?`<div style="font-size:12px;color:var(--red);font-weight:600;padding:4px 0">⚠ ${overdue.length} försenade</div>`:""}${(unplanned&&unplanned.length)?`<div style="font-size:12px;color:var(--gold);font-weight:600;padding:4px 0">📥 ${unplanned.length} ej inplanerade</div>`:""}${ti.length?ti.slice(0,5).map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<div class="week-row" onclick="gotoView('schema')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${PI_MAP[t.prioritet]||"🟡"} ${e(t.text)}</div>${co?`<div class="week-rs">🏢 ${e(co.namn)}</div>`:""}</div></div>`;}).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga uppgifter inplanerade idag.</p>'}`;return`<div class="dash-sec week-sec" data-sec="schema" style="margin-bottom:0"><div class="week-sec-hdr"><h3>${t("dash_schema")}</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('schema')">${t("dash_hela_schemat")}</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>${t("dash_lankar")}</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">${t("dash_lagg_till")}</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     birthdays:()=>{const bd=upcomingBirthdays(60);const inner=bd.length?bd.map(({c,days,date})=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🎂 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")}${c.foretag?" · ":""}${days===0?"<strong style='color:var(--accent)'>idag!</strong>":days===1?"imorgon":"om "+days+" dagar"} (${e(date)})</div></div></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga födelsedagar inom 60 dagar.</p>';return`<div class="dash-sec week-sec" data-sec="birthdays" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎂 Kommande födelsedagar</h3></div><div style="padding:4px 14px">${inner}</div></div>`;},
     gdpr:()=>{const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-3);const cut=cutoff.toISOString().slice(0,10);const noBasis=contacts.filter(c=>!c.laglig_grund&&c.ar_aktiv!==false&&c.status!=="Inaktiv");const oldSub=subs.filter(s=>s.status!=="Arkiverad"&&(!s.samtycke_datum||s.samtycke_datum<cut));const items=[...noBasis.map(c=>({n:`${c.fornamn} ${c.efternamn}`,sub:"kontakt – laglig grund saknas",act:`openCard('${c.id}')`})),...oldSub.map(s=>({n:`${s.fornamn} ${s.efternamn}`,sub:s.samtycke_datum?"underkonsult – samtycke >3 år":"underkonsult – samtycke saknas",act:`openSubCard('${s.id}')`}))];const inner=items.length?items.slice(0,10).map(it=>`<div class="week-row" onclick="${it.act}" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">⚖️ ${e(it.n)}</div><div class="week-rs">${e(it.sub)}</div></div></div>`).join("")+(items.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${items.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga GDPR-flaggor 🎉</p>';return`<div class="dash-sec week-sec" data-sec="gdpr" style="margin-bottom:0;${items.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>⚖️ GDPR att se över</h3><span style="font-size:12px;color:#888;margin-left:auto">${items.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
     leadsnext:()=>{const open=signals.filter(s=>s.status!=="ignorerad"&&(s.pipeline_steg||"Signal")!=="Uppdrag"&&!(sigIsFast(s)&&s.dold_fast!==false)&&!s.nasta_steg);open.sort((a,b)=>{if((b.signal_styrka||0)!==(a.signal_styrka||0))return(b.signal_styrka||0)-(a.signal_styrka||0);return String(b.created_at||"").localeCompare(String(a.created_at||""));});const inner=open.length?open.slice(0,12).map(s=>`<div class="week-row" onclick="openLead('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${"★".repeat(s.signal_styrka||1)} ${e(sigName(s))}</div><div class="week-rs">${LEAD_PIPE_LABEL[s.pipeline_steg||"Signal"]} · ${e((s.rubrik||"").slice(0,50))}</div></div></div>`).join("")+(open.length>12?`<div class="week-row" style="color:#888;font-size:12px">+${open.length-12} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla leads har nästa steg 🎉</p>';return`<div class="dash-sec week-sec" data-sec="leadsnext" style="margin-bottom:0;${open.length?"border-left:4px solid var(--red)":""}"><div class="week-sec-hdr"><h3>⚠ Leads utan nästa steg</h3><span style="font-size:12px;color:#888;margin-left:auto">${open.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
