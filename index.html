@@ -1138,7 +1138,7 @@ const I18N={
     li_overblick_titel:"Överblick – vad jag skrivit om",li_inga_inlagg:"Inga inlägg ännu.",li_utan_amne:"Utan ämne",
     li_spara_utkast:"Spara utkast",li_markera_planerad:"Markera planerad",li_markera_publicerad:"Markera publicerad",li_logga_utfall:"📊 Logga utfall",li_radera:"🗑 Radera",
     li_idebank:"Idébank – vinklar för perioden",li_skriv_inlagg:"Skriv inlägg",li_vinklar_info:"Vinklarna är uppslag – du skriver din egen text.",li_amnesfordelning:"Ämnesfördelning",li_veckans:"Veckans LinkedIn",
-    sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera",prio_sortera:"Sortera automatiskt (deadline + prio)",prio_inga:"Inga öppna todos att prioritera. Skapa todos så kan du ordna dem här."
+    sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera",prio_sortera:"Sortera automatiskt (deadline + prio)",prio_inga:"Inga öppna todos att prioritera. Skapa todos så kan du ordna dem här.",sigs_ny:"ny",sigs_granskad:"granskad",sigs_ignorerad:"ignorerad",pl_watchlist:"Watchlist",pl_intressant:"Intressant",pl_varm:"Varm",pl_mojlighet:"Möjlighet",pl_mote:"Möte",pl_offert:"Offert",pl_vunnet:"Vunnet",pl_kund:"Kund",pl_forlorat:"Förlorat"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1196,7 +1196,7 @@ const I18N={
     li_overblick_titel:"Overview – what I've written about",li_inga_inlagg:"No posts yet.",li_utan_amne:"No topic",
     li_spara_utkast:"Save draft",li_markera_planerad:"Mark planned",li_markera_publicerad:"Mark published",li_logga_utfall:"📊 Log outcome",li_radera:"🗑 Delete",
     li_idebank:"Idea bank – angles for the period",li_skriv_inlagg:"Write post",li_vinklar_info:"The angles are prompts – you write your own text.",li_amnesfordelning:"Topic distribution",li_veckans:"This week's LinkedIn",
-    sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done",prio_sortera:"Sort automatically (deadline + priority)",prio_inga:"No open to-dos to prioritize. Create to-dos to organize them here."
+    sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done",prio_sortera:"Sort automatically (deadline + priority)",prio_inga:"No open to-dos to prioritize. Create to-dos to organize them here.",sigs_ny:"new",sigs_granskad:"reviewed",sigs_ignorerad:"ignored",pl_watchlist:"Watchlist",pl_intressant:"Interesting",pl_varm:"Warm",pl_mojlighet:"Opportunity",pl_mote:"Meeting",pl_offert:"Quote",pl_vunnet:"Won",pl_kund:"Client",pl_forlorat:"Lost"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -1258,12 +1258,14 @@ const cleanOrg=s=>String(s||"").replace(/\D/g,"")||null;
 const money=n=>n==null?"--":Math.round(n).toLocaleString("sv-SE")+" SEK";
 const csvCell=v=>`"${String(v??"").replace(/"/g,'""')}"`;
 function scoreClass(s){return s>=60?"sh":s>=30?"sm":"sl";}
-function pipeLabel(p){return PIPE_LABEL[p]||p;}
+const PIPE_KEY={Watchlist:"pl_watchlist",Intressant:"pl_intressant",Varm:"pl_varm",Mojlighet:"pl_mojlighet",Mote:"pl_mote",Offert:"pl_offert",Vunnet:"pl_vunnet",Kund:"pl_kund",Forlorat:"pl_forlorat"};
+function pipeLabel(p){if(PIPE_KEY[p])return t(PIPE_KEY[p]);return PIPE_LABEL[p]||p;}
 function sigLabel(t){return SIG_LABEL[t]||t;}
 function statusClass(s){const m=String(s||"").toLowerCase().replace(/ö/g,"o").replace(/å/g,"a").replace(/ä/g,"a");return"proj-status ps-"+({"planering":"planering","aktiv":"aktiv","pausad":"pausad","avslut":"avslut","slutförd":"slutford","slutford":"slutford","förlorad":"forlorad","forlorad":"forlorad"}[m]||"planering");}
 function badgeStatus(s){return{"Ny kontakt":"b-prospekt","Aktiv relation":"b-aktiv","Varm – möte bokat":"b-varm","Kund":"b-kund","Introduktör":"b-aktiv","Kollega / nätverk":"b-prospekt","Tidigare kund":"b-kund","Vilande":"b-inaktiv","Prospekt":"b-prospekt","Inaktiv":"b-inaktiv","Aktiv":"b-aktiv","Varm lead":"b-varm"}[s]||"b-prospekt";}
 const STATUS_KEY={"Ny kontakt":"ct_ny_kontakt","Aktiv relation":"ct_aktiv_relation","Varm – möte bokat":"ct_varm_mote","Kund":"ct_kund","Introduktör":"ct_introduktor","Kollega / nätverk":"ct_kollega","Tidigare kund":"ct_tidigare_kund","Vilande":"ct_vilande","Prospekt":"ct_prospekt","Inaktiv":"ct_inaktiv"};
 function statusName(s){if(!s)return"";const k=STATUS_KEY[s];return k?t(k):s;}
+function sigStatusName(st){return{ny:t("sigs_ny"),granskad:t("sigs_granskad"),ignorerad:t("sigs_ignorerad")}[st]||st;}
 function kedja(t){return KEDJA[t]||KEDJA[""];}
 function kedjaLevel(t){return{"":0,"Inget":0,"LinkedIn":1,"E-post":1,"Telefonsamtal":2,"samtal":2,"Lunch":3,"lunch":3,"Mote":4,"mote":4}[t]||0;}
 function fupInterval(c){if(c.kontakt_niva==="stark")return 60;if(c.kontakt_niva==="strategisk")return c.anpassad_foljup_dagar||45;return 120;}
@@ -2215,7 +2217,7 @@ async function openCompanyCard(id){
       ${cardTodoHtml("company",id)}
     </div>
     <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Ingen score beräknad än")}</p><p style="font-size:12px;color:#888">Lead-score (regelbaserad)</p></div></div></div>
-    <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${e(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
+    <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${sigStatusName(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
     <div class="ctpane" id="cco-contacts">${(()=>{
       const mine=nm.filter(n=>!n.user_id||n.user_id===me.id);
       let html=mine.length?mine.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join(""):"";
@@ -2331,7 +2333,7 @@ function renderSignals(){
       <strong>${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad" style="margin-right:4px">✍️</span>':""}${sigIsFast(s)?'<span title="Trolig fastanställning" style="margin-right:4px">🔒</span>':""}${e(s.rubrik)}</strong>
       ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:300px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,100))}${(s.beskrivning||"").length>100?"…":""}</div>`:""}
       <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
-    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td style="font-size:12px;color:#666">${e(vem)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(s.status)}</span></td><td style="white-space:nowrap">
+    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td style="font-size:12px;color:#666">${e(vem)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${sigStatusName(s.status)}</span></td><td style="white-space:nowrap">
       ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
       <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
       <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
@@ -4491,7 +4493,7 @@ function openSubCard(id){
             <div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openLead('${sig.id}')">${e(sig.companies?.namn||"Bolag")} – ${e(sig.rubrik||"")} ↗</div>
             <div class="fup-meta">${count>0?`<span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>`:'<span style="color:#aaa">Ingen kompetensmatch</span>'}${sig.efterfragar?` · efterfrågar: ${e(sig.efterfragar)}`:""}</div>
           </div>
-          <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(sig.status)}</span>
+          <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${sigStatusName(sig.status)}</span>
         </div>`).join("");
     })()}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-sub-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
