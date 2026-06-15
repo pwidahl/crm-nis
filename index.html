@@ -935,7 +935,7 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="todo-list"></div>
     </div>
-    <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Exportera till kalender</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')">Stäng</button></div>
+    <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Exportera till kalender</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')" data-i18n="u_stang">Stäng</button></div>
   </div>
 </div>
 
@@ -1129,7 +1129,15 @@ const I18N={
     kcc_totalt:"KCC totalt",kcc_guld_l:"Guld",kcc_silver_l:"Silver",kcc_kontakter:"KCC-kontakter",kcc_underkonsulter:"KCC-underkonsulter",
     kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult",
     goal_totalt:"Mål totalt",goal_uppnadda:"Uppnådda",goal_pavag:"På väg",goal_snitt:"Snitt-progress",goal_inga:'Inga mål ännu. Klicka "+ Nytt mål" för att sätta ditt första mål.',goal_nytt:"+ Nytt mål",
-    gt_aktiviteter:"Antal aktiviteter (alla)",gt_luncher:"Luncher",gt_samtal:"Telefonsamtal",gt_moten:"Möten",gt_nya_kontakter:"Nya kontakter",gt_kontakter_framat:"Kontakter framåt i kedjan",gt_nya_kunder:"Nya kunder",gt_sub_aktiviteter:"Aktiviteter med underkonsulter",gt_nya_underkonsulter:"Nya underkonsulter",gt_kcc:"Antal KCC (kontakter + underkonsulter)"
+    gt_aktiviteter:"Antal aktiviteter (alla)",gt_luncher:"Luncher",gt_samtal:"Telefonsamtal",gt_moten:"Möten",gt_nya_kontakter:"Nya kontakter",gt_kontakter_framat:"Kontakter framåt i kedjan",gt_nya_kunder:"Nya kunder",gt_sub_aktiviteter:"Aktiviteter med underkonsulter",gt_nya_underkonsulter:"Nya underkonsulter",gt_kcc:"Antal KCC (kontakter + underkonsulter)",
+    u_oppna:"Öppna",u_stang:"Stäng",u_tabort:"Ta bort",u_arkivera:"Arkivera",u_redigera:"Redigera",u_klar:"Klar",u_idag:"Idag",u_manad:"Månad",u_overblick:"Överblick",u_ar:"År",u_logga_aktivitet:"Logga aktivitet",u_nasta_steg:"Nästa steg",u_inga_signaler:"Inga signaler",u_nya_signaler:"Nya signaler",
+    li_idag:"Idag",li_manad:"Månad",li_ar:"År",li_overblick:"Överblick",li_schema:"Schema",
+    li_utkast:"Utkast",li_planerad:"Planerad",li_publicerad:"Publicerad",li_tom:"Tom",
+    li_publiceras:"Publiceras (datum)",li_tid:"Tid",li_amneskat:"Ämneskategori",li_rubrik:"Rubrik/ämne",
+    li_utveckling:"Utveckling över tid",li_inlagg_totalt:"inlägg totalt",li_publicerade:"publicerade",li_reaktioner:"reaktioner",li_kommentarer:"kommentarer",li_leads:"leads",
+    li_overblick_titel:"Överblick – vad jag skrivit om",li_inga_inlagg:"Inga inlägg ännu.",li_utan_amne:"Utan ämne",
+    li_spara_utkast:"Spara utkast",li_markera_planerad:"Markera planerad",li_markera_publicerad:"Markera publicerad",li_logga_utfall:"📊 Logga utfall",li_radera:"🗑 Radera",
+    li_idebank:"Idébank – vinklar för perioden",li_skriv_inlagg:"Skriv inlägg",li_vinklar_info:"Vinklarna är uppslag – du skriver din egen text.",li_amnesfordelning:"Ämnesfördelning",li_veckans:"Veckans LinkedIn"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1178,7 +1186,15 @@ const I18N={
     kcc_totalt:"KCC total",kcc_guld_l:"Gold",kcc_silver_l:"Silver",kcc_kontakter:"KCC contacts",kcc_underkonsulter:"KCC subconsultants",
     kcc_inga_kontakter:"No KCC contacts yet. Mark a contact as KCC in its form.",kcc_inga_subs:"No KCC subconsultants yet.",kcc_kontakt:"Contact",kcc_underkonsult_l:"Subconsultant",
     goal_totalt:"Goals total",goal_uppnadda:"Achieved",goal_pavag:"On track",goal_snitt:"Avg. progress",goal_inga:'No goals yet. Click "+ New goal" to set your first goal.',goal_nytt:"+ New goal",
-    gt_aktiviteter:"Number of activities (all)",gt_luncher:"Lunches",gt_samtal:"Phone calls",gt_moten:"Meetings",gt_nya_kontakter:"New contacts",gt_kontakter_framat:"Contacts advanced in chain",gt_nya_kunder:"New clients",gt_sub_aktiviteter:"Activities with subconsultants",gt_nya_underkonsulter:"New subconsultants",gt_kcc:"Number of KCC (contacts + subconsultants)"
+    gt_aktiviteter:"Number of activities (all)",gt_luncher:"Lunches",gt_samtal:"Phone calls",gt_moten:"Meetings",gt_nya_kontakter:"New contacts",gt_kontakter_framat:"Contacts advanced in chain",gt_nya_kunder:"New clients",gt_sub_aktiviteter:"Activities with subconsultants",gt_nya_underkonsulter:"New subconsultants",gt_kcc:"Number of KCC (contacts + subconsultants)",
+    u_oppna:"Open",u_stang:"Close",u_tabort:"Delete",u_arkivera:"Archive",u_redigera:"Edit",u_klar:"Done",u_idag:"Today",u_manad:"Month",u_overblick:"Overview",u_ar:"Year",u_logga_aktivitet:"Log activity",u_nasta_steg:"Next step",u_inga_signaler:"No signals",u_nya_signaler:"New signals",
+    li_idag:"Today",li_manad:"Month",li_ar:"Year",li_overblick:"Overview",li_schema:"Schedule",
+    li_utkast:"Draft",li_planerad:"Planned",li_publicerad:"Published",li_tom:"Empty",
+    li_publiceras:"Publish (date)",li_tid:"Time",li_amneskat:"Topic category",li_rubrik:"Headline/topic",
+    li_utveckling:"Development over time",li_inlagg_totalt:"posts total",li_publicerade:"published",li_reaktioner:"reactions",li_kommentarer:"comments",li_leads:"leads",
+    li_overblick_titel:"Overview – what I've written about",li_inga_inlagg:"No posts yet.",li_utan_amne:"No topic",
+    li_spara_utkast:"Save draft",li_markera_planerad:"Mark planned",li_markera_publicerad:"Mark published",li_logga_utfall:"📊 Log outcome",li_radera:"🗑 Delete",
+    li_idebank:"Idea bank – angles for the period",li_skriv_inlagg:"Write post",li_vinklar_info:"The angles are prompts – you write your own text.",li_amnesfordelning:"Topic distribution",li_veckans:"This week's LinkedIn"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -2202,7 +2218,7 @@ async function openCompanyCard(id){
       return (html||'<p style="color:#aaa">Inga egna kontakter</p>')+'<div id="cco-other-owners"></div>';
     })()}</div>
     <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">Inga projekt</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-company-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-company-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
   openM("m-company-card");
   loadCompanyContactOwners(id);
 }
@@ -2596,7 +2612,7 @@ async function openCard(id){
     <div class="ctpane" id="cc-log">${cLog.length?cLog.map(l=>`<div class="log-entry"><span style="font-size:12px;color:#888">${e(l.datum||"")}</span><span style="font-size:12px;font-weight:600">${e(l.typ||"")}</span><div><div style="font-size:13px">${e(l.anteckning||"")}</div>${l.nasta_steg?`<div style="font-size:11px;color:#888">→ ${e(l.nasta_steg)}</div>`:""}</div><div><button class="btn-icon" onclick="openLogModal('${l.contact_id}','${l.id}')">✎</button><button class="btn-icon" onclick="deleteLogEntry('${l.id}')">🗑</button></div></div>`).join(""):'<p style="color:#aaa">Ingen logg</p>'}</div>
     <div class="ctpane" id="cc-notes"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNoteModal('${c.id}')">+ Anteckning</button></div>${cNotes.length?cNotes.map(n=>`<div style="display:flex;gap:7px;padding:8px 0;border-bottom:1px solid var(--cream)"><div class="note-chip" style="flex:1"><span class="chip-cat">${e(n.kategori)}</span>${e(n.anteckning)}</div><button class="btn-icon" onclick="deleteNote('${n.id}','${c.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga anteckningar</p>'}</div>
     <div class="ctpane" id="cc-conns"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openConnModal('${c.id}')">+ Lägg till koppling</button></div>${cConns.length?cConns.map(({conn,other})=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream)"><div style="flex:1"><div style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="closeM('m-card');openCard('${other.id}')">${e(other.fornamn)} ${e(other.efternamn)} ↗</div><div style="font-size:11px;color:#888">${e(CONN_TYPES[conn.relation_typ]||conn.relation_typ)}${other.foretag?" · "+e(other.foretag):""}${conn.anteckning?" · "+e(conn.anteckning):""}</div></div><button class="btn-icon" title="Ta bort koppling" onclick="deleteConnection('${conn.id}','${c.id}')" style="color:var(--red)">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga kopplingar ännu. Lägg till vem denna person känner för att spåra vägar in i bolag.</p>'}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-card')">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button></div>`;
   openM("m-card");
 }
 
@@ -2887,7 +2903,7 @@ function openProjectCard(id){
     <div class="ctpane" id="cpro-tasks"><div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openNewTask('${id}')">+ Ny uppgift</button></div>${renderTaskList(id)}</div>
     <div class="ctpane" id="cpro-people"><div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openAddProjPerson('${id}')">+ Lägg till person</button></div>${renderPeopleList(id)}</div>
     <div class="ctpane" id="cpro-closing"><div class="fg"><div class="fl full"><label>Vad levererades?</label><textarea id="cl-del">${e(cl.delivered||"")}</textarea></div><div class="fl full"><label>Problem som löstes</label><textarea id="cl-prob">${e(cl.problems_solved||"")}</textarea></div><div class="fl full"><label>Nyckelpersoner</label><textarea id="cl-people">${e(cl.key_people||"")}</textarea></div><div class="fl full"><label>Framtida möjligheter</label><textarea id="cl-future">${e(cl.future_opportunities||"")}</textarea></div><div class="fl full"><label>Lärdomar</label><textarea id="cl-learn">${e(cl.lessons_learned||"")}</textarea></div></div><div style="margin-top:12px"><button class="btn btn-warm" onclick="saveCloseout('${id}')">Spara avslut</button></div></div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="archiveProject('${id}')">Arkivera</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteProject('${id}')">🗑 Radera permanent</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-project-card')">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-project-card');openEditProject('${id}')">Redigera</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="archiveProject('${id}')">Arkivera</button><button class="btn btn-outline btn-sm" style="color:var(--red)" onclick="deleteProject('${id}')">🗑 Radera permanent</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-project-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-project-card');openEditProject('${id}')">Redigera</button></div>`;
   openM("m-project-card");
 }
 
@@ -4120,13 +4136,13 @@ function linkedinTrendStats(){
   const totalLeads=pub.reduce((a,p)=>a+(p.leads_genererade||0),0);
   const totalKomm=pub.reduce((a,p)=>a+(p.kommentarer||0),0);
   return `<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px">
-    <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Utveckling över tid</div>
+    <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${t("li_utveckling")}</div>
     <div style="display:flex;gap:18px;margin-bottom:14px;flex-wrap:wrap">
-      <div><div style="font-size:22px;font-weight:600">${linkedinPosts.length}</div><div style="font-size:11px;color:#888">inlägg totalt</div></div>
-      <div><div style="font-size:22px;font-weight:600">${pub.length}</div><div style="font-size:11px;color:#888">publicerade</div></div>
-      <div><div style="font-size:22px;font-weight:600">${totalReak}</div><div style="font-size:11px;color:#888">reaktioner</div></div>
-      <div><div style="font-size:22px;font-weight:600">${totalKomm}</div><div style="font-size:11px;color:#888">kommentarer</div></div>
-      <div><div style="font-size:22px;font-weight:600;color:var(--accent)">${totalLeads}</div><div style="font-size:11px;color:#888">leads</div></div>
+      <div><div style="font-size:22px;font-weight:600">${linkedinPosts.length}</div><div style="font-size:11px;color:#888">${t("li_inlagg_totalt")}</div></div>
+      <div><div style="font-size:22px;font-weight:600">${pub.length}</div><div style="font-size:11px;color:#888">${t("li_publicerade")}</div></div>
+      <div><div style="font-size:22px;font-weight:600">${totalReak}</div><div style="font-size:11px;color:#888">${t("li_reaktioner")}</div></div>
+      <div><div style="font-size:22px;font-weight:600">${totalKomm}</div><div style="font-size:11px;color:#888">${t("li_kommentarer")}</div></div>
+      <div><div style="font-size:22px;font-weight:600;color:var(--accent)">${totalLeads}</div><div style="font-size:11px;color:#888">${t("li_leads")}</div></div>
     </div>
     <div style="display:flex;align-items:flex-end;gap:6px;height:80px;border-bottom:1px solid var(--cream);padding-bottom:2px">
       ${months.map(m=>{const d=byMonth[m];const h=Math.round(d.total/maxTotal*70);const mLabel=new Date(m+"-01").toLocaleDateString("sv-SE",{month:"short"});return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${m}: ${d.total} inlägg, ${d.pub} publicerade, ${d.leads} leads"><div style="width:100%;max-width:34px;background:var(--accent);height:${h}px;border-radius:3px 3px 0 0;min-height:2px"></div><div style="font-size:9px;color:#aaa">${mLabel}</div></div>`;}).join("")}
@@ -4143,17 +4159,17 @@ function linkedinOverviewHtml(){
   const card=p=>{const st=statusBadge(p.status);const d=p.planerad_datum||(p.created_at||"").slice(0,10);return `<div class="week-row" style="cursor:pointer;flex-direction:column;align-items:stretch" onclick="openLinkedinWeek('${p.vecka||weekKey(new Date(d||Date.now()))}','${d||""}')"><div style="display:flex;gap:8px;align-items:center"><strong style="flex:1;font-size:13px">${e(p.amne||"(utan rubrik)")}</strong>${st}</div><div style="font-size:11px;color:#aaa;margin-top:2px">${e(d||"")}</div><div style="font-size:12px;color:#666;margin-top:4px;white-space:pre-wrap;max-height:44px;overflow:hidden">${e((p.innehall||"").slice(0,140))}${(p.innehall||"").length>140?"…":""}</div>${p.status==="publicerad"&&(p.reaktioner!=null||p.leads_genererade!=null)?`<div style="font-size:11px;color:#888;margin-top:4px">👍 ${p.reaktioner??"–"} · 💬 ${p.kommentarer??"–"} · 🎯 ${p.leads_genererade??"–"}</div>`:""}</div>`;};
   return `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1">Överblick – vad jag skrivit om</h3>
-      <div class="seg"><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('month')">Schema</button><button class="btn btn-xs btn-primary">Överblick</button></div>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1">${t("li_overblick_titel")}</h3>
+      <div class="seg"><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('month')">${t("li_schema")}</button><button class="btn btn-xs btn-primary">${t("li_overblick")}</button></div>
     </div>
     ${linkedinTrendStats()}
-    ${posts.length?"":'<p style="color:#aaa;font-size:13px">Inga inlägg ännu.</p>'}
+    ${posts.length?"":'<p style="color:#aaa;font-size:13px">${t("li_inga_inlagg")}</p>'}
     ${kats.map(k=>`<div style="margin-bottom:18px"><div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px">${e(k)} <span style="font-size:11px;color:#888;font-weight:400">${byKat[k].length} inlägg</span></div>${byKat[k].sort((a,b)=>String(b.planerad_datum||b.created_at).localeCompare(String(a.planerad_datum||a.created_at))).map(card).join("")}</div>`).join("")}
     ${utan.length?`<div style="margin-bottom:18px"><div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#888">Utan ämne <span style="font-size:11px;font-weight:400">${utan.length}</span></div>${utan.map(card).join("")}</div>`:""}`;
 }
 
 function postForWeek(wk){return linkedinPosts.find(p=>p.vecka===wk);}
-function statusBadge(st){return {utkast:'<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">Utkast</span>',planerad:'<span class="badge b-ny">Planerad</span>',publicerad:'<span class="badge b-granskad">Publicerad</span>'}[st]||'<span class="badge" style="background:#f3f3f3;color:#aaa">Tom</span>';}
+function statusBadge(st){return {utkast:`<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">${t("li_utkast")}</span>`,planerad:`<span class="badge b-ny">${t("li_planerad")}</span>`,publicerad:`<span class="badge b-granskad">${t("li_publicerad")}</span>`}[st]||`<span class="badge" style="background:#f3f3f3;color:#aaa">${t("li_tom")}</span>`;}
 
 function linkedinTopicStats(){
   const byKat={};let total=0;
@@ -4174,9 +4190,9 @@ function linkedinMonthHtml(){
   const lastWk=weekKey(last);if(!weeks.find(w=>w.key===lastWk))weeks.push({key:lastWk,tuesday:tuesdayDate(last)});
   return `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" onclick="linkedinNav(-1)">←</button><button class="btn btn-outline btn-xs" onclick="linkedinToday()">Idag</button><button class="btn btn-outline btn-xs" onclick="linkedinNav(1)">→</button></div>
+      <div style="display:flex;gap:4px"><button class="btn btn-outline btn-xs" onclick="linkedinNav(-1)">←</button><button class="btn btn-outline btn-xs" onclick="linkedinToday()">${t("li_idag")}</button><button class="btn btn-outline btn-xs" onclick="linkedinNav(1)">→</button></div>
       <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1;text-transform:capitalize">${manad}</h3>
-      <div class="seg"><button class="btn btn-xs btn-primary">Månad</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('year')">År</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('overview')">Överblick</button></div>
+      <div class="seg"><button class="btn btn-xs btn-primary">${t("li_manad")}</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('year')">${t("li_ar")}</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('overview')">${t("li_overblick")}</button></div>
     </div>
     ${linkedinTopicStats()}
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -4224,16 +4240,16 @@ function openLinkedinWeek(wk,tuesdayISO){
       <div>
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Vecka ${wk.split("-W")[1]} · ${wk.split("-")[0]}</div>
         <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <div style="flex:1;min-width:130px"><label style="font-size:11px;color:#888;display:block">Publiceras (datum)</label><input id="li-datum" type="date" value="${e(linkedinDraft.planerad_datum)}" style="width:100%"></div>
-          <div style="min-width:90px"><label style="font-size:11px;color:#888;display:block">Tid</label><input id="li-tid" type="time" value="${e(linkedinDraft.planerad_tid)}" style="width:100%"></div>
+          <div style="flex:1;min-width:130px"><label style="font-size:11px;color:#888;display:block">${t("li_publiceras")}</label><input id="li-datum" type="date" value="${e(linkedinDraft.planerad_datum)}" style="width:100%"></div>
+          <div style="min-width:90px"><label style="font-size:11px;color:#888;display:block">${t("li_tid")}</label><input id="li-tid" type="time" value="${e(linkedinDraft.planerad_tid)}" style="width:100%"></div>
         </div>
         <input id="li-amne" value="${e(linkedinDraft.amne)}" placeholder="Rubrik/ämne" style="width:100%;margin-bottom:8px">
-        <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Ämneskategori</label><select id="li-kat" style="width:100%" onchange="document.getElementById('li-kat-eget').style.display=this.value==='__eget__'?'block':'none'"><option value="">– Välj ämne –</option>${LI_AMNEN.map(a=>`<option value="${e(a)}" ${linkedinDraft.amne_kategori===a?"selected":""}>${e(a)}</option>`).join("")}${linkedinDraft.amne_kategori&&!LI_AMNEN.includes(linkedinDraft.amne_kategori)?`<option value="${e(linkedinDraft.amne_kategori)}" selected>${e(linkedinDraft.amne_kategori)}</option>`:""}<option value="__eget__">+ Eget ämne…</option></select><input id="li-kat-eget" placeholder="Skriv eget ämne" style="width:100%;margin-top:6px;display:none" onblur="this.previousElementSibling"></div>
+        <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${t("li_amneskat")}</label><select id="li-kat" style="width:100%" onchange="document.getElementById('li-kat-eget').style.display=this.value==='__eget__'?'block':'none'"><option value="">– Välj ämne –</option>${LI_AMNEN.map(a=>`<option value="${e(a)}" ${linkedinDraft.amne_kategori===a?"selected":""}>${e(a)}</option>`).join("")}${linkedinDraft.amne_kategori&&!LI_AMNEN.includes(linkedinDraft.amne_kategori)?`<option value="${e(linkedinDraft.amne_kategori)}" selected>${e(linkedinDraft.amne_kategori)}</option>`:""}<option value="__eget__">+ Eget ämne…</option></select><input id="li-kat-eget" placeholder="Skriv eget ämne" style="width:100%;margin-top:6px;display:none" onblur="this.previousElementSibling"></div>
         <textarea id="li-innehall" placeholder="Skriv ditt inlägg här – det sparas när du klickar Spara utkast, och du kan fortsätta en annan dag." style="width:100%;min-height:200px;font-family:inherit;font-size:14px;line-height:1.55">${e(linkedinDraft.innehall)}</textarea>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">Spara utkast</button>
-          <button class="btn btn-outline btn-sm" onclick="saveLinkedinPost('planerad')">Markera planerad</button>
-          <button class="btn btn-warm btn-sm" onclick="saveLinkedinPost('publicerad')">Markera publicerad</button>
+          <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">${t("li_spara_utkast")}</button>
+          <button class="btn btn-outline btn-sm" onclick="saveLinkedinPost('planerad')">${t("li_markera_planerad")}</button>
+          <button class="btn btn-warm btn-sm" onclick="saveLinkedinPost('publicerad')">${t("li_markera_publicerad")}</button>
         </div>
         ${linkedinDraft.editId&&linkedinDraft.status==="publicerad"?`<button class="btn btn-outline btn-xs" style="margin-top:8px" onclick="logLinkedinOutcome('${linkedinDraft.editId}')">📊 Logga utfall</button>`:""}
         ${linkedinDraft.editId?`<button class="btn btn-outline btn-xs" style="margin-top:8px;color:var(--red)" onclick="deleteLinkedinPost('${linkedinDraft.editId}')">🗑 Radera</button>`:""}
@@ -4474,7 +4490,7 @@ function openSubCard(id){
           <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${e(sig.status)}</span>
         </div>`).join("");
     })()}</div>
-    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-sub-card')">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
+    <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-sub-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button></div>`;
   openM("m-sub-card");
 }
 
@@ -5636,7 +5652,7 @@ function openLead(sigId){
       <button class="btn btn-outline btn-sm" onclick="sigStatusThenNext('${s.id}','ignorerad')">Ignorera lead</button>
       <div style="flex:1"></div>
       ${leadNavList.length>1?`<button class="btn btn-outline btn-sm" onclick="leadPrev('${s.id}')" title="Föregående lead">‹ Förra</button><span style="font-size:12px;color:#888;align-self:center">${leadNavList.indexOf(s.id)+1}/${leadNavList.length}</span><button class="btn btn-outline btn-sm" onclick="leadNext('${s.id}')" title="Nästa lead">Nästa ›</button>`:""}
-      <button class="btn btn-outline" onclick="navClear();closeM('m-lead')">Stäng</button>
+      <button class="btn btn-outline" onclick="navClear();closeM('m-lead')" data-i18n="u_stang">Stäng</button>
       <button class="btn btn-warm" onclick="sigStatusThenNext('${s.id}','granskad')">✓ Granskad + nästa</button>
     </div>
   `;
