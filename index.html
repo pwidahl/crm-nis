@@ -1098,7 +1098,8 @@ const I18N={
     f_laglig:"⚖️ Laglig grund (GDPR)",f_kcc:"⭐ KCC-nivå",f_samtycke:"Samtyckesdatum",f_bransch:"Bransch",f_stad:"Stad",
     f_epost:"E-post",f_telefon:"Telefon",f_linkedin:"LinkedIn",f_status_relation:"Status / Relation",f_anteckningar:"Anteckningar",
     btn_spara:"Spara",btn_avbryt:"Avbryt",btn_spara_kontakt:"Spara kontakt",ej_kcc:"– Ej KCC –",kcc_guld:"⭐ Guld",kcc_silver:"☆ Silver",
-    fs_ny:"🔵 Ny kontakt",fs_aktiv:"🟢 Aktiv relation",fs_varm:"🟠 Varm – möte bokat",fs_kund:"⭐ Kund",fs_intro:"🤝 Introduktör",fs_kollega:"👥 Kollega / nätverk",fs_tidigare:"📁 Tidigare kund",fs_vilande:"💤 Vilande",fs_prospekt:"📋 Prospekt",fs_inaktiv:"⛔ Inaktiv"
+    fs_ny:"🔵 Ny kontakt",fs_aktiv:"🟢 Aktiv relation",fs_varm:"🟠 Varm – möte bokat",fs_kund:"⭐ Kund",fs_intro:"🤝 Introduktör",fs_kollega:"👥 Kollega / nätverk",fs_tidigare:"📁 Tidigare kund",fs_vilande:"💤 Vilande",fs_prospekt:"📋 Prospekt",fs_inaktiv:"⛔ Inaktiv",
+    cc_oversikt:"Översikt",cc_relpoang:"Relationspoäng",cc_logg:"Logg",cc_anteckningar:"Anteckningar",cc_kanner:"Känner",cc_relkedja:"Relationskedja",cc_telefon:"Telefon",cc_hemsida:"Bolagets hemsida",cc_senaste:"Senaste kontakt",cc_nasta:"Nästa uppföljning",cc_introducerad:"Introducerad av"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1124,7 +1125,8 @@ const I18N={
     f_laglig:"⚖️ Legal basis (GDPR)",f_kcc:"⭐ KCC level",f_samtycke:"Consent date",f_bransch:"Industry",f_stad:"City",
     f_epost:"Email",f_telefon:"Phone",f_linkedin:"LinkedIn",f_status_relation:"Status / Relationship",f_anteckningar:"Notes",
     btn_spara:"Save",btn_avbryt:"Cancel",btn_spara_kontakt:"Save contact",ej_kcc:"– Not KCC –",kcc_guld:"⭐ Gold",kcc_silver:"☆ Silver",
-    fs_ny:"🔵 New contact",fs_aktiv:"🟢 Active relationship",fs_varm:"🟠 Warm – meeting booked",fs_kund:"⭐ Client",fs_intro:"🤝 Introducer",fs_kollega:"👥 Colleague / network",fs_tidigare:"📁 Former client",fs_vilande:"💤 Dormant",fs_prospekt:"📋 Prospect",fs_inaktiv:"⛔ Inactive"
+    fs_ny:"🔵 New contact",fs_aktiv:"🟢 Active relationship",fs_varm:"🟠 Warm – meeting booked",fs_kund:"⭐ Client",fs_intro:"🤝 Introducer",fs_kollega:"👥 Colleague / network",fs_tidigare:"📁 Former client",fs_vilande:"💤 Dormant",fs_prospekt:"📋 Prospect",fs_inaktiv:"⛔ Inactive",
+    cc_oversikt:"Overview",cc_relpoang:"Relationship score",cc_logg:"Log",cc_anteckningar:"Notes",cc_kanner:"Knows",cc_relkedja:"Relationship chain",cc_telefon:"Phone",cc_hemsida:"Company website",cc_senaste:"Last contact",cc_nasta:"Next follow-up",cc_introducerad:"Introduced by"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -2519,13 +2521,13 @@ async function openCard(id){
   const introBy=c.introduktion_av?contacts.find(x=>x.id===c.introduktion_av):null;
   document.getElementById("card-content").innerHTML=`
     <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.roll,c.foretag].filter(Boolean).join(" – "))}</p><div class="card-hdr-badges"><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span>${co?`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff;cursor:pointer" onclick="openCompanyCard('${co.id}')">🏢 ${e(co.namn)}</span>`:""}</div></div>
-    <div class="card-tabs"><div class="ctab active" onclick="cct('c','overview',this)">Översikt</div><div class="ctab" onclick="cct('c','score',this)">Relationspoäng</div><div class="ctab" onclick="cct('c','log',this)">Logg (${cLog.length})</div><div class="ctab" onclick="cct('c','notes',this)">Anteckningar (${cNotes.length})</div><div class="ctab" onclick="cct('c','conns',this)">Känner (${cConns.length})</div></div>
+    <div class="card-tabs"><div class="ctab active" onclick="cct('c','overview',this)">${t("cc_oversikt")}</div><div class="ctab" onclick="cct('c','score',this)">${t("cc_relpoang")}</div><div class="ctab" onclick="cct('c','log',this)">${t("cc_logg")} (${cLog.length})</div><div class="ctab" onclick="cct('c','notes',this)">${t("cc_anteckningar")} (${cNotes.length})</div><div class="ctab" onclick="cct('c','conns',this)">${t("cc_kanner")} (${cConns.length})</div></div>
     <div class="ctpane active" id="cc-overview">
       <p style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">Relationskedja</p><p style="font-size:13px;margin-bottom:10px">${chain}</p>
       <div style="background:var(--paper);border-radius:var(--r);padding:10px 13px;font-size:13px;border:1px solid var(--cream);margin-bottom:16px"><strong>Nästa steg:</strong> ${e(k[1])}</div>
       <div class="ig">
         <div class="ii"><label>E-post</label><span>${c.epost?`<a href="mailto:${e(c.epost)}">${e(c.epost)}</a>`:"--"}</span></div>
-        <div class="ii"><label>Telefon</label><span>${c.telefon?`<a href="tel:${e(c.telefon)}">${e(c.telefon)}</a>`:"--"}</span></div>
+        <div class="ii"><label>${t(cc_telefon)}</label><span>${c.telefon?`<a href="tel:${e(c.telefon)}">${e(c.telefon)}</a>`:"--"}</span></div>
         <div class="ii"><label>LinkedIn</label><span>${c.linkedin?`<a href="${/^https?:\/\//i.test(c.linkedin)?e(c.linkedin):"https://"+e(c.linkedin)}" target="_blank" rel="noopener">Öppna profil ↗</a>`:"--"}</span></div>
         ${co?.hemsida?`<div class="ii"><label>Bolagets hemsida</label><span><a href="${e(co.hemsida)}" target="_blank" rel="noopener">${e(co.hemsida.replace(/^https?:\/\//i,""))} ↗</a></span></div>`:""}
         <div class="ii"><label>Senaste kontakt</label><span>${e(c.senast_kontakt||"--")}</span></div>
