@@ -1137,7 +1137,8 @@ const I18N={
     li_utveckling:"Utveckling över tid",li_inlagg_totalt:"inlägg totalt",li_publicerade:"publicerade",li_reaktioner:"reaktioner",li_kommentarer:"kommentarer",li_leads:"leads",
     li_overblick_titel:"Överblick – vad jag skrivit om",li_inga_inlagg:"Inga inlägg ännu.",li_utan_amne:"Utan ämne",
     li_spara_utkast:"Spara utkast",li_markera_planerad:"Markera planerad",li_markera_publicerad:"Markera publicerad",li_logga_utfall:"📊 Logga utfall",li_radera:"🗑 Radera",
-    li_idebank:"Idébank – vinklar för perioden",li_skriv_inlagg:"Skriv inlägg",li_vinklar_info:"Vinklarna är uppslag – du skriver din egen text.",li_amnesfordelning:"Ämnesfördelning",li_veckans:"Veckans LinkedIn"
+    li_idebank:"Idébank – vinklar för perioden",li_skriv_inlagg:"Skriv inlägg",li_vinklar_info:"Vinklarna är uppslag – du skriver din egen text.",li_amnesfordelning:"Ämnesfördelning",li_veckans:"Veckans LinkedIn",
+    sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1194,7 +1195,8 @@ const I18N={
     li_utveckling:"Development over time",li_inlagg_totalt:"posts total",li_publicerade:"published",li_reaktioner:"reactions",li_kommentarer:"comments",li_leads:"leads",
     li_overblick_titel:"Overview – what I've written about",li_inga_inlagg:"No posts yet.",li_utan_amne:"No topic",
     li_spara_utkast:"Save draft",li_markera_planerad:"Mark planned",li_markera_publicerad:"Mark published",li_logga_utfall:"📊 Log outcome",li_radera:"🗑 Delete",
-    li_idebank:"Idea bank – angles for the period",li_skriv_inlagg:"Write post",li_vinklar_info:"The angles are prompts – you write your own text.",li_amnesfordelning:"Topic distribution",li_veckans:"This week's LinkedIn"
+    li_idebank:"Idea bank – angles for the period",li_skriv_inlagg:"Write post",li_vinklar_info:"The angles are prompts – you write your own text.",li_amnesfordelning:"Topic distribution",li_veckans:"This week's LinkedIn",
+    sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -3655,7 +3657,7 @@ function renderSchema(){
 
   // Dagens förslag
   const todayItems=(map[todayStr]||[]);
-  const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>⭐ Dagens förslag</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">Inga uppgifter inplanerade idag 🎉</span>'}</div></div>`;
+  const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>⭐ Dagens förslag</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">${t("sch_inga_idag")}</span>'}</div></div>`;
 
   const unplannedBlock=(unplanned&&unplanned.length)?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--gold)"><div class="week-sec-hdr"><h3>📥 Ej inplanerade</h3><span style="font-size:12px;color:#888">${unplanned.length} st – syns inte i kalendern förrän du ger dem en dag</span></div><div style="padding:8px 14px">${unplanned.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
 
@@ -3663,9 +3665,9 @@ function renderSchema(){
 
   // Navigering + vy-växel + export
   const ctrls=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-    <div class="seg"><button class="btn btn-sm ${schemaView==="vecka"?"btn-primary":"btn-outline"}" onclick="schemaView='vecka';renderSchema()">Vecka</button><button class="btn btn-sm ${schemaView==="manad"?"btn-primary":"btn-outline"}" onclick="schemaView='manad';renderSchema()">Månad</button></div>
+    <div class="seg"><button class="btn btn-sm ${schemaView==="vecka"?"btn-primary":"btn-outline"}" onclick="schemaView='vecka';renderSchema()">${t("sch_vecka")}</button><button class="btn btn-sm ${schemaView==="manad"?"btn-primary":"btn-outline"}" onclick="schemaView='manad';renderSchema()">${t("sch_manad")}</button></div>
     <button class="btn btn-outline btn-sm" onclick="schemaNav(-1)">←</button>
-    <button class="btn btn-outline btn-sm" onclick="schemaAnchor=schemaToday();renderSchema()">Idag</button>
+    <button class="btn btn-outline btn-sm" onclick="schemaAnchor=schemaToday();renderSchema()">${t("sch_idag")}</button>
     <button class="btn btn-outline btn-sm" onclick="schemaNav(1)">→</button>
     <button class="btn btn-warm btn-sm" onclick="renderSchema()" title="Uppdatera schemat med nya/ändrade uppgifter">🔄 Uppdatera</button>
     <div style="flex:1"></div>
@@ -3673,8 +3675,8 @@ function renderSchema(){
     <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">📲 Hela schemat</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-    <select onchange="schemaFilterCo=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterCo===""?" selected":""}>Alla bolag</option><option value="__none__"${schemaFilterCo==="__none__"?" selected":""}>Utan bolag</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${schemaFilterCo===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
-    <select onchange="schemaFilterProj=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterProj===""?" selected":""}>Alla projekt</option><option value="__none__"${schemaFilterProj==="__none__"?" selected":""}>Utan projekt</option>${projects.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(p=>`<option value="${p.id}"${schemaFilterProj===p.id?" selected":""}>${e(p.namn)}</option>`).join("")}</select>
+    <select onchange="schemaFilterCo=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterCo===""?" selected":""}>${t("sch_alla_bolag")}</option><option value="__none__"${schemaFilterCo==="__none__"?" selected":""}>${t("sch_utan_bolag")}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${schemaFilterCo===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+    <select onchange="schemaFilterProj=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterProj===""?" selected":""}>${t("sch_alla_projekt")}</option><option value="__none__"${schemaFilterProj==="__none__"?" selected":""}>${t("sch_utan_projekt")}</option>${projects.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(p=>`<option value="${p.id}"${schemaFilterProj===p.id?" selected":""}>${e(p.namn)}</option>`).join("")}</select>
     ${(schemaFilterCo||schemaFilterProj)?`<button class="btn btn-outline btn-sm" onclick="schemaFilterCo='';schemaFilterProj='';renderSchema()">Rensa filter</button>`:""}
   </div>`;
 
