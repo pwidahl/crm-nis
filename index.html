@@ -400,55 +400,55 @@ textarea{resize:vertical;min-height:68px}
 <aside class="sidebar">
   <div class="sidebar-logo"><h1>CRM</h1><p>NIS</p></div>
   <nav class="nav">
-    <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none">Översikt <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span data-i18n="nav_oversikt">Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
     <div class="nav-grp" id="grp-oversikt">
       <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
       <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
-      <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span>Mål</div>
-      <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span>Prioritering</div>
-      <div class="nav-item" data-v="schema" onclick="gotoView('schema')"><span class="nav-icon">🗓️</span>Arbetsschema</div>
+      <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
+      <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span><span data-i18n="nav_prio">Prioritering</span></div>
+      <div class="nav-item" data-v="schema" onclick="gotoView('schema')"><span class="nav-icon">🗓️</span><span data-i18n="nav_schema">Arbetsschema</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none">Bolag &amp; leads <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span data-i18n="nav_bolag_leads">Bolag &amp; leads</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
-      <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span>Bolag</div>
-      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span>Signaler<span class="nav-badge" id="badge-signals">0</span></div>
-      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span>Koncernkarta</div>
-      <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span>Nyckeltal</div>
-      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span>Konsultbehov</div>
+      <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
+      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
+      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Koncernkarta</span></div>
+      <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span><span data-i18n="nav_nyckeltal">Nyckeltal</span></div>
+      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span><span data-i18n="nav_konsultbehov">Konsultbehov</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
-      <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span>KCC</div>
-      <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span>Mellanhänder</div>
+      <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span><span data-i18n="nav_kcc">KCC</span></div>
+      <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span><span data-i18n="nav_mellanhander">Mellanhänder</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none">Uppdrag &amp; tid <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('uppdrag')" style="cursor:pointer;user-select:none"><span data-i18n="nav_uppdrag_tid">Uppdrag &amp; tid</span> <span class="nav-sec-arrow" id="arr-uppdrag">▾</span></div>
     <div class="nav-grp" id="grp-uppdrag">
-      <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span>Uppdrag</div>
-      <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span>Dagbok</div>
-      <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span>Tidrapport</div>
+      <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
+      <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Dagbok</span></div>
+      <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span><span data-i18n="nav_tidrapport">Tidrapport</span></div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('relationer')" style="cursor:pointer;user-select:none">Relationer <span class="nav-sec-arrow" id="arr-relationer">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('relationer')" style="cursor:pointer;user-select:none"><span data-i18n="nav_relationer">Relationer</span> <span class="nav-sec-arrow" id="arr-relationer">▾</span></div>
     <div class="nav-grp" id="grp-relationer">
-      <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span>Kontakter<span class="nav-badge" id="badge-linkedin">0</span></div>
-      <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span>Nätverk</div>
-      <div class="nav-item" data-v="relnet" onclick="gotoView('relnet')"><span class="nav-icon">🕸️</span>Relationsnät</div>
-      <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span>Uppföljningar<span class="nav-badge" id="badge-followups">0</span></div>
-      <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span>Underkonsulter</div>
+      <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span><span data-i18n="nav_kontakter">Kontakter</span><span class="nav-badge" id="badge-linkedin">0</span></div>
+      <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span><span data-i18n="nav_natverk_item">Nätverk</span></div>
+      <div class="nav-item" data-v="relnet" onclick="gotoView('relnet')"><span class="nav-icon">🕸️</span><span data-i18n="nav_relnet">Relationsnät</span></div>
+      <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span><span data-i18n="nav_uppfoljningar">Uppföljningar</span><span class="nav-badge" id="badge-followups">0</span></div>
+      <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span><span data-i18n="nav_underkonsulter">Underkonsulter</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none">Kunskap &amp; CV <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none"><span data-i18n="nav_kunskap">Kunskap &amp; CV</span> <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
     <div class="nav-grp" id="grp-kunskap">
-      <div class="nav-item" data-v="kb" onclick="gotoView('kb')"><span class="nav-icon">📚</span>Faktabank</div>
-      <div class="nav-item" data-v="cv" onclick="gotoView('cv')"><span class="nav-icon">📄</span>CV / Erfarenhet</div>
+      <div class="nav-item" data-v="kb" onclick="gotoView('kb')"><span class="nav-icon">📚</span><span data-i18n="nav_faktabank">Faktabank</span></div>
+      <div class="nav-item" data-v="cv" onclick="gotoView('cv')"><span class="nav-icon">📄</span><span data-i18n="nav_cv">CV / Erfarenhet</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none">Analys &amp; aktivitet <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span data-i18n="nav_analys">Analys &amp; aktivitet</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
     <div class="nav-grp" id="grp-analys">
-      <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span>Statistik</div>
-      <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span>Min aktivitet</div>
-      <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span>Aktivitetslogg</div>
+      <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span><span data-i18n="nav_statistik">Statistik</span></div>
+      <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span><span data-i18n="nav_minaktivitet">Min aktivitet</span></div>
+      <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span><span data-i18n="nav_logg">Aktivitetslogg</span></div>
     </div>
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
-    <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span>Todo<span class="nav-badge" id="badge-todo">0</span></div>
-    <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span>Inställningar</div>
+    <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
+    <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span><span data-i18n="nav_installningar">Inställningar</span></div>
   </nav>
 </aside>
 
@@ -1071,6 +1071,40 @@ const ACT_TYPE_CLASS={uppdrag:"dt-uppdrag",lunch:"dt-lunch",mote:"dt-mote",aw:"d
 
 const e=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const toast=msg=>{const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3400);};
+// ── Språk (i18n) ──
+let LANG=localStorage.getItem("lang")||"sv";
+const I18N={
+  sv:{
+    nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
+    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_koncern:"Koncernkarta",nav_nyckeltal:"Nyckeltal",
+    nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
+    nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
+    nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
+    nav_relnet:"Relationsnät",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",nav_cv:"CV / Erfarenhet",
+    nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
+    nav_todo:"Todo",nav_installningar:"Inställningar",
+    nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
+    sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk"
+  },
+  en:{
+    nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
+    nav_bolag:"Companies",nav_signaler:"Signals",nav_koncern:"Group map",nav_nyckeltal:"KPIs",
+    nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
+    nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
+    nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
+    nav_relnet:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",nav_cv:"CV / Experience",
+    nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
+    nav_todo:"To-do",nav_installningar:"Settings",
+    nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
+    sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language"
+  }
+};
+function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
+function setLang(l){LANG=l;localStorage.setItem("lang",l);applyStaticI18n();renderCurrent();}
+function applyStaticI18n(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));});
+  document.documentElement.lang=LANG;
+}
 const openM=id=>document.getElementById(id).classList.add("open");
 const closeM=id=>document.getElementById(id).classList.remove("open");
 // ── Navigeringshistorik (bakåt-pil i kort) ──
@@ -1353,6 +1387,7 @@ async function loadAll(){
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
+  applyStaticI18n();
   renderCurrent();
   check2FAReminder();
 }
@@ -4560,7 +4595,8 @@ function showAnnualResult(coId,nyckeltal,text){
 
 
 // SETTINGS
-function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p><div class="fg" style="margin-bottom:10px"><div class="fl"><label>Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div>
+function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">Inloggad som: <strong>${e(me?.email||"")}</strong></p>
+    <div class="fg" style="margin-bottom:14px"><div class="fl"><label>🌐 ${t("sprak_valj")}</label><select id="lang-select" onchange="setLang(this.value)"><option value="sv" ${LANG==="sv"?"selected":""}>${t("sprak_sv")}</option><option value="en" ${LANG==="en"?"selected":""}>${t("sprak_en")}</option></select></div></div><div class="fg" style="margin-bottom:10px"><div class="fl"><label>Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()">Logga ut</button></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Byt lösenord</div><div class="fg"><div class="fl"><label>Nytt lösenord (minst 8 tecken)</label><input id="pw-new" type="password" autocomplete="new-password"></div><div class="fl"><label>Upprepa</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="changePassword()">Byt lösenord</button><div id="pw-result" style="margin-top:8px;font-size:13px"></div></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()">Radera mitt konto</button></div></div></div><p class="sec-title">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label>Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label>Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label>Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label>Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
