@@ -479,10 +479,10 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
-        <input id="co-filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
-        <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="">Alla steg</option></select>
-        <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
-        <select id="co-typ-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="">Alla typer</option><option value="direkt">Direktkunder</option><option value="formedlare">Mellanhänder</option></select>
+        <input id="co-filter" data-i18n-ph="co_filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
+        <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="" data-i18n="co_alla_steg">Alla steg</option></select>
+        <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        <select id="co-typ-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="" data-i18n="sig_alla_typer">Alla typer</option><option value="direkt" data-i18n="co_direktkunder">Direktkunder</option><option value="formedlare" data-i18n="co_mellanhander">Mellanhänder</option></select>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Börsnoterade</label>
       </div>
       <div id="companies-content"></div>
@@ -491,12 +491,12 @@ textarea{resize:vertical;min-height:68px}
       <p class="sec-title">Lead Discovery</p>
       <div class="sig-grid" id="sig-sources"></div>
       <div class="toolbar">
-        <input id="sig-search-f" placeholder="Sök signaler..." oninput="renderSignals()" style="flex:1;max-width:240px">
-        <select id="sig-company-f" onchange="renderSignals()"><option value="">Alla bolag</option></select>
-        <select id="sig-status-f" onchange="renderSignals()"><option value="">Alla statusar</option><option value="ny">Ny</option><option value="granskad">Granskad</option><option value="ignorerad">Ignorerad</option></select>
-        <select id="sig-type-f" onchange="renderSignals()"><option value="">Alla typer</option></select>
-        <select id="sig-land-f" onchange="renderSignals()"><option value="">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
-        <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt">👤 Känd kontakt först</option><option value="inkommen">🆕 Senast inkomna</option><option value="datum">📅 Publiceringsdatum</option><option value="styrka">★ Starkast först</option><option value="score">📊 AI-score först</option><option value="bolag">🔤 Bolag A–Ö</option></select>
+        <input id="sig-search-f" data-i18n-ph="sig_sok" placeholder="Sök signaler..." oninput="renderSignals()" style="flex:1;max-width:240px">
+        <select id="sig-company-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_bolag">Alla bolag</option></select>
+        <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">Alla statusar</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
+        <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
+        <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt" data-i18n="sig_sort_kand">👤 Känd kontakt först</option><option value="inkommen" data-i18n="sig_sort_senast">🆕 Senast inkomna</option><option value="datum" data-i18n="sig_sort_pub">📅 Publiceringsdatum</option><option value="styrka" data-i18n="sig_sort_stark">★ Starkast först</option><option value="score" data-i18n="sig_sort_ai">📊 AI-score först</option><option value="bolag" data-i18n="sig_sort_az">🔤 Bolag A–Ö</option></select>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto">🤝 Dölj mellanhänder</label>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto">🔒 Dölj fastanställningar</label>
         <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto">✍️ Bara mina manuella</label>
@@ -579,8 +579,8 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <div class="view" id="view-subconsultants">
       <div class="toolbar">
-        <input id="sub-filter" placeholder="Filtrera eller sök kompetens..." oninput="renderSubconsultants()" style="flex:1;max-width:280px">
-        <select id="sub-av-f" onchange="renderSubconsultants()"><option value="">Alla</option><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select>
+        <input id="sub-filter" data-i18n-ph="sub_filter" placeholder="Filtrera eller sök kompetens..." oninput="renderSubconsultants()" style="flex:1;max-width:280px">
+        <select id="sub-av-f" onchange="renderSubconsultants()"><option value="" data-i18n="sub_alla">Alla</option><option value="tillganglig" data-i18n="sub_tillganglig">Tillgänglig</option><option value="i_uppdrag" data-i18n="sub_i_uppdrag">I uppdrag</option><option value="ej_tillganglig" data-i18n="sub_ej_tillganglig">Ej tillgänglig</option></select>
         <button class="btn btn-outline btn-sm" id="sub-kcc-btn" onclick="window._kccOnlySub=!window._kccOnlySub;document.getElementById('sub-kcc-btn').classList.toggle('btn-primary',window._kccOnlySub);renderSubconsultants()">⭐ Endast KCC</button>
       </div>
       <div id="subconsultants-content"></div>
@@ -1072,7 +1072,14 @@ const ACT_TYPE_CLASS={uppdrag:"dt-uppdrag",lunch:"dt-lunch",mote:"dt-mote",aw:"d
 const e=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const toast=msg=>{const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3400);};
 // ── Språk (i18n) ──
-let LANG=localStorage.getItem("lang")||"sv";
+let LANG=localStorage.getItem("lang")||"en";
+async function loadUserLang(){
+  if(!me)return;
+  try{
+    const r=await sb.from("profiles").select("sprak").eq("id",me.id).maybeSingle();
+    if(r.data&&r.data.sprak){LANG=r.data.sprak;localStorage.setItem("lang",LANG);}
+  }catch{}
+}
 const I18N={
   sv:{
     nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
@@ -1099,7 +1106,11 @@ const I18N={
     f_epost:"E-post",f_telefon:"Telefon",f_linkedin:"LinkedIn",f_status_relation:"Status / Relation",f_anteckningar:"Anteckningar",
     btn_spara:"Spara",btn_avbryt:"Avbryt",btn_spara_kontakt:"Spara kontakt",ej_kcc:"– Ej KCC –",kcc_guld:"⭐ Guld",kcc_silver:"☆ Silver",
     fs_ny:"🔵 Ny kontakt",fs_aktiv:"🟢 Aktiv relation",fs_varm:"🟠 Varm – möte bokat",fs_kund:"⭐ Kund",fs_intro:"🤝 Introduktör",fs_kollega:"👥 Kollega / nätverk",fs_tidigare:"📁 Tidigare kund",fs_vilande:"💤 Vilande",fs_prospekt:"📋 Prospekt",fs_inaktiv:"⛔ Inaktiv",
-    cc_oversikt:"Översikt",cc_relpoang:"Relationspoäng",cc_logg:"Logg",cc_anteckningar:"Anteckningar",cc_kanner:"Känner",cc_relkedja:"Relationskedja",cc_telefon:"Telefon",cc_hemsida:"Bolagets hemsida",cc_senaste:"Senaste kontakt",cc_nasta:"Nästa uppföljning",cc_introducerad:"Introducerad av"
+    cc_oversikt:"Översikt",cc_relpoang:"Relationspoäng",cc_logg:"Logg",cc_anteckningar:"Anteckningar",cc_kanner:"Känner",cc_relkedja:"Relationskedja",cc_telefon:"Telefon",cc_hemsida:"Bolagets hemsida",cc_senaste:"Senaste kontakt",cc_nasta:"Nästa uppföljning",cc_introducerad:"Introducerad av",
+    sig_sok:"Sök signaler...",sig_alla_bolag:"Alla bolag",sig_alla_status:"Alla statusar",sig_ny:"Ny",sig_granskad:"Granskad",sig_ignorerad:"Ignorerad",sig_alla_typer:"Alla typer",sig_alla_lander:"Alla länder",sig_sort_kand:"👤 Känd kontakt först",sig_sort_senast:"🆕 Senast inkomna",sig_sort_pub:"📅 Publiceringsdatum",sig_sort_stark:"★ Starkast först",sig_sort_ai:"📊 AI-score först",sig_sort_az:"🔤 Bolag A–Ö",sig_lead_discovery:"Lead Discovery",
+    co_filter:"Filtrera bolag...",co_alla_steg:"Alla steg",co_direktkunder:"Direktkunder",co_mellanhander:"Mellanhänder",
+    sub_filter:"Filtrera eller sök kompetens...",sub_alla:"Alla",sub_tillganglig:"Tillgänglig",sub_i_uppdrag:"I uppdrag",sub_ej_tillganglig:"Ej tillgänglig",
+    pr_filter:"Filtrera tasks...",land_sverige:"Sverige",land_norge:"Norge",land_danmark:"Danmark",land_finland:"Finland"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1126,11 +1137,15 @@ const I18N={
     f_epost:"Email",f_telefon:"Phone",f_linkedin:"LinkedIn",f_status_relation:"Status / Relationship",f_anteckningar:"Notes",
     btn_spara:"Save",btn_avbryt:"Cancel",btn_spara_kontakt:"Save contact",ej_kcc:"– Not KCC –",kcc_guld:"⭐ Gold",kcc_silver:"☆ Silver",
     fs_ny:"🔵 New contact",fs_aktiv:"🟢 Active relationship",fs_varm:"🟠 Warm – meeting booked",fs_kund:"⭐ Client",fs_intro:"🤝 Introducer",fs_kollega:"👥 Colleague / network",fs_tidigare:"📁 Former client",fs_vilande:"💤 Dormant",fs_prospekt:"📋 Prospect",fs_inaktiv:"⛔ Inactive",
-    cc_oversikt:"Overview",cc_relpoang:"Relationship score",cc_logg:"Log",cc_anteckningar:"Notes",cc_kanner:"Knows",cc_relkedja:"Relationship chain",cc_telefon:"Phone",cc_hemsida:"Company website",cc_senaste:"Last contact",cc_nasta:"Next follow-up",cc_introducerad:"Introduced by"
+    cc_oversikt:"Overview",cc_relpoang:"Relationship score",cc_logg:"Log",cc_anteckningar:"Notes",cc_kanner:"Knows",cc_relkedja:"Relationship chain",cc_telefon:"Phone",cc_hemsida:"Company website",cc_senaste:"Last contact",cc_nasta:"Next follow-up",cc_introducerad:"Introduced by",
+    sig_sok:"Search signals...",sig_alla_bolag:"All companies",sig_alla_status:"All statuses",sig_ny:"New",sig_granskad:"Reviewed",sig_ignorerad:"Ignored",sig_alla_typer:"All types",sig_alla_lander:"All countries",sig_sort_kand:"👤 Known contact first",sig_sort_senast:"🆕 Most recent",sig_sort_pub:"📅 Publication date",sig_sort_stark:"★ Strongest first",sig_sort_ai:"📊 AI score first",sig_sort_az:"🔤 Company A–Z",sig_lead_discovery:"Lead Discovery",
+    co_filter:"Filter companies...",co_alla_steg:"All stages",co_direktkunder:"Direct clients",co_mellanhander:"Intermediaries",
+    sub_filter:"Filter or search skills...",sub_alla:"All",sub_tillganglig:"Available",sub_i_uppdrag:"On assignment",sub_ej_tillganglig:"Unavailable",
+    pr_filter:"Filter tasks...",land_sverige:"Sweden",land_norge:"Norway",land_danmark:"Denmark",land_finland:"Finland"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
-function setLang(l){LANG=l;localStorage.setItem("lang",l);applyStaticI18n();renderCurrent();}
+function setLang(l){LANG=l;localStorage.setItem("lang",l);applyStaticI18n();renderCurrent();if(me){sb.from("profiles").upsert({id:me.id,sprak:l}).then(()=>{});}}
 function applyStaticI18n(){
   document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"));});
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{el.setAttribute("placeholder",t(el.getAttribute("data-i18n-ph")));});
@@ -1418,6 +1433,7 @@ async function loadAll(){
   fillSelects();updateBadges();updateWeekLabel();
   fillTimerSelects();
   if(!rtChannel)setupRT();
+  await loadUserLang();
   applyStaticI18n();
   renderCurrent();
   check2FAReminder();
