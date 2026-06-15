@@ -1055,7 +1055,8 @@ function sigIsFast(s){
 const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",annat:"Annat"};
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
-const GOAL_TYPES={aktiviteter:"Antal aktiviteter (alla)",luncher:"Luncher",samtal:"Telefonsamtal",moten:"Möten",nya_kontakter:"Nya kontakter",kontakter_framat:"Kontakter framåt i kedjan",nya_kunder:"Nya kunder",sub_aktiviteter:"Aktiviteter med underkonsulter",nya_underkonsulter:"Nya underkonsulter",kcc:"Antal KCC (kontakter + underkonsulter)"};
+const GOAL_TYPES={aktiviteter:"gt_aktiviteter",luncher:"gt_luncher",samtal:"gt_samtal",moten:"gt_moten",nya_kontakter:"gt_nya_kontakter",kontakter_framat:"gt_kontakter_framat",nya_kunder:"gt_nya_kunder",sub_aktiviteter:"gt_sub_aktiviteter",nya_underkonsulter:"gt_nya_underkonsulter",kcc:"gt_kcc"};
+function goalTypeName(typ){return t(GOAL_TYPES[typ]||typ);}
 const GOAL_PERIODS={manad:"Denna månad",kvartal:"Detta kvartal",ar:"Detta år",eget:"Eget datumintervall"};
 const PIPE_LABEL={Mote:"Möte",Forlorat:"Förlorat",Mojlighet:"Möjlighet"};
 const SIG_TYPES=["jobbannons","finance_hiring","management_change","growth","expansion","restructuring","layoffs","new_hires","acquisition","funding","ownership_change","annual_report","arsredovisning_publicerad","financial_pressure","balance_sheet_change","profitability_change","system_change","audit_remark","ny_cfo","ny_vd","ny_ledning","forvärv","varsel","nyhet","arsredovisning","manuell"];
@@ -1126,7 +1127,9 @@ const I18N={
     set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_radera_mitt:"Radera mitt konto",
     set_veckobrev_aktivt:"Veckobrev aktivt",set_veckodag:"Veckodag",set_veckobrev_till:"Veckobrev till",set_uppf_pamin:"Uppföljningspåminnelser",set_pamin_epost:"Påminnelse e-post",set_dagar_forvag:"Dagar i förväg",set_skicka_test:"Skicka testmejl",set_kontrollerar:"Kontrollerar status...",
     kcc_totalt:"KCC totalt",kcc_guld_l:"Guld",kcc_silver_l:"Silver",kcc_kontakter:"KCC-kontakter",kcc_underkonsulter:"KCC-underkonsulter",
-    kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult"
+    kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult",
+    goal_totalt:"Mål totalt",goal_uppnadda:"Uppnådda",goal_pavag:"På väg",goal_snitt:"Snitt-progress",goal_inga:'Inga mål ännu. Klicka "+ Nytt mål" för att sätta ditt första mål.',goal_nytt:"+ Nytt mål",
+    gt_aktiviteter:"Antal aktiviteter (alla)",gt_luncher:"Luncher",gt_samtal:"Telefonsamtal",gt_moten:"Möten",gt_nya_kontakter:"Nya kontakter",gt_kontakter_framat:"Kontakter framåt i kedjan",gt_nya_kunder:"Nya kunder",gt_sub_aktiviteter:"Aktiviteter med underkonsulter",gt_nya_underkonsulter:"Nya underkonsulter",gt_kcc:"Antal KCC (kontakter + underkonsulter)"
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1173,7 +1176,9 @@ const I18N={
     set_radera_konto:"Delete account",set_radera_info:"Deletes your account and all your data permanently. Cannot be undone.",set_radera_mitt:"Delete my account",
     set_veckobrev_aktivt:"Weekly digest active",set_veckodag:"Weekday",set_veckobrev_till:"Weekly digest to",set_uppf_pamin:"Follow-up reminders",set_pamin_epost:"Reminder email",set_dagar_forvag:"Days in advance",set_skicka_test:"Send test email",set_kontrollerar:"Checking status...",
     kcc_totalt:"KCC total",kcc_guld_l:"Gold",kcc_silver_l:"Silver",kcc_kontakter:"KCC contacts",kcc_underkonsulter:"KCC subconsultants",
-    kcc_inga_kontakter:"No KCC contacts yet. Mark a contact as KCC in its form.",kcc_inga_subs:"No KCC subconsultants yet.",kcc_kontakt:"Contact",kcc_underkonsult_l:"Subconsultant"
+    kcc_inga_kontakter:"No KCC contacts yet. Mark a contact as KCC in its form.",kcc_inga_subs:"No KCC subconsultants yet.",kcc_kontakt:"Contact",kcc_underkonsult_l:"Subconsultant",
+    goal_totalt:"Goals total",goal_uppnadda:"Achieved",goal_pavag:"On track",goal_snitt:"Avg. progress",goal_inga:'No goals yet. Click "+ New goal" to set your first goal.',goal_nytt:"+ New goal",
+    gt_aktiviteter:"Number of activities (all)",gt_luncher:"Lunches",gt_samtal:"Phone calls",gt_moten:"Meetings",gt_nya_kontakter:"New contacts",gt_kontakter_framat:"Contacts advanced in chain",gt_nya_kunder:"New clients",gt_sub_aktiviteter:"Activities with subconsultants",gt_nya_underkonsulter:"New subconsultants",gt_kcc:"Number of KCC (contacts + subconsultants)"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -1650,7 +1655,7 @@ function renderDashboard(){
   const taskRows=dtasks.map(t=>{const p=projects.find(x=>x.id===t.project_id);return`<div class="week-row" onclick="gotoView('tasks')"><div style="flex:1"><div class="week-rn">${e(t.title)}</div><div class="week-rs">${e(p?.namn||"")} · <span class="overdue">${e(t.due_date)}</span></div></div></div>`;}).join("");
   const todoRows=dtodos.map(t=>{const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"}[t.prioritet]||"🟡";return`<div class="week-row" onclick="openTodo()"><div style="flex:1"><div class="week-rn">${pi} ${e(t.text)}</div>${t.due_date?`<div class="week-rs">📅 ${e(t.due_date)}</div>`:""}</div></div>`;}).join("");
   const needRows=topNeeds.length?topNeeds.map(({c,flags,score})=>`<div class="week-row" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${e(c.namn)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):"";
-  const goalInner=goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:12px 14px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(GOAL_TYPES[g.typ]||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px;padding:12px 14px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>';
+  const goalInner=goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:12px 14px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(goalTypeName(g.typ)||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px;padding:12px 14px">Inga mål satta ännu. <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">Sätt ditt första mål →</span></p>';
 
   // Sektioner i vald ordning
   const card=(key,title,countLabel,onclickAll,allLabel,rowsHtml,emptyTxt)=>`
@@ -3344,7 +3349,7 @@ function goalProgress(g){
 
 let showAchievedGoals=false;
 function renderGoals(){
-  if(!goals.length){document.getElementById("goals-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga mål ännu. Klicka "+ Nytt mål" för att sätta ditt första mål.</p></div>';return;}
+  if(!goals.length){document.getElementById("goals-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>${t("goal_inga")}</p></div>';return;}
   // beräkna status för alla
   const withProg=goals.map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));return{g,prog,mal,pct,done:pct>=100};});
   const total=withProg.length;
@@ -3356,10 +3361,10 @@ function renderGoals(){
 
   const summary=`<div class="week-sec" style="margin-bottom:18px"><div style="padding:18px">
     <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px">
-      <div><div style="font-family:'DM Serif Display',serif;font-size:30px">${total}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Mål totalt</div></div>
-      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--green)">${achieved}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Uppnådda</div></div>
-      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--accent)">${onTrack}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">På väg</div></div>
-      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--gold)">${avgPct}%</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Snitt-progress</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px">${total}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${t("goal_totalt")}</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--green)">${achieved}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${t("goal_uppnadda")}</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--accent)">${onTrack}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${t("goal_pavag")}</div></div>
+      <div><div style="font-family:'DM Serif Display',serif;font-size:30px;color:var(--gold)">${avgPct}%</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${t("goal_snitt")}</div></div>
     </div>
     <div style="display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--cream)">
       ${achieved>0?`<div style="width:${achievedW}%;background:var(--green)" title="${achieved} uppnådda"></div>`:""}
@@ -3373,7 +3378,7 @@ function renderGoals(){
     const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";
     const col=pct>=100?"var(--green)":pct>=60?"var(--accent)":"var(--gold)";
     return`<div class="week-sec" style="margin-bottom:0;${done?"opacity:.75":""}"><div style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${done?"✓ ":""}${e(GOAL_TYPES[g.typ]||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${g.period==="eget"?e((g.period_start||"")+" – "+(g.slut_datum||"")):e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:600;font-size:15px">${done?"✓ ":""}${e(goalTypeName(g.typ)||g.typ)}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">${g.period==="eget"?e((g.period_start||"")+" – "+(g.slut_datum||"")):e(GOAL_PERIODS[g.period]||g.period)}</div></div><div style="display:flex;gap:2px"><button class="btn-icon" onclick="openEditGoal('${g.id}')">✎</button><button class="btn-icon" style="color:var(--red)" onclick="deleteGoalById('${g.id}')">🗑</button></div></div>
       <div style="display:flex;align-items:baseline;gap:6px;margin:12px 0 8px"><span style="font-family:'DM Serif Display',serif;font-size:34px;color:${col}">${prog}</span><span style="font-size:16px;color:#888">/ ${mal}</span></div>
       <div class="progress-wrap" style="height:10px"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div>
       <div style="font-size:12px;color:#888;margin-top:6px">${pct}% ${pct>=100?"– uppnått! 🎉":`· ${mal-prog} kvar`}</div>
@@ -3388,7 +3393,7 @@ function renderGoals(){
 }
 
 function fillGoalSelects(){
-  document.getElementById("goal-typ").innerHTML=Object.entries(GOAL_TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
+  document.getElementById("goal-typ").innerHTML=Object.entries(GOAL_TYPES).map(([k,l])=>`<option value="${k}">${t(l)}</option>`).join("");
   document.getElementById("goal-period").innerHTML=Object.entries(GOAL_PERIODS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
 }
 function toggleGoalDates(){
