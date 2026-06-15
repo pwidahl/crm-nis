@@ -1138,7 +1138,7 @@ const I18N={
     li_overblick_titel:"Överblick – vad jag skrivit om",li_inga_inlagg:"Inga inlägg ännu.",li_utan_amne:"Utan ämne",
     li_spara_utkast:"Spara utkast",li_markera_planerad:"Markera planerad",li_markera_publicerad:"Markera publicerad",li_logga_utfall:"📊 Logga utfall",li_radera:"🗑 Radera",
     li_idebank:"Idébank – vinklar för perioden",li_skriv_inlagg:"Skriv inlägg",li_vinklar_info:"Vinklarna är uppslag – du skriver din egen text.",li_amnesfordelning:"Ämnesfördelning",li_veckans:"Veckans LinkedIn",
-    sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera"
+    sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera",prio_sortera:"Sortera automatiskt (deadline + prio)",prio_inga:"Inga öppna todos att prioritera. Skapa todos så kan du ordna dem här."
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1196,7 +1196,7 @@ const I18N={
     li_overblick_titel:"Overview – what I've written about",li_inga_inlagg:"No posts yet.",li_utan_amne:"No topic",
     li_spara_utkast:"Save draft",li_markera_planerad:"Mark planned",li_markera_publicerad:"Mark published",li_logga_utfall:"📊 Log outcome",li_radera:"🗑 Delete",
     li_idebank:"Idea bank – angles for the period",li_skriv_inlagg:"Write post",li_vinklar_info:"The angles are prompts – you write your own text.",li_amnesfordelning:"Topic distribution",li_veckans:"This week's LinkedIn",
-    sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done"
+    sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done",prio_sortera:"Sort automatically (deadline + priority)",prio_inga:"No open to-dos to prioritize. Create to-dos to organize them here."
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
@@ -1262,6 +1262,8 @@ function pipeLabel(p){return PIPE_LABEL[p]||p;}
 function sigLabel(t){return SIG_LABEL[t]||t;}
 function statusClass(s){const m=String(s||"").toLowerCase().replace(/ö/g,"o").replace(/å/g,"a").replace(/ä/g,"a");return"proj-status ps-"+({"planering":"planering","aktiv":"aktiv","pausad":"pausad","avslut":"avslut","slutförd":"slutford","slutford":"slutford","förlorad":"forlorad","forlorad":"forlorad"}[m]||"planering");}
 function badgeStatus(s){return{"Ny kontakt":"b-prospekt","Aktiv relation":"b-aktiv","Varm – möte bokat":"b-varm","Kund":"b-kund","Introduktör":"b-aktiv","Kollega / nätverk":"b-prospekt","Tidigare kund":"b-kund","Vilande":"b-inaktiv","Prospekt":"b-prospekt","Inaktiv":"b-inaktiv","Aktiv":"b-aktiv","Varm lead":"b-varm"}[s]||"b-prospekt";}
+const STATUS_KEY={"Ny kontakt":"ct_ny_kontakt","Aktiv relation":"ct_aktiv_relation","Varm – möte bokat":"ct_varm_mote","Kund":"ct_kund","Introduktör":"ct_introduktor","Kollega / nätverk":"ct_kollega","Tidigare kund":"ct_tidigare_kund","Vilande":"ct_vilande","Prospekt":"ct_prospekt","Inaktiv":"ct_inaktiv"};
+function statusName(s){if(!s)return"";const k=STATUS_KEY[s];return k?t(k):s;}
 function kedja(t){return KEDJA[t]||KEDJA[""];}
 function kedjaLevel(t){return{"":0,"Inget":0,"LinkedIn":1,"E-post":1,"Telefonsamtal":2,"samtal":2,"Lunch":3,"lunch":3,"Mote":4,"mote":4}[t]||0;}
 function fupInterval(c){if(c.kontakt_niva==="stark")return 60;if(c.kontakt_niva==="strategisk")return c.anpassad_foljup_dagar||45;return 120;}
@@ -2484,7 +2486,7 @@ function renderContacts(){
     return`<tr onclick="openCard('${c.id}')" ${!aktiv||c.status==="Inaktiv"||c.status==="Vilande"?'style="opacity:.6"':""}>
       <td><strong>${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</strong>${!aktiv||c.status==="Inaktiv"?'<span class="badge b-inaktiv" style="margin-left:5px;font-size:10px">Inaktiv</span>':c.status==="Vilande"?'<span class="badge b-inaktiv" style="margin-left:5px;font-size:10px">Vilande</span>':aktiv&&isOverdue(c)?'<span class="overdue-badge" style="margin-left:5px">!</span>':""}
       </td><td>${e(c.foretag||"--")}</td><td>${e(c.roll||"--")}</td>
-      <td><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></td>
+      <td><span class="badge ${badgeStatus(c.status)}">${statusName(c.status)}</span></td>
       <td><div class="sring ${scoreClass(sc)}" style="width:30px;height:30px;font-size:11px;border-width:2px">${sc}</div></td>
       <td>${e(c.senast_kontakt||"--")}</td>
       <td><span class="${fCls}">${aktiv&&c.nasta_foljup?e(fDate):"–"}</span></td>
@@ -2591,7 +2593,7 @@ async function openCard(id){
   const co=c.company_id?companies.find(x=>x.id===c.company_id):null;
   const introBy=c.introduktion_av?contacts.find(x=>x.id===c.introduktion_av):null;
   document.getElementById("card-content").innerHTML=`
-    <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.roll,c.foretag].filter(Boolean).join(" – "))}</p><div class="card-hdr-badges"><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span>${co?`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff;cursor:pointer" onclick="openCompanyCard('${co.id}')">🏢 ${e(co.namn)}</span>`:""}</div></div>
+    <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.roll,c.foretag].filter(Boolean).join(" – "))}</p><div class="card-hdr-badges"><span class="badge ${badgeStatus(c.status)}">${statusName(c.status)}</span>${co?`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff;cursor:pointer" onclick="openCompanyCard('${co.id}')">🏢 ${e(co.namn)}</span>`:""}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('c','overview',this)">${t("cc_oversikt")}</div><div class="ctab" onclick="cct('c','score',this)">${t("cc_relpoang")}</div><div class="ctab" onclick="cct('c','log',this)">${t("cc_logg")} (${cLog.length})</div><div class="ctab" onclick="cct('c','notes',this)">${t("cc_anteckningar")} (${cNotes.length})</div><div class="ctab" onclick="cct('c','conns',this)">${t("cc_kanner")} (${cConns.length})</div></div>
     <div class="ctpane active" id="cc-overview">
       <p style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">Relationskedja</p><p style="font-size:13px;margin-bottom:10px">${chain}</p>
@@ -3487,7 +3489,7 @@ function renderPrio(){
   if(!list.length){document.getElementById("prio-content").innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Inga öppna todos att prioritera. Skapa todos så kan du rangordna dem här.</p></div>';return;}
   const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
   document.getElementById("prio-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Rangordna dina öppna uppgifter med pilarna – överst = högst prioritet. Ordningen sparas. <button class="btn btn-outline btn-xs" onclick="autoSortPrio()" style="margin-left:6px">Sortera automatiskt (deadline + prio)</button></div>
+    <div class="privacy-note" style="margin-bottom:14px">Rangordna dina öppna uppgifter med pilarna – överst = högst prioritet. Ordningen sparas. <button class="btn btn-outline btn-xs" onclick="autoSortPrio()" style="margin-left:6px">${t("prio_sortera")}</button></div>
     ${list.map((t,i)=>{
       const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
       const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
@@ -3503,7 +3505,7 @@ function renderPrio(){
           <button class="btn-icon" title="Upp" onclick="movePrio('${t.id}',-1)" ${i===0?"disabled style=opacity:.3":""}>▲</button>
           <button class="btn-icon" title="Ner" onclick="movePrio('${t.id}',1)" ${i===list.length-1?"disabled style=opacity:.3":""}>▼</button>
         </div>
-        <button class="btn-icon" title="Klarmarkera" onclick="toggleTodo('${t.id}');setTimeout(renderPrio,300)">✓</button>
+        <button class="btn-icon" title="${t("sch_klarmarkera")}" onclick="toggleTodo('${t.id}');setTimeout(renderPrio,300)">✓</button>
       </div></div>`;
     }).join("")}`;
 }
@@ -4109,7 +4111,7 @@ function renderKcc(){
   const guld=kccC.filter(c=>c.kcc_niva==="Guld").length+kccS.filter(s=>s.kcc_niva==="Guld").length;
   const silver=total-guld;
   const nivaSort=(a,b)=>(a.kcc_niva==="Guld"?0:1)-(b.kcc_niva==="Guld"?0:1);
-  const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||t("kcc_kontakt")}</div></div><span class="badge ${badgeStatus(c.status)}">${e(c.status||"")}</span></div>`;
+  const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||t("kcc_kontakt")}</div></div><span class="badge ${badgeStatus(c.status)}">${statusName(c.status)}</span></div>`;
   const sRow=s=>`<div class="week-row" style="cursor:pointer" onclick="openSubCard('${s.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${t("kcc_underkonsult_l")}${s.stad?" · "+e(s.stad):""}</div></div></div>`;
   box.innerHTML=`
     <div style="display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap">
