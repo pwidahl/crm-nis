@@ -3900,7 +3900,8 @@ function renderMellanhander(){
 }
 
 // ── LinkedIn redaktionellt schema ──
-let linkedinDraft={amne:"",innehall:"",editId:null,vecka:"",planerad_datum:"",planerad_tid:"08:00",status:"utkast"};
+const LI_AMNEN=["Likviditet","Bokslut","Budget","Årsredovisning","Nya lagar/regler","Ränteläge/konjunktur","Hållbarhet/CSRD","Skatt","Kassaflöde","Digitalisering/system","Ekonomistyrning","Rekrytering/kompetens"];
+let linkedinDraft={amne:"",innehall:"",editId:null,vecka:"",planerad_datum:"",planerad_tid:"08:00",status:"utkast",amne_kategori:""};
 let linkedinViewMode="month"; // month | year
 let linkedinRefDate=new Date();
 
@@ -3959,6 +3960,14 @@ function renderLinkedin(){
 function postForWeek(wk){return linkedinPosts.find(p=>p.vecka===wk);}
 function statusBadge(st){return {utkast:'<span class="badge" style="background:var(--paper);border:1px solid var(--cream)">Utkast</span>',planerad:'<span class="badge b-ny">Planerad</span>',publicerad:'<span class="badge b-granskad">Publicerad</span>'}[st]||'<span class="badge" style="background:#f3f3f3;color:#aaa">Tom</span>';}
 
+function linkedinTopicStats(){
+  const byKat={};let total=0;
+  linkedinPosts.forEach(p=>{if(p.amne_kategori){byKat[p.amne_kategori]=(byKat[p.amne_kategori]||0)+1;total++;}});
+  const rows=Object.entries(byKat).sort((a,b)=>b[1]-a[1]);
+  if(!rows.length)return "";
+  const max=rows[0][1];
+  return `<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ämnesfördelning (${total} inlägg med ämne)</div>${rows.map(([k,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><div style="width:140px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(k)}</div><div style="flex:1;background:var(--paper);border-radius:4px;height:16px;position:relative"><div style="width:${Math.round(n/max*100)}%;background:var(--accent);height:100%;border-radius:4px"></div></div><div style="font-size:12px;color:#666;width:24px;text-align:right">${n}</div></div>`).join("")}</div>`;
+}
 function linkedinMonthHtml(){
   const ref=linkedinRefDate;const year=ref.getFullYear();const month=ref.getMonth();
   const manad=ref.toLocaleDateString("sv-SE",{month:"long",year:"numeric"});
@@ -3974,11 +3983,12 @@ function linkedinMonthHtml(){
       <h3 style="font-family:'DM Serif Display',serif;font-size:20px;flex:1;text-transform:capitalize">${manad}</h3>
       <div class="seg"><button class="btn btn-xs btn-primary">Månad</button><button class="btn btn-xs btn-outline" onclick="linkedinSetMode('year')">År</button></div>
     </div>
+    ${linkedinTopicStats()}
     <div style="display:flex;flex-direction:column;gap:10px">
     ${weeks.map(w=>{const p=postForWeek(w.key);const st=p?p.status:"tom";const tDate=p&&p.planerad_datum?p.planerad_datum:fmtISO(w.tuesday);const tTid=p&&p.planerad_tid?p.planerad_tid.slice(0,5):"08:00";
       return `<div class="week-row" style="cursor:pointer;align-items:flex-start" onclick="openLinkedinWeek('${w.key}','${fmtISO(w.tuesday)}')">
         <div style="min-width:90px"><div style="font-size:12px;color:#888">Vecka ${w.key.split("-W")[1]}</div><div style="font-size:11px;color:#aaa">${tDate} ${tTid}</div></div>
-        <div style="flex:1;min-width:0">${p?`<div style="font-weight:600;font-size:13px">${e(p.amne||"(utan rubrik)")}</div><div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:38px;overflow:hidden">${e((p.innehall||"").slice(0,120))}</div>`:'<div style="color:#bbb;font-size:13px">Inget inlägg – klicka för att skriva</div>'}</div>
+        <div style="flex:1;min-width:0">${p?`<div style="font-weight:600;font-size:13px">${e(p.amne||"(utan rubrik)")}${p.amne_kategori?` <span class="badge" style="font-size:10px;background:var(--paper);border:1px solid var(--cream)">${e(p.amne_kategori)}</span>`:""}</div><div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:38px;overflow:hidden">${e((p.innehall||"").slice(0,120))}</div>`:'<div style="color:#bbb;font-size:13px">Inget inlägg – klicka för att skriva</div>'}</div>
         ${statusBadge(st)}
       </div>`;}).join("")}
     </div>`;
@@ -4011,7 +4021,7 @@ function linkedinOpenMonth(m){linkedinRefDate=new Date(linkedinRefDate.getFullYe
 
 function openLinkedinWeek(wk,tuesdayISO){
   const p=postForWeek(wk);
-  linkedinDraft=p?{amne:p.amne||"",innehall:p.innehall||"",editId:p.id,vecka:wk,planerad_datum:p.planerad_datum||tuesdayISO,planerad_tid:(p.planerad_tid||"08:00").slice(0,5),status:p.status||"utkast"}:{amne:"",innehall:"",editId:null,vecka:wk,planerad_datum:tuesdayISO,planerad_tid:"08:00",status:"utkast"};
+  linkedinDraft=p?{amne:p.amne||"",innehall:p.innehall||"",editId:p.id,vecka:wk,planerad_datum:p.planerad_datum||tuesdayISO,planerad_tid:(p.planerad_tid||"08:00").slice(0,5),status:p.status||"utkast",amne_kategori:p.amne_kategori||""}:{amne:"",innehall:"",editId:null,vecka:wk,planerad_datum:tuesdayISO,planerad_tid:"08:00",status:"utkast",amne_kategori:""};
   const month=new Date(tuesdayISO).getMonth();
   const bank=angleBank(month);
   document.getElementById("li-editor-content").innerHTML=`
@@ -4023,6 +4033,7 @@ function openLinkedinWeek(wk,tuesdayISO){
           <div style="min-width:90px"><label style="font-size:11px;color:#888;display:block">Tid</label><input id="li-tid" type="time" value="${e(linkedinDraft.planerad_tid)}" style="width:100%"></div>
         </div>
         <input id="li-amne" value="${e(linkedinDraft.amne)}" placeholder="Rubrik/ämne" style="width:100%;margin-bottom:8px">
+        <div style="margin-bottom:8px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Ämneskategori</label><select id="li-kat" style="width:100%" onchange="document.getElementById('li-kat-eget').style.display=this.value==='__eget__'?'block':'none'"><option value="">– Välj ämne –</option>${LI_AMNEN.map(a=>`<option value="${e(a)}" ${linkedinDraft.amne_kategori===a?"selected":""}>${e(a)}</option>`).join("")}${linkedinDraft.amne_kategori&&!LI_AMNEN.includes(linkedinDraft.amne_kategori)?`<option value="${e(linkedinDraft.amne_kategori)}" selected>${e(linkedinDraft.amne_kategori)}</option>`:""}<option value="__eget__">+ Eget ämne…</option></select><input id="li-kat-eget" placeholder="Skriv eget ämne" style="width:100%;margin-top:6px;display:none" onblur="this.previousElementSibling"></div>
         <textarea id="li-innehall" placeholder="Skriv ditt inlägg här – det sparas när du klickar Spara utkast, och du kan fortsätta en annan dag." style="width:100%;min-height:200px;font-family:inherit;font-size:14px;line-height:1.55">${e(linkedinDraft.innehall)}</textarea>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="saveLinkedinPost('utkast')">Spara utkast</button>
@@ -4045,8 +4056,9 @@ function useAngle(t){const ta=document.getElementById("li-innehall");if(!ta)retu
 async function saveLinkedinPost(status){
   const amne=v("li-amne");const innehall=document.getElementById("li-innehall")?.value||"";
   const datum=v("li-datum")||null;const tid=v("li-tid")||"08:00";
+  let kat=v("li-kat");if(kat==="__eget__")kat=v("li-kat-eget")||null;
   if(!amne&&!innehall){toast("Skriv något först");return;}
-  const rec={amne,innehall,status,planerad_datum:datum,planerad_tid:tid,vecka:linkedinDraft.vecka};
+  const rec={amne,innehall,status,planerad_datum:datum,planerad_tid:tid,vecka:linkedinDraft.vecka,amne_kategori:kat||null};
   let r;
   if(linkedinDraft.editId){r=await sb.from("linkedin_posts").update(rec).eq("id",linkedinDraft.editId).select("*").single();}
   else{r=await sb.from("linkedin_posts").insert({user_id:me.id,...rec,...(status==="publicerad"?{publicerad_datum:today()}:{})}).select("*").single();}
