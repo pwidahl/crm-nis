@@ -518,21 +518,21 @@ textarea{resize:vertical;min-height:68px}
         <button class="btn btn-outline btn-sm" id="ct-kcc-btn" data-i18n="ct_endast_kcc" onclick="window._kccOnly=!window._kccOnly;document.getElementById('ct-kcc-btn').classList.toggle('btn-primary',window._kccOnly);renderContacts()">⭐ Endast KCC</button>
         <select id="ct-status-f" onchange="renderContacts()">
           <option value="">Alla statusar</option>
-          <option>Ny kontakt</option><option>Aktiv relation</option>
-          <option>Varm – möte bokat</option><option>Kund</option>
-          <option>Introduktör</option><option>Kollega / nätverk</option>
-          <option>Tidigare kund</option><option>Vilande</option>
-          <option>Prospekt</option><option>Inaktiv</option>
+          <option value="Ny kontakt" data-i18n="ct_ny_kontakt">Ny kontakt</option><option value="Aktiv relation" data-i18n="ct_aktiv_relation">Aktiv relation</option>
+          <option value="Varm – möte bokat" data-i18n="ct_varm_mote">Varm – möte bokat</option><option value="Kund" data-i18n="ct_kund">Kund</option>
+          <option value="Introduktör" data-i18n="ct_introduktor">Introduktör</option><option value="Kollega / nätverk" data-i18n="ct_kollega">Kollega / nätverk</option>
+          <option value="Tidigare kund" data-i18n="ct_tidigare_kund">Tidigare kund</option><option value="Vilande" data-i18n="ct_vilande">Vilande</option>
+          <option value="Prospekt" data-i18n="ct_prospekt">Prospekt</option><option value="Inaktiv" data-i18n="ct_inaktiv">Inaktiv</option>
         </select>
       </div>
       <div class="tw"><table><thead><tr>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('namn')">Namn <span id="sort-namn">↕</span></th>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('foretag')">Företag <span id="sort-foretag">↕</span></th>
-          <th>Roll</th>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('status')">Status <span id="sort-status">↕</span></th>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('score')">Poäng <span id="sort-score">↕</span></th>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('senast')">Senaste kontakt <span id="sort-senast">↕</span></th>
-          <th style="cursor:pointer;user-select:none" onclick="sortContacts('nasta')">Nästa uppfölj. <span id="sort-nasta">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('namn')"><span data-i18n="col_namn">Namn</span> <span id="sort-namn">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('foretag')"><span data-i18n="col_foretag">Företag</span> <span id="sort-foretag">↕</span></th>
+          <th data-i18n="col_roll">Roll</th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('status')"><span data-i18n="col_status">Status</span> <span id="sort-status">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('score')"><span data-i18n="col_poang">Poäng</span> <span id="sort-score">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('senast')"><span data-i18n="col_senaste_kontakt">Senaste kontakt</span> <span id="sort-senast">↕</span></th>
+          <th style="cursor:pointer;user-select:none" onclick="sortContacts('nasta')"><span data-i18n="col_nasta_uppf">Nästa uppfölj.</span> <span id="sort-nasta">↕</span></th>
           <th></th>
         </tr></thead><tbody id="contacts-tbody"></tbody></table></div>
     </div>
@@ -1090,7 +1090,10 @@ const I18N={
     dash_schema:"🗓️ Dagens arbetsschema",dash_lankar:"🔗 Snabblänkar",dash_fodelsedagar:"🎂 Kommande födelsedagar",
     dash_gdpr:"⚖️ GDPR att se över",dash_leadsnext:"⚠ Leads utan nästa steg",dash_allt_kontroll:"Allt under kontroll",
     ct_filter:"Filtrera kontakter...",ct_alla_aktiva:"Alla (aktiva + inaktiva)",ct_aktiva:"Aktiva",ct_inaktiva:"Inaktiva / vilande",
-    ct_endast_kcc:"⭐ Endast KCC",ct_alla_status:"Alla statusar",ct_ny_kontakt:"Ny kontakt"
+    ct_endast_kcc:"⭐ Endast KCC",ct_alla_status:"Alla statusar",ct_ny_kontakt:"Ny kontakt",
+    ct_aktiv_relation:"Aktiv relation",ct_varm_mote:"Varm – möte bokat",ct_kund:"Kund",ct_introduktor:"Introduktör",
+    ct_kollega:"Kollega / nätverk",ct_tidigare_kund:"Tidigare kund",ct_vilande:"Vilande",ct_prospekt:"Prospekt",ct_inaktiv:"Inaktiv",
+    col_namn:"Namn",col_foretag:"Företag",col_roll:"Roll",col_status:"Status",col_poang:"Poäng",col_senaste_kontakt:"Senaste kontakt",col_nasta_uppf:"Nästa uppfölj."
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
@@ -1108,7 +1111,10 @@ const I18N={
     dash_schema:"🗓️ Today's work schedule",dash_lankar:"🔗 Quick links",dash_fodelsedagar:"🎂 Upcoming birthdays",
     dash_gdpr:"⚖️ GDPR to review",dash_leadsnext:"⚠ Leads without next step",dash_allt_kontroll:"All under control",
     ct_filter:"Filter contacts...",ct_alla_aktiva:"All (active + inactive)",ct_aktiva:"Active",ct_inaktiva:"Inactive / dormant",
-    ct_endast_kcc:"⭐ KCC only",ct_alla_status:"All statuses",ct_ny_kontakt:"New contact"
+    ct_endast_kcc:"⭐ KCC only",ct_alla_status:"All statuses",ct_ny_kontakt:"New contact",
+    ct_aktiv_relation:"Active relationship",ct_varm_mote:"Warm – meeting booked",ct_kund:"Client",ct_introduktor:"Introducer",
+    ct_kollega:"Colleague / network",ct_tidigare_kund:"Former client",ct_vilande:"Dormant",ct_prospekt:"Prospect",ct_inaktiv:"Inactive",
+    col_namn:"Name",col_foretag:"Company",col_roll:"Role",col_status:"Status",col_poang:"Score",col_senaste_kontakt:"Last contact",col_nasta_uppf:"Next follow-up"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
