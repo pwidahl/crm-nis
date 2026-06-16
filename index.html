@@ -2619,7 +2619,7 @@ async function openCard(id){
       <div style="background:var(--paper);border-radius:var(--r);padding:10px 13px;font-size:13px;border:1px solid var(--cream);margin-bottom:16px"><strong>Nästa steg:</strong> ${e(k[1])}</div>
       <div class="ig">
         <div class="ii"><label>E-post</label><span>${c.epost?`<a href="mailto:${e(c.epost)}">${e(c.epost)}</a>`:"--"}</span></div>
-        <div class="ii"><label>${t(cc_telefon)}</label><span>${c.telefon?`<a href="tel:${e(c.telefon)}">${e(c.telefon)}</a>`:"--"}</span></div>
+        <div class="ii"><label>${t("cc_telefon")}</label><span>${c.telefon?`<a href="tel:${e(c.telefon)}">${e(c.telefon)}</a>`:"--"}</span></div>
         <div class="ii"><label>LinkedIn</label><span>${c.linkedin?`<a href="${/^https?:\/\//i.test(c.linkedin)?e(c.linkedin):"https://"+e(c.linkedin)}" target="_blank" rel="noopener">Öppna profil ↗</a>`:"--"}</span></div>
         ${co?.hemsida?`<div class="ii"><label>Bolagets hemsida</label><span><a href="${e(co.hemsida)}" target="_blank" rel="noopener">${e(co.hemsida.replace(/^https?:\/\//i,""))} ↗</a></span></div>`:""}
         <div class="ii"><label>Senaste kontakt</label><span>${e(c.senast_kontakt||"--")}</span></div>
