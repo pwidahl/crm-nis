@@ -3524,7 +3524,7 @@ function renderPrio(){
           <button class="btn-icon" title="Upp" onclick="movePrio('${t.id}',-1)" ${i===0?"disabled style=opacity:.3":""}>▲</button>
           <button class="btn-icon" title="Ner" onclick="movePrio('${t.id}',1)" ${i===list.length-1?"disabled style=opacity:.3":""}>▼</button>
         </div>
-        <button class="btn-icon" title="${t("sch_klarmarkera")}" onclick="toggleTodo('${t.id}');setTimeout(renderPrio,300)">✓</button>
+        <button class="btn-icon" title="Klarmarkera" onclick="toggleTodo('${t.id}');setTimeout(renderPrio,300)">✓</button>
       </div></div>`;
     }).join("")}`;
 }
