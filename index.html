@@ -684,7 +684,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl full"><label data-i18n="f_anteckningar">Anteckningar</label><textarea id="f-notes"></textarea></div>
       </div>
     </div>
-    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-contact')"data-i18n="btn_avbryt" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveContact()"data-i18n="btn_spara_kontakt">Spara kontakt</button></div>
+    <div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-contact')"data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveContact()"data-i18n="btn_spara_kontakt">Spara kontakt</button></div>
   </div>
 </div>
 
@@ -1075,14 +1075,8 @@ const TOAST_EN={"Namn sparat ✓":"Name saved ✓","Skriv ett namn":"Enter a nam
 function trToast(msg){if(LANG==="en"&&TOAST_EN[msg])return TOAST_EN[msg];return msg;}
 const toast=msg=>{const t=document.getElementById("toast");t.textContent=trToast(msg);t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3400);};
 // ── Språk (i18n) ──
-let LANG=localStorage.getItem("lang")||"en";
-async function loadUserLang(){
-  if(!me)return;
-  try{
-    const r=await sb.from("profiles").select("sprak").eq("id",me.id).maybeSingle();
-    if(r.data&&r.data.sprak){LANG=r.data.sprak;localStorage.setItem("lang",LANG);}
-  }catch{}
-}
+let LANG="sv";
+async function loadUserLang(){return;}
 const I18N={
   sv:{
     nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
