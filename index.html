@@ -1500,12 +1500,16 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  await Promise.all([loadContacts(),loadLog(),loadNotes(),loadCompanies(),loadSignals(),loadNetwork(),loadSettings2(),loadSubs(),loadProjects(),loadConnections(),loadKnowledge(),loadTodos(),loadSubRelations(),loadGoals(),loadAdmins(),loadFinAnalyses(),loadQuickLinks(),loadChecklist(),loadProfiles(),loadLinkedin()]);
-  fillSelects();updateBadges();updateWeekLabel();
-  fillTimerSelects();
-  if(!rtChannel)setupRT();
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin]];
+  const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
+  results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
+  try{fillSelects();}catch(e){console.warn("fillSelects",e);}
+  try{updateBadges();}catch(e){}
+  try{updateWeekLabel();}catch(e){}
+  try{fillTimerSelects();}catch(e){}
+  try{if(!rtChannel)setupRT();}catch(e){}
   try{await loadUserLang();}catch(e){}
-  applyStaticI18n();
+  try{applyStaticI18n();}catch(e){}
   renderCurrent();
   check2FAReminder();
 }
@@ -1737,30 +1741,30 @@ function nextStepHtml(){
   contacts.forEach(c=>{
     if(c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td){
       const overdueDays=Math.round((new Date(td)-new Date(c.nasta_foljup))/86400000);
-      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:t("db_logga_kontakt"),act:`openLogModal('${c.id}')`});
+      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:"Logga kontakt",act:`openLogModal('${c.id}')`});
     }
   });
   // försenade tasks
   tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<td).forEach(t=>{
     const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
-    cands.push({urg:900+overdueDays,icon:"✓",txt:t.title,sub:`task försenad ${overdueDays} dagar`,btn:t("db_till_tasks"),act:`gotoView('tasks')`});
+    cands.push({urg:900+overdueDays,icon:"✓",txt:t.title,sub:`task försenad ${overdueDays} dagar`,btn:"Till tasks",act:`gotoView('tasks')`});
   });
   // försenade todos
   todos.filter(t=>!t.done&&t.due_date&&t.due_date<td).forEach(t=>{
     const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
     const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
-    cands.push({urg:800+overdueDays+pw,icon:"✅",txt:t.text,sub:`todo försenad ${overdueDays} dagar`,btn:t("db_oppna_todo"),act:`openTodo()`});
+    cands.push({urg:800+overdueDays+pw,icon:"✅",txt:t.text,sub:`todo försenad ${overdueDays} dagar`,btn:"Öppna todo",act:`openTodo()`});
   });
   // todos med deadline idag (hög prio)
   todos.filter(t=>!t.done&&t.due_date===td).forEach(t=>{
     const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
-    cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:t("db_deadline_idag"),btn:"Öppna todo",act:`openTodo()`});
+    cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:"deadline idag",btn:"Öppna todo",act:`openTodo()`});
   });
   // leads med försenat nästa steg
   signals.filter(s=>s.status!=="ignorerad"&&s.nasta_steg&&s.nasta_steg_datum&&s.nasta_steg_datum<=td).forEach(s=>{
     const overdueDays=Math.round((new Date(td)-new Date(s.nasta_steg_datum))/86400000);
     const sw=(s.signal_styrka||1)*15;
-    cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:t("db_oppna_lead"),act:`openLead('${s.id}')`});
+    cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:"Öppna lead",act:`openLead('${s.id}')`});
   });
   if(!cands.length){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#f0f7f0,#fff);border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:12px"><span style="font-size:20px">✨</span><div style="flex:1"><div style="font-weight:600;font-size:14px">${t("dash_allt_kontroll")}</div><div style="font-size:12px;color:#888">Inget försenat eller akut just nu – bra jobbat!</div></div></div>`;
