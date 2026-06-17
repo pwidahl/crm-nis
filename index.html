@@ -1162,6 +1162,8 @@ const I18N={
     st_aktiviteter_v:"Aktiviteter (v)",st_snitt_vecka:"Snitt per vecka",st_starka:"Starka relationer",st_svaga:"Svaga – prioritera",
     rn_alla_typer:"Alla relationstyper",
     nw_bolagskort:"Bolagskort",nw_inga_traffar:"Inga träffar – ändra filter",
+    cc_lead_score:"Lead-score",cc_agare:"Ägare",cc_oppna:"Öppna",cc_lead_score_regel:"Lead-score (regelbaserad)",cc_inga_signaler:"Inga signaler",cc_inga_kontakter:"Inga egna kontakter",cc_inga_projekt:"Inga projekt",cc_arkivera:"Arkivera",cc_redigera:"Redigera",
+    sc_passande:"Passande leads",sc_oppna_cv:"Öppna CV",sc_inga_akt:"Inga aktiviteter ännu.",sc_inga_kopplade:"Inga kopplade kontakter ännu.",sc_ingen_match:"Ingen kompetensmatch",sc_aktiviteter:"Aktiviteter",sc_bolag:"Bolag",sc_kanner:"Känner",sc_niva:"Nivå",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1238,6 +1240,8 @@ const I18N={
     st_aktiviteter_v:"Activities (wk)",st_snitt_vecka:"Avg per week",st_starka:"Strong relationships",st_svaga:"Weak – prioritize",
     rn_alla_typer:"All relationship types",
     nw_bolagskort:"Company card",nw_inga_traffar:"No matches – change filter",
+    cc_lead_score:"Lead score",cc_agare:"Owner",cc_oppna:"Open",cc_lead_score_regel:"Lead score (rule-based)",cc_inga_signaler:"No signals",cc_inga_kontakter:"No own contacts",cc_inga_projekt:"No assignments",cc_arkivera:"Archive",cc_redigera:"Edit",
+    sc_passande:"Matching leads",sc_oppna_cv:"Open CV",sc_inga_akt:"No activities yet.",sc_inga_kopplade:"No linked contacts yet.",sc_ingen_match:"No skill match",sc_aktiviteter:"Activities",sc_bolag:"Companies",sc_kanner:"Knows",sc_niva:"Level",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -2247,7 +2251,7 @@ async function openCompanyCard(id){
       </div>`:""}
       <div class="ig">
         <div class="ii"><label>Org.nr</label><span>${e(c.orgnr||"--")}</span></div>
-        <div class="ii"><label>Ägare</label><span>${e(userName(c.user_id))}${c.senast_andrad_av&&c.senast_andrad_av!==c.user_id?` · ändrad av ${e(userName(c.senast_andrad_av))}`:""}</span></div>
+        <div class="ii"><label>${TR("cc_agare")}</label><span>${e(userName(c.user_id))}${c.senast_andrad_av&&c.senast_andrad_av!==c.user_id?` · ändrad av ${e(userName(c.senast_andrad_av))}`:""}</span></div>
         <div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div>
         <div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div>
         <div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div>
@@ -2269,14 +2273,14 @@ async function openCompanyCard(id){
       </div>`:""}
       ${cardTodoHtml("company",id)}
     </div>
-    <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Ingen score beräknad än")}</p><p style="font-size:12px;color:#888">Lead-score (regelbaserad)</p></div></div></div>
-    <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${sigStatusName(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">Inga signaler</p>'}</div>
+    <div class="ctpane" id="cco-ai"><div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div class="sring ${scoreClass(c.ai_score||0)}" style="width:74px;height:74px;font-size:24px">${c.ai_score??"--"}</div><div><p style="font-weight:600;font-size:14px">${e(c.ai_rekommendation||"Ingen score beräknad än")}</p><p style="font-size:12px;color:#888">${TR("cc_lead_score_regel")}</p></div></div></div>
+    <div class="ctpane" id="cco-signals">${cs.length?cs.map(s=>`<div class="fup-row"><div class="fup-info"><div class="fup-name">${sigLabel(s.signal_typ)} · ${e(s.rubrik)}</div><div class="fup-meta">${e(s.kalla||"")} · ${e(s.signal_datum||"")}</div></div><span class="badge ${s.status==="ny"?"b-ny":"b-granskad"}">${sigStatusName(s.status)}</span>${s.status==="ny"?`<button class="btn btn-outline btn-xs" onclick="setSigStatus('${s.id}','granskad')">✓</button>`:""}</div>`).join(""):'<p style="color:#aaa">${TR("cc_inga_signaler")}</p>'}</div>
     <div class="ctpane" id="cco-contacts">${(()=>{
       const mine=nm.filter(n=>!n.user_id||n.user_id===me.id);
       let html=mine.length?mine.map(n=>`<div class="fup-row"><div class="fup-info"><strong>${e(n.fornamn)} ${e(n.efternamn)}</strong><div class="fup-meta">${e(n.roll||"")}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join(""):"";
-      return (html||'<p style="color:#aaa">Inga egna kontakter</p>')+'<div id="cco-other-owners"></div>';
+      return (html||'<p style="color:#aaa">${TR("cc_inga_kontakter")}</p>')+'<div id="cco-other-owners"></div>';
     })()}</div>
-    <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">Inga projekt</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
+    <div class="ctpane" id="cco-projects">${cp.length?cp.map(p=>`<div class="fup-row"><div class="fup-info"><strong>${e(p.namn)}</strong><div class="fup-meta">${e(p.uppdragstyp||"")} · ${e(p.status)}</div></div><span class="${statusClass(p.status)}">${e(p.status)}</span><button class="btn btn-outline btn-xs" onclick="closeM('m-company-card');openProjectCard('${p.id}')">Öppna</button></div>`).join(""):`<p style="color:#aaa">${TR("cc_inga_projekt")}</p><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="closeM('m-company-card');openNewProjectForCo('${id}')">+ Skapa projekt</button>`}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="archiveCo('${c.id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-company-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline btn-sm" onclick="closeM('m-company-card');openEditCompany('${c.id}')">Redigera</button></div>`;
   openM("m-company-card");
   loadCompanyContactOwners(id);
@@ -4503,7 +4507,7 @@ function openSubCard(id){
   const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";
   document.getElementById("sub-card-content").innerHTML=`
     <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${kccBadge(s.kcc_niva)} ★ ${e(s.fornamn)} ${e(s.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([s.stad,avlbl].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges">${sk.map(x=>`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(x)}</span>`).join("")}</div></div>
-    <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div><div class="ctab" onclick="cct('sub','leads',this)">Passande leads</div></div>
+    <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div><div class="ctab" onclick="cct('sub','leads',this)">${TR("sc_passande")}</div></div>
     <div class="ctpane active" id="csub-overview">
       <div class="ig">
         <div class="ii"><label>E-post</label><span>${s.epost?`<a href="mailto:${e(s.epost)}">${e(s.epost)}</a>`:"--"}</span></div>
@@ -4511,12 +4515,12 @@ function openSubCard(id){
         <div class="ii"><label>LinkedIn</label><span>${s.linkedin?`<a href="${/^https?:\/\//i.test(s.linkedin)?e(s.linkedin):"https://"+e(s.linkedin)}" target="_blank" rel="noopener">Öppna ↗</a>`:"--"}</span></div>
         <div class="ii"><label>Tillgänglighet</label><span>${avlbl||"--"}</span></div>
         <div class="ii"><label>Dagspris</label><span>${s.dagspris_fran?s.dagspris_fran.toLocaleString("sv-SE")+(s.dagspris_till?"–"+s.dagspris_till.toLocaleString("sv-SE"):"")+" kr":"--"}</span></div>
-        <div class="ii"><label>Nivå</label><span>${e(s.arvodesniva||"--")}</span></div>
+        <div class="ii"><label>${TR("sc_niva")}</label><span>${e(s.arvodesniva||"--")}</span></div>
       </div>
       ${s.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(s.anteckningar)}</p>`:""}
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--cream);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span style="font-size:13px;color:#555">📄 CV:</span>
-        ${s.cv_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(s.cv_path)}')">Öppna CV</button>`:""}
+        ${s.cv_path?`<button class="btn btn-outline btn-sm" onclick="openStoredPdf('${e(s.cv_path)}')">${TR("sc_oppna_cv")}</button>`:""}
         <button class="btn btn-primary btn-sm" onclick="openCvUpload('${id}')">${s.cv_path?"Ladda upp nytt":"Ladda upp CV (PDF)"}</button>
       </div>
       ${checklistHtml(id)}
@@ -4525,7 +4529,7 @@ function openSubCard(id){
     </div>
     <div class="ctpane" id="csub-acts">
       <div style="margin-bottom:10px"><button class="btn btn-warm btn-sm" onclick="openSubActivity('${id}')">+ Logga aktivitet</button></div>
-      ${acts.length?acts.map(a=>`<div class="diary-entry"><div class="diary-entry-hdr"><div style="display:flex;align-items:center;gap:8px"><strong>${e(a.datum||"")}</strong><span class="badge b-prospekt">${e(a.typ||"")}</span></div><button class="btn-icon" onclick="deleteSubActivity('${a.id}')">🗑</button></div><div style="font-size:13px">${e(a.anteckning||"")}</div>${a.nasta_steg?`<div style="font-size:11px;color:#888;margin-top:3px">→ ${e(a.nasta_steg)}</div>`:""}</div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga aktiviteter ännu.</p>'}
+      ${acts.length?acts.map(a=>`<div class="diary-entry"><div class="diary-entry-hdr"><div style="display:flex;align-items:center;gap:8px"><strong>${e(a.datum||"")}</strong><span class="badge b-prospekt">${e(a.typ||"")}</span></div><button class="btn-icon" onclick="deleteSubActivity('${a.id}')">🗑</button></div><div style="font-size:13px">${e(a.anteckning||"")}</div>${a.nasta_steg?`<div style="font-size:11px;color:#888;margin-top:3px">→ ${e(a.nasta_steg)}</div>`:""}</div>`).join(""):'<p style="color:#aaa;font-size:13px">${TR("sc_inga_akt")}</p>'}
     </div>
     <div class="ctpane" id="csub-cos">
       <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openSubCompany('${id}')">+ Lägg till bolag</button></div>
@@ -4535,7 +4539,7 @@ function openSubCard(id){
     </div>
     <div class="ctpane" id="csub-cts">
       <div style="margin-bottom:10px"><button class="btn btn-primary btn-sm" onclick="openSubContact('${id}')">+ Koppla kontakt</button></div>
-      ${cts.length?cts.map(x=>{const c=contacts.find(ct=>ct.id===x.contact_id);if(!c)return"";return`<div class="fup-row"><div class="fup-info"><div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openCard('${c.id}')">${e(c.fornamn)} ${e(c.efternamn)} ↗</div><div class="fup-meta">${e(CONN_TYPES[x.relation_typ]||x.relation_typ)}${c.foretag?" · "+e(c.foretag):""}${x.anteckning?" · "+e(x.anteckning):""}</div></div><button class="btn-icon" onclick="deleteSubContact('${x.id}')" style="color:var(--red)">🗑</button></div>`;}).join(""):'<p style="color:#aaa;font-size:13px">Inga kopplade kontakter ännu.</p>'}
+      ${cts.length?cts.map(x=>{const c=contacts.find(ct=>ct.id===x.contact_id);if(!c)return"";return`<div class="fup-row"><div class="fup-info"><div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openCard('${c.id}')">${e(c.fornamn)} ${e(c.efternamn)} ↗</div><div class="fup-meta">${e(CONN_TYPES[x.relation_typ]||x.relation_typ)}${c.foretag?" · "+e(c.foretag):""}${x.anteckning?" · "+e(x.anteckning):""}</div></div><button class="btn-icon" onclick="deleteSubContact('${x.id}')" style="color:var(--red)">🗑</button></div>`;}).join(""):'<p style="color:#aaa;font-size:13px">${TR("sc_inga_kopplade")}</p>'}
     </div>
     <div class="ctpane" id="csub-leads">${(()=>{
       const skills=subSkillList(id);
@@ -4545,7 +4549,7 @@ function openSubCard(id){
         ranked.map(({sig,count,matched})=>`<div class="fup-row" style="${count>0?"border-left:3px solid var(--green)":""}">
           <div class="fup-info">
             <div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-sub-card');openLead('${sig.id}')">${e(sig.companies?.namn||"Bolag")} – ${e(sig.rubrik||"")} ↗</div>
-            <div class="fup-meta">${count>0?`<span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>`:'<span style="color:#aaa">Ingen kompetensmatch</span>'}${sig.efterfragar?` · efterfrågar: ${e(sig.efterfragar)}`:""}</div>
+            <div class="fup-meta">${count>0?`<span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>`:'<span style="color:#aaa">${TR("sc_ingen_match")}</span>'}${sig.efterfragar?` · efterfrågar: ${e(sig.efterfragar)}`:""}</div>
           </div>
           <span class="badge ${sig.status==="ny"?"b-ny":sig.status==="granskad"?"b-granskad":"b-ignorerad"}">${sigStatusName(sig.status)}</span>
         </div>`).join("");
