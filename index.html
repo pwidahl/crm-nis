@@ -497,9 +497,9 @@ textarea{resize:vertical;min-height:68px}
         <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
         <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt" data-i18n="sig_sort_kand">👤 Känd kontakt först</option><option value="inkommen" data-i18n="sig_sort_senast">🆕 Senast inkomna</option><option value="datum" data-i18n="sig_sort_pub">📅 Publiceringsdatum</option><option value="styrka" data-i18n="sig_sort_stark">★ Starkast först</option><option value="score" data-i18n="sig_sort_ai">📊 AI-score först</option><option value="bolag" data-i18n="sig_sort_az">🔤 Bolag A–Ö</option></select>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto">${TR("flt_dolj_mellan")}</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto">${TR("flt_dolj_fasta")}</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto">${TR("flt_bara_mina")}</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_mellan">🤝 Dölj mellanhänder</span></label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fasta">🔒 Dölj fastanställningar</span></label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
       </div>
       <div id="signals-content"></div>
     </div>
@@ -1170,6 +1170,10 @@ const I18N={
     flt_borsnoterade:"Börsnoterade",chk_borsnoterat:"Börsnoterat bolag",
     sig_fasta_dolda_a:"troliga fasta tjänster är dolda (interim/konsult visas).",sig_visa_fasta:"Visa fasta",
     co_dotterbolag:"dotterbolag",co_lagg_dotter:"Lägg till dotterbolag under",
+    sch_forslag:"⭐ Dagens förslag",sch_uppgifter:"uppgifter",sch_ej_inpl:"📥 Ej inplanerade",sch_syns_inte:"st – syns inte i kalendern förrän du ger dem en dag",sch_forsenade:"⚠ Försenade",sch_uppdatera:"🔄 Uppdatera",sch_dagens_kal:"📲 Dagens till kalender",sch_hela_schemat:"📲 Hela schemat",sch_kalender_info:"Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.",
+    kpi_soliditet:"Soliditet",kpi_skuld:"Skuldsättningsgrad",kpi_balanslik:"Balanslikviditet",kpi_kassalik:"Kassalikviditet",kpi_roe:"Räntabilitet eget kapital (ROE)",kpi_roa:"Räntabilitet totalt kapital (ROA)",kpi_rormarginal:"Rörelsemarginal",kpi_vinstmarginal:"Vinstmarginal",kpi_omsattningstillvaxt:"Omsättningstillväxt",kpi_runway:"Runway",kpi_pe_bors:"P/E (börsvärde/resultat)",kpi_pe_pris:"P/E (pris/EPS)",
+    mh_info:"Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.",
+    kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1254,11 +1258,17 @@ const I18N={
     flt_borsnoterade:"Publicly listed",chk_borsnoterat:"Publicly listed company",
     sig_fasta_dolda_a:"likely permanent positions hidden (interim/consulting shown).",sig_visa_fasta:"Show permanent",
     co_dotterbolag:"subsidiaries",co_lagg_dotter:"Add subsidiary under",
+    sch_forslag:"⭐ Today's suggestions",sch_uppgifter:"tasks",sch_ej_inpl:"📥 Unscheduled",sch_syns_inte:"unscheduled – not shown in the calendar until you assign a day",sch_forsenade:"⚠ Overdue",sch_uppdatera:"🔄 Refresh",sch_dagens_kal:"📲 Today to calendar",sch_hela_schemat:"📲 Full schedule",sch_kalender_info:"Calendar of your open tasks. Move a task with ← → to the previous/next day. Tasks without a set day are placed automatically by deadline and priority.",
+    kpi_soliditet:"Equity ratio",kpi_skuld:"Debt-to-equity ratio",kpi_balanslik:"Current ratio",kpi_kassalik:"Quick ratio",kpi_roe:"Return on equity (ROE)",kpi_roa:"Return on assets (ROA)",kpi_rormarginal:"Operating margin",kpi_vinstmarginal:"Profit margin",kpi_omsattningstillvaxt:"Revenue growth",kpi_runway:"Runway",kpi_pe_bors:"P/E (market cap/profit)",kpi_pe_pris:"P/E (price/EPS)",
+    mh_info:"Companies marked as brokers/intermediaries (recruitment agencies, consultant brokers, etc.). These are not counted as direct clients or as companies with their own consulting needs.",
+    kbh_info:"Companies ranked by indicated need, based on saved key figures and new signals. Top = most urgent.",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
 function t(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
 function TR(key){return (I18N[LANG]&&I18N[LANG][key])||(I18N.sv[key])||key;}
+const KPI_KEY={"Soliditet":"kpi_soliditet","Skuldsättningsgrad":"kpi_skuld","Balanslikviditet":"kpi_balanslik","Kassalikviditet":"kpi_kassalik","Räntabilitet eget kapital (ROE)":"kpi_roe","Räntabilitet totalt kapital (ROA)":"kpi_roa","Rörelsemarginal":"kpi_rormarginal","Vinstmarginal":"kpi_vinstmarginal","Omsättningstillväxt":"kpi_omsattningstillvaxt","Runway":"kpi_runway","P/E (börsvärde/resultat)":"kpi_pe_bors","P/E (pris/EPS)":"kpi_pe_pris"};
+function kpiLabel(l){return KPI_KEY[l]?TR(KPI_KEY[l]):l;}
 function setLang(l){LANG=l;localStorage.setItem("lang",l);try{applyStaticI18n();}catch(e){}updateWeekLabel();renderCurrent();if(me){try{sb.from("profiles").upsert({id:me.id,sprak:l}).then(()=>{}).catch(()=>{});}catch(e){}}}
 const PH_EN={"Börja skriva bolagsnamn...":"Start typing company name...","6-siffrig kod från appen":"6-digit code from the app","E-post":"Email","Filtrera bolag...":"Filter companies...","Filtrera eller sök kompetens...":"Filter or search skills...","Filtrera kontakter...":"Filter contacts...","Filtrera tasks...":"Filter tasks...","Företagskonto":"Company account","IFRS, SAP, Interim CFO":"IFRS, SAP, Interim CFO","Lösenord":"Password","Ny uppgift...":"New task...","Restaurang / lokal...":"Restaurant / venue...","Rubrik/ämne":"Headline/topic","Skriv din notering här...":"Write your note here...","Skriv dina tankar, nästa steg, vad du vet om bolaget...":"Write your thoughts, next steps, what you know about the company...","Skriv ditt inlägg här – det sparas när du klickar Spara utkast, och du kan fortsätta en annan dag.":"Write your post here – it's saved when you click Save draft, and you can continue another day.","Skriv eget ämne":"Write your own topic","Sök koncern eller bolag...":"Search group or company...","Sök kontakt...":"Search contact...","Sök kontakter, bolag, tasks...":"Search contacts, companies, tasks...","Sök namn, bolag, roll...":"Search name, company, role...","Sök person...":"Search person...","Sök projekt eller kund...":"Search assignment or client...","Sök på ett eller flera ord...":"Search by one or more words...","Sök signaler...":"Search signals...","Sökord (lämna tomt för alla)":"Keyword (leave blank for all)","T.ex: Ny VD tillträdde mars, söker controller på LinkedIn...":"E.g.: New CEO started in March, looking for a controller on LinkedIn...","Vad jobbar du med?":"What are you working on?","Välj eller skriv egen":"Select or write your own","minst 8 tecken":"min 8 characters","namn@exempel.se":"name@example.com","t.ex. 1.5":"e.g. 1.5","t.ex. 20":"e.g. 20","t.ex. 2023–2024":"e.g. 2023–2024","t.ex. 40":"e.g. 40","t.ex. Acme AB":"e.g. Acme Inc","t.ex. Anna Svensson":"e.g. Jane Smith","t.ex. IFRS 16 – leasingredovisning":"e.g. IFRS 16 – lease accounting","Org.nr":"Reg. no.","Sök eller skriv...":"Search or type..."};
 function applyStaticI18n(){
@@ -3731,11 +3741,11 @@ function renderSchema(){
 
   // Dagens förslag
   const todayItems=(map[todayStr]||[]);
-  const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>⭐ Dagens förslag</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">${t("sch_inga_idag")}</span>'}</div></div>`;
+  const todayBlock=`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--accent)"><div class="week-sec-hdr"><h3>${TR("sch_forslag")}</h3><span style="font-size:12px;color:#888">${todayItems.length} uppgifter</span></div><div style="padding:8px 14px">${todayItems.length?todayItems.map(t=>schemaTaskChip(t,true)).join(""):'<span style="color:#888;font-size:13px">${t("sch_inga_idag")}</span>'}</div></div>`;
 
-  const unplannedBlock=(unplanned&&unplanned.length)?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--gold)"><div class="week-sec-hdr"><h3>📥 Ej inplanerade</h3><span style="font-size:12px;color:#888">${unplanned.length} st – syns inte i kalendern förrän du ger dem en dag</span></div><div style="padding:8px 14px">${unplanned.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
+  const unplannedBlock=(unplanned&&unplanned.length)?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--gold)"><div class="week-sec-hdr"><h3>${TR("sch_ej_inpl")}</h3><span style="font-size:12px;color:#888">${unplanned.length} ${TR("sch_syns_inte")}</span></div><div style="padding:8px 14px">${unplanned.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
 
-  const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>⚠ Försenade</h3><span style="font-size:12px;color:#888">${overdue.length} st</span></div><div style="padding:8px 14px">${overdue.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
+  const overdueBlock=overdue.length?`<div class="week-sec" style="margin-bottom:14px;border-left:4px solid var(--red)"><div class="week-sec-hdr"><h3>${TR("sch_forsenade")}</h3><span style="font-size:12px;color:#888">${overdue.length} st</span></div><div style="padding:8px 14px">${overdue.map(t=>schemaTaskChip(t,true)).join("")}</div></div>`:"";
 
   // Navigering + vy-växel + export
   const ctrls=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
@@ -3743,10 +3753,10 @@ function renderSchema(){
     <button class="btn btn-outline btn-sm" onclick="schemaNav(-1)">←</button>
     <button class="btn btn-outline btn-sm" onclick="schemaAnchor=schemaToday();renderSchema()">${t("sch_idag")}</button>
     <button class="btn btn-outline btn-sm" onclick="schemaNav(1)">→</button>
-    <button class="btn btn-warm btn-sm" onclick="renderSchema()" title="Uppdatera schemat med nya/ändrade uppgifter">🔄 Uppdatera</button>
+    <button class="btn btn-warm btn-sm" onclick="renderSchema()" title="Uppdatera schemat med nya/ändrade uppgifter">${TR("sch_uppdatera")}</button>
     <div style="flex:1"></div>
-    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('today')">📲 Dagens till kalender</button>
-    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">📲 Hela schemat</button>
+    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('today')">${TR("sch_dagens_kal")}</button>
+    <button class="btn btn-green btn-sm" onclick="exportScheduleICS('all')">${TR("sch_hela_schemat")}</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
     <select onchange="schemaFilterCo=this.value;renderSchema()" style="width:190px"><option value=""${schemaFilterCo===""?" selected":""}>${t("sch_alla_bolag")}</option><option value="__none__"${schemaFilterCo==="__none__"?" selected":""}>${t("sch_utan_bolag")}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${schemaFilterCo===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
@@ -3775,7 +3785,7 @@ function renderSchema(){
   }
 
   document.getElementById("schema-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.</div>
+    <div class="privacy-note" style="margin-bottom:14px">${TR("sch_kalender_info")}</div>
     ${todayBlock}${overdueBlock}${unplannedBlock}${ctrls}${grid}`;
 }
 function schemaNav(dir){
@@ -3878,7 +3888,7 @@ function companyFinSummary(coId){
   const soliditet=tillg>0?(ek/tillg)*100:NaN;
   const vinstmarg=oms>0?(ar/oms)*100:NaN;
   const kbr=ak>0&&ek<ak*0.5;
-  const kt=(l,v2)=>`<div class="ii"><label>${l}</label><span>${v2}</span></div>`;
+  const kt=(l,v2)=>`<div class="ii"><label>${kpiLabel(l)}</label><span>${v2}</span></div>`;
   return `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">📐 Nyckeltal · senaste (${e(d._period||"")})</div><button class="btn btn-outline btn-xs" onclick="closeM('m-card');closeM('m-company');gotoFinForCompany('${coId}')">Full analys →</button></div>
     ${kbr?'<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px">⛔ Möjlig KBR-plikt (EK under halva aktiekapitalet)</div>':""}
@@ -4116,7 +4126,7 @@ function renderMellanhander(){
   const list=companies.filter(c=>c.ar_formedlare).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
   if(!list.length){document.getElementById("mellanhander-content").innerHTML='<div class="empty"><div class="empty-icon">🤝</div><p>Inga bolag är markerade som förmedlare/mellanhand ännu. Kryssa i "Förmedlare/mellanhand" på ett bolag för att samla dem här.</p></div>';return;}
   document.getElementById("mellanhander-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.</div>
+    <div class="privacy-note" style="margin-bottom:14px">${TR("mh_info")}</div>
     <div class="tw"><table><thead><tr><th>${TR("mh_bolag")}</th><th>${TR("mh_pipeline_steg")}</th><th>${TR("mh_stad")}</th><th>${TR("mh_nya_signaler")}</th></tr></thead><tbody>
     ${list.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openCompanyCard('${c.id}')">${FLAG[c.land]||"🌍"} ${e(c.namn)} ↗</strong></td><td>${e(pipeLabel(c.pipeline_status))}</td><td>${e(c.stad||"–")}</td><td>${sig>0?`<span class="badge b-granskad">${sig}</span>`:'<span style="color:#aaa">0</span>'}</td></tr>`;}).join("")}
     </tbody></table></div>`;
@@ -4373,7 +4383,7 @@ function renderKonsultbehov(){
   if(!needs.length){document.getElementById("konsultbehov-content").innerHTML='<div class="empty"><div class="empty-icon">🎯</div><p>Inga indikerade konsultbehov ännu. Spara nyckeltal på bolag eller fånga signaler – bolag med varningar dyker upp här automatiskt.</p></div>';return;}
   const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
   document.getElementById("konsultbehov-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.</div>
+    <div class="privacy-note" style="margin-bottom:14px">${TR("kbh_info")}</div>
     ${needs.map(({c,flags,score,tjanster})=>`
       <div class="week-sec" style="margin-bottom:12px;border-left:4px solid ${sevColor(score)}"><div style="padding:14px 16px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
