@@ -1017,6 +1017,10 @@ let contactConnections=[];
 let knowledgeNotes=[];
 let subActivity=[],subCompanies=[],subContacts=[];
 let goals=[];
+let activityTypes=[];
+async function loadActivityTypes(){const r=await sb.from("activity_types").select("*").eq("user_id",me.id).order("sort_order",{ascending:true});activityTypes=r.data||[];}
+function actTypeOptions(selected){return activityTypes.map(a=>`<option value="${a.varde}"${selected===a.varde?" selected":""}>${a.ikon?a.ikon+" ":""}${e(a.namn)}</option>`).join("");}
+function fillActTypeSelects(){["lg-typ","sa-typ"].forEach(id=>{const el=document.getElementById(id);if(el){const cur=el.value;el.innerHTML=actTypeOptions(cur);}});}
 let finAnalyses=[];
 let projects=[],tasks=[],diary=[],projPeople=[],closeouts=[],veckoplan=[];
 let editCid=null,editCoid=null,editSubId=null,editPid=null,editTid=null,editDid=null;
@@ -1143,7 +1147,7 @@ const I18N={
     sch_vecka:"Vecka",sch_manad:"Månad",sch_idag:"Idag",sch_alla_bolag:"Alla bolag",sch_utan_bolag:"Utan bolag",sch_alla_projekt:"Alla projekt",sch_utan_projekt:"Utan projekt",sch_inga_idag:"Inga uppgifter inplanerade idag 🎉",sch_sortera:"Sortera automatiskt (deadline + prio)",sch_klarmarkera:"Klarmarkera",prio_sortera:"Sortera automatiskt (deadline + prio)",prio_inga:"Inga öppna todos att prioritera. Skapa todos så kan du ordna dem här.",sigs_ny:"ny",sigs_granskad:"granskad",sigs_ignorerad:"ignorerad",pl_watchlist:"Watchlist",pl_intressant:"Intressant",pl_varm:"Varm",pl_mojlighet:"Möjlighet",pl_mote:"Möte",pl_offert:"Offert",pl_vunnet:"Vunnet",pl_kund:"Kund",pl_forlorat:"Förlorat",co_oversikt:"Översikt",co_ai:"AI-score",co_signaler:"Signaler",co_kontakter:"Kontakter",co_projekt:"Projekt",
     tb_ny_kontakt:"+ Ny kontakt",tb_exportera:"📥 Exportera",tb_nytt_projekt:"+ Nytt projekt",tb_nytt_bolag:"+ Nytt bolag",tb_manuell_signal:"+ Manuell signal",tb_ny_uppgift:"+ Ny uppgift",tb_ny_underkonsult:"+ Ny underkonsult",tb_exportera_alla:"Exportera alla",tb_ny_logg:"+ Ny logg",tb_ny_notering:"+ Ny notering",tb_skriv_ut:"🖨 Skriv ut / PDF",tb_word:"📄 Word (.docx)",tb_ny_analys:"+ Ny analys",
     vt_dashboard:"Dashboard",vt_companies:"Bolag",vt_signals:"Signaler",vt_contacts:"Kontakter",vt_subconsultants:"Underkonsulter",vt_projects:"Uppdrag",vt_goals:"Mål",vt_kcc:"KCC",vt_linkedin:"LinkedIn-inlägg",vt_schema:"Arbetsschema",vt_prio:"Prioritering",vt_settings:"Inställningar",vt_konsultbehov:"Konsultbehov",
-    dbc_att_folja:"Att följa upp",dbc_inga_uppf:"Inga uppföljningar idag – bra jobbat!",dbc_heta_leads:"Heta leads",dbc_inga_signaler:"Inga nya signaler",dbc_visa_alla:"Visa alla",dbc_inga_behov:"Inga indikerade behov ännu.",dbc_inga_tasks:"Inga försenade tasks",dbc_inga_todos:"Inga öppna todos",dbc_inga_mal:"Inga mål satta ännu.",dbc_satt_mal:"Sätt ditt första mål →",dbc_konsultbehov:"Konsultbehov",dbc_pot_behov:"Potentiellt konsultbehov",dbc_fors_tasks:"Försenade tasks",dbc_todo:"Todo",
+    dbc_att_folja:"Att följa upp",dbc_inga_uppf:"Inga uppföljningar idag – bra jobbat!",dbc_heta_leads:"Heta leads",dbc_inga_signaler:"Inga nya signaler",dbc_visa_alla:"Visa alla",dbc_inga_behov:"Inga indikerade behov ännu.",dbc_inga_tasks:"Inga försenade tasks",dbc_inga_todos:"Inga öppna todos",dbc_inga_mal:"Inga mål satta ännu.",dbc_satt_mal:"Sätt ditt första mål →",dbc_konsultbehov:"Konsultbehov",dbc_pot_behov:"Potentiellt konsultbehov",dbc_fors_tasks:"Försenade tasks",dbc_todo:"Todo",at_rubrik:"Aktivitetstyper",at_info:"Skapa egna aktivitetstyper som syns när du loggar aktiviteter.",at_namn:"Namn",at_ikon:"Ikon (emoji)",at_lagg_till:"Lägg till typ",at_ta_bort:"Ta bort",at_namn_kravs:"Ange ett namn",at_tillagd:"Aktivitetstyp tillagd ✓",at_borttagen:"Aktivitetstyp borttagen",at_bekrafta_bort:"Ta bort denna aktivitetstyp?",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1205,7 +1209,7 @@ const I18N={
     sch_vecka:"Week",sch_manad:"Month",sch_idag:"Today",sch_alla_bolag:"All companies",sch_utan_bolag:"Without company",sch_alla_projekt:"All assignments",sch_utan_projekt:"Without assignment",sch_inga_idag:"No tasks scheduled today 🎉",sch_sortera:"Sort automatically (deadline + priority)",sch_klarmarkera:"Mark done",prio_sortera:"Sort automatically (deadline + priority)",prio_inga:"No open to-dos to prioritize. Create to-dos to organize them here.",sigs_ny:"new",sigs_granskad:"reviewed",sigs_ignorerad:"ignored",pl_watchlist:"Watchlist",pl_intressant:"Interesting",pl_varm:"Warm",pl_mojlighet:"Opportunity",pl_mote:"Meeting",pl_offert:"Quote",pl_vunnet:"Won",pl_kund:"Client",pl_forlorat:"Lost",co_oversikt:"Overview",co_ai:"AI score",co_signaler:"Signals",co_kontakter:"Contacts",co_projekt:"Assignments",
     tb_ny_kontakt:"+ New contact",tb_exportera:"📥 Export",tb_nytt_projekt:"+ New assignment",tb_nytt_bolag:"+ New company",tb_manuell_signal:"+ Manual signal",tb_ny_uppgift:"+ New task",tb_ny_underkonsult:"+ New subconsultant",tb_exportera_alla:"Export all",tb_ny_logg:"+ New entry",tb_ny_notering:"+ New note",tb_skriv_ut:"🖨 Print / PDF",tb_word:"📄 Word (.docx)",tb_ny_analys:"+ New analysis",
     vt_dashboard:"Dashboard",vt_companies:"Companies",vt_signals:"Signals",vt_contacts:"Contacts",vt_subconsultants:"Subconsultants",vt_projects:"Assignments",vt_goals:"Goals",vt_kcc:"KCC",vt_linkedin:"LinkedIn posts",vt_schema:"Work schedule",vt_prio:"Prioritization",vt_settings:"Settings",vt_konsultbehov:"Assignment leads",
-    dbc_att_folja:"To follow up",dbc_inga_uppf:"No follow-ups today – well done!",dbc_heta_leads:"Hot leads",dbc_inga_signaler:"No new signals",dbc_visa_alla:"Show all",dbc_inga_behov:"No indicated needs yet.",dbc_inga_tasks:"No overdue tasks",dbc_inga_todos:"No open to-dos",dbc_inga_mal:"No goals set yet.",dbc_satt_mal:"Set your first goal →",dbc_konsultbehov:"Assignment leads",dbc_pot_behov:"Potential assignment leads",dbc_fors_tasks:"Overdue tasks",dbc_todo:"To-do",
+    dbc_att_folja:"To follow up",dbc_inga_uppf:"No follow-ups today – well done!",dbc_heta_leads:"Hot leads",dbc_inga_signaler:"No new signals",dbc_visa_alla:"Show all",dbc_inga_behov:"No indicated needs yet.",dbc_inga_tasks:"No overdue tasks",dbc_inga_todos:"No open to-dos",dbc_inga_mal:"No goals set yet.",dbc_satt_mal:"Set your first goal →",dbc_konsultbehov:"Assignment leads",dbc_pot_behov:"Potential assignment leads",dbc_fors_tasks:"Overdue tasks",dbc_todo:"To-do",at_rubrik:"Activity types",at_info:"Create your own activity types that appear when logging activities.",at_namn:"Name",at_ikon:"Icon (emoji)",at_lagg_till:"Add type",at_ta_bort:"Delete",at_namn_kravs:"Enter a name",at_tillagd:"Activity type added ✓",at_borttagen:"Activity type deleted",at_bekrafta_bort:"Delete this activity type?",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -1503,10 +1507,11 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
+  try{fillActTypeSelects();}catch(e){}
   try{updateBadges();}catch(e){}
   try{updateWeekLabel();}catch(e){}
   try{fillTimerSelects();}catch(e){}
@@ -2694,6 +2699,7 @@ function openLogModal(cid,logId=null){
   document.getElementById("lg-next").value=l?.nasta_steg||"";
   document.getElementById("lg-typ").value=l?.typ||"Mote";
   document.getElementById("lg-itype").value=l?.interaktionstyp||"";
+  try{fillActTypeSelects();}catch(e){}
   openM("m-log");
 }
 async function saveLog(){
@@ -4529,6 +4535,7 @@ function openSubActivity(subId){
   document.getElementById("sa-typ").value="Mote";
   document.getElementById("sa-sub-picker").style.display="none";
   closeM("m-sub-card");
+  try{fillActTypeSelects();}catch(e){}
   openM("m-sub-act");
 }
 async function saveSubActivity(){
@@ -4721,10 +4728,49 @@ function showAnnualResult(coId,nyckeltal,text){
 
 
 // SETTINGS
+function actTypesManagerHtml(){
+  return `<p class="sec-title">${TR("at_rubrik")}</p>
+  <div class="week-sec" style="margin-bottom:18px"><div style="padding:16px">
+    <p style="font-size:13px;color:#666;margin-bottom:12px">${TR("at_info")}</p>
+    <div id="at-list" style="margin-bottom:14px">${actTypesListHtml()}</div>
+    <div class="fg" style="align-items:flex-end">
+      <div class="fl" style="max-width:90px"><label>${TR("at_ikon")}</label><input id="at-new-ikon" maxlength="2" placeholder="📌" style="text-align:center"></div>
+      <div class="fl"><label>${TR("at_namn")}</label><input id="at-new-namn" placeholder=""></div>
+      <div class="fl" style="max-width:140px"><button class="btn btn-primary" onclick="addActivityType()">${TR("at_lagg_till")}</button></div>
+    </div>
+  </div></div>`;
+}
+function actTypesListHtml(){
+  if(!activityTypes.length)return "";
+  return activityTypes.map(a=>`<div class="week-row" style="display:flex;align-items:center;gap:10px"><span style="font-size:16px">${a.ikon||"📌"}</span><span style="flex:1">${e(a.namn)}</span><button class="btn-icon" title="${TR("at_ta_bort")}" onclick="deleteActivityType('${a.id}')">🗑</button></div>`).join("");
+}
+async function addActivityType(){
+  const namn=(document.getElementById("at-new-namn").value||"").trim();
+  const ikon=(document.getElementById("at-new-ikon").value||"📌").trim()||"📌";
+  if(!namn){toast(TR("at_namn_kravs"));return;}
+  const maxSort=activityTypes.reduce((m,a)=>Math.max(m,a.sort_order||0),0);
+  const {error}=await sb.from("activity_types").insert({namn,varde:namn,ikon,sort_order:maxSort+1,user_id:me.id});
+  if(error){toast(error.message);return;}
+  await loadActivityTypes();
+  const lst=document.getElementById("at-list");if(lst)lst.innerHTML=actTypesListHtml();
+  document.getElementById("at-new-namn").value="";document.getElementById("at-new-ikon").value="";
+  fillActTypeSelects();
+  toast(TR("at_tillagd"));
+}
+function deleteActivityType(id){
+  confirm2(TR("at_bekrafta_bort"),async()=>{
+    const {error}=await sb.from("activity_types").delete().eq("id",id);
+    if(error){toast(error.message);return;}
+    await loadActivityTypes();
+    const lst=document.getElementById("at-list");if(lst)lst.innerHTML=actTypesListHtml();
+    fillActTypeSelects();
+    toast(TR("at_borttagen"));
+  });
+}
 function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title" data-i18n="set_konto">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">${t("set_inloggad_som")} <strong>${e(me?.email||"")}</strong></p>
     <div class="fg" style="margin-bottom:14px"><div class="fl"><label>🌐 ${t("sprak_valj")}</label><select id="lang-select" onchange="setLang(this.value)"><option value="sv" ${LANG==="sv"?"selected":""}>${t("sprak_sv")}</option><option value="en" ${LANG==="en"?"selected":""}>${t("sprak_en")}</option></select></div></div><div class="fg" style="margin-bottom:10px"><div class="fl"><label data-i18n="set_ditt_namn">Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()" data-i18n="set_spara_namn">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()" data-i18n="set_logga_ut">Logga ut</button></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_byt_losen">Byt lösenord</div><div class="fg"><div class="fl"><label data-i18n="set_nytt_losen">Nytt lösenord (minst 8 tecken)</label><input id="pw-new" type="password" autocomplete="new-password"></div><div class="fl"><label data-i18n="set_upprepa">Upprepa</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="changePassword()" data-i18n="set_byt_losen">Byt lösenord</button><div id="pw-result" style="margin-top:8px;font-size:13px"></div></div>
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_radera_konto">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()" data-i18n="set_radera_mitt">Radera mitt konto</button></div></div></div><p class="sec-title" data-i18n="set_sakerhet">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666" data-i18n="set_kontrollerar">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title" data-i18n="set_rapporter">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label data-i18n="set_veckodag">Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label data-i18n="set_veckobrev_till">Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label data-i18n="set_pamin_epost">Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label data-i18n="set_dagar_forvag">Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()" data-i18n="btn_spara">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()" data-i18n="set_skicka_test">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_radera_konto">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()" data-i18n="set_radera_mitt">Radera mitt konto</button></div></div></div>${actTypesManagerHtml()}<p class="sec-title" data-i18n="set_sakerhet">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666" data-i18n="set_kontrollerar">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title" data-i18n="set_rapporter">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label data-i18n="set_veckodag">Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label data-i18n="set_veckobrev_till">Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label data-i18n="set_pamin_epost">Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label data-i18n="set_dagar_forvag">Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()" data-i18n="btn_spara">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()" data-i18n="set_skicka_test">Skicka testmejl</button></div></div></div></div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
 async function sendTestEmail(){toast("Skickar...",5000);const token=await getToken();if(!token)return;const r=await fetch("/api/test-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));toast(data.message||"Skickat ✓");}
 
@@ -4769,6 +4815,7 @@ function openSubActivityQuick(){
   const picker=document.getElementById("sa-sub-picker");
   picker.style.display="";
   document.getElementById("sa-sub-sel").innerHTML=subs.slice().sort((a,b)=>((a.fornamn||"")+(a.efternamn||"")).localeCompare((b.fornamn||"")+(b.efternamn||""),"sv")).map(s=>`<option value="${s.id}">${e(s.fornamn)} ${e(s.efternamn)}</option>`).join("");
+  try{fillActTypeSelects();}catch(e){}
   openM("m-sub-act");
 }
 function toggleTimerPanel(){document.getElementById("timer-panel").classList.toggle("open");}
