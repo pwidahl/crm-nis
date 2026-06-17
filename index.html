@@ -1156,6 +1156,12 @@ const I18N={
     mh_bolag:"Bolag",mh_pipeline_steg:"Pipeline-steg",mh_stad:"Stad",mh_nya_signaler:"Nya signaler",
     wk_relationer_varma:"Relationer att värma",wk_nya_signaler:"Nya signaler",wk_kanda:"Kända kontakt + signal",wk_forsenade:"Försenade tasks",
     kb_alla_kat:"Alla kategorier",
+    cv_erfarenhet:"Konsulterfarenhet",cv_roller:"Roller",
+    kon_inga_match:"Inga bolag matchar.",kon_fristaende:"Fristående bolag",
+    fin_valj_bolag:"Välj bolag (eller fristående)",fin_helar:"Helår",fin_rensa:"Rensa fält",
+    st_aktiviteter_v:"Aktiviteter (v)",st_snitt_vecka:"Snitt per vecka",st_starka:"Starka relationer",st_svaga:"Svaga – prioritera",
+    rn_alla_typer:"Alla relationstyper",
+    nw_bolagskort:"Bolagskort",nw_inga_traffar:"Inga träffar – ändra filter",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1226,6 +1232,12 @@ const I18N={
     mh_bolag:"Company",mh_pipeline_steg:"Pipeline stage",mh_stad:"City",mh_nya_signaler:"New signals",
     wk_relationer_varma:"Relationships to warm up",wk_nya_signaler:"New signals",wk_kanda:"Known contact + signal",wk_forsenade:"Overdue tasks",
     kb_alla_kat:"All categories",
+    cv_erfarenhet:"Consulting experience",cv_roller:"Roles",
+    kon_inga_match:"No companies match.",kon_fristaende:"Standalone companies",
+    fin_valj_bolag:"Select company (or standalone)",fin_helar:"Full year",fin_rensa:"Clear fields",
+    st_aktiviteter_v:"Activities (wk)",st_snitt_vecka:"Avg per week",st_starka:"Strong relationships",st_svaga:"Weak – prioritize",
+    rn_alla_typer:"All relationship types",
+    nw_bolagskort:"Company card",nw_inga_traffar:"No matches – change filter",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -2476,7 +2488,7 @@ function renderNetwork(){
     const filtered=arr.filter(filterPerson);if(!filtered.length)return"";
     return`<div class="week-sec"><div class="week-sec-hdr"><h3>${e(arr[0].company_namn)}</h3>${arr[0].nya_signaler>0?`<span class="badge b-ny">${arr[0].nya_signaler} nya</span>`:""}<span style="font-size:12px;color:#888">${filtered.length} kontakter</span><button class="btn btn-outline btn-xs" onclick="openCompanyCard('${id}')">Bolagskort</button></div>${filtered.map(n=>`<div class="week-row"><div class="sring ${scoreClass(n.relationspoang)}" style="width:34px;height:34px;font-size:12px;border-width:2px">${n.relationspoang}</div><div style="flex:1"><div class="week-rn">${e(n.fornamn)} ${e(n.efternamn)}</div><div class="week-rs">${e(n.roll||"")}${n.dagar_sedan_kontakt?` · ${n.dagar_sedan_kontakt} dagar sedan`:""}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join("")}</div>`;
   }).filter(Boolean);
-  document.getElementById("network-content").innerHTML=rows.length?rows.join(""):'<div class="empty"><div class="empty-icon">🔍</div><p>Inga träffar – ändra filter</p></div>';
+  document.getElementById("network-content").innerHTML=rows.length?rows.join(""):'<div class="empty"><div class="empty-icon">🔍</div><p>${TR("nw_inga_traffar")}</p></div>';
 }
 
 // CONTACTS
@@ -2887,9 +2899,9 @@ function renderStats(){
   document.getElementById("stats-content").innerHTML=`
     <div class="kpi-grid" style="margin-bottom:20px">
       <div class="kpi c-blue"><div class="kpi-n">${totAktiviteter}</div><div class="kpi-l">Aktiviteter (${nWeeks}v)</div></div>
-      <div class="kpi c-warm"><div class="kpi-n">${snittVecka}</div><div class="kpi-l">Snitt per vecka</div></div>
-      <div class="kpi c-green"><div class="kpi-n">${scoreBuckets.stark}</div><div class="kpi-l">Starka relationer</div></div>
-      <div class="kpi c-red"><div class="kpi-n">${scoreBuckets.svag}</div><div class="kpi-l">Svaga – prioritera</div></div>
+      <div class="kpi c-warm"><div class="kpi-n">${snittVecka}</div><div class="kpi-l">${TR("st_snitt_vecka")}</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${scoreBuckets.stark}</div><div class="kpi-l">${TR("st_starka")}</div></div>
+      <div class="kpi c-red"><div class="kpi-n">${scoreBuckets.svag}</div><div class="kpi-l">${TR("st_svaga")}</div></div>
     </div>
 
     <div class="week-sec" style="margin-bottom:18px">
@@ -3059,7 +3071,7 @@ function renderKoncern(){
   const visibleStandalone=q?standalone.filter(c=>(c.namn||"").toLowerCase().includes(q)):standalone;
 
   if(!visibleKoncerner.length&&!visibleStandalone.length){
-    document.getElementById("koncern-content").innerHTML=html+'<div class="empty"><div class="empty-icon">🗺️</div><p>Inga bolag matchar.</p></div>';
+    document.getElementById("koncern-content").innerHTML=html+'<div class="empty"><div class="empty-icon">🗺️</div><p>${TR("kon_inga_match")}</p></div>';
     return;
   }
   if(!visibleKoncerner.length){
@@ -3068,7 +3080,7 @@ function renderKoncern(){
 
   if(visibleStandalone.length){
     html+=`<div class="week-sec">
-      <div class="week-sec-hdr"><h3>Fristående bolag</h3><span style="font-size:12px;color:#888">${visibleStandalone.length} utan koncern</span></div>
+      <div class="week-sec-hdr"><h3>${TR("kon_fristaende")}</h3><span style="font-size:12px;color:#888">${visibleStandalone.length} utan koncern</span></div>
       <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
         ${visibleStandalone.sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).slice(0,60).map(c=>`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div class="${moveKoncernId===c.id?"move-selected":""}" style="border-radius:8px">${koncernCard(c,false)}</div><button class="btn-icon" title="Lägg in i koncern" onclick="event.stopPropagation();startMoveKoncern('${c.id}')" style="font-size:10px">↔ Flytta</button></div>`).join("")}
       </div>
@@ -3301,11 +3313,11 @@ function renderCV(){
   const flag=l=>({"Sverige":"🇸🇪","Norge":"🇳🇴","Danmark":"🇩🇰","Finland":"🇫🇮"}[l]||"");
   document.getElementById("cv-content").innerHTML=`
     <div id="cv-printable" style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:28px;max-width:820px">
-      <h1 style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">Konsulterfarenhet</h1>
+      <h1 style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px">${TR("cv_erfarenhet")}</h1>
       <p style="color:#888;font-size:13px;margin-bottom:18px">Sammanställt ${e(today())} · ${companyRows.length} bolag · ${projects.length} uppdrag</p>
 
       <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:22px;padding-bottom:18px;border-bottom:2px solid var(--cream)">
-        <div style="flex:1;min-width:200px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:5px">Roller</div><div style="font-size:13px;line-height:1.7">${roller.length?roller.map(e).join(" · "):"–"}</div></div>
+        <div style="flex:1;min-width:200px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:5px">${TR("cv_roller")}</div><div style="font-size:13px;line-height:1.7">${roller.length?roller.map(e).join(" · "):"–"}</div></div>
         <div style="flex:1;min-width:200px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:5px">Kunder (${kunder.length})</div><div style="font-size:13px;line-height:1.7">${kunder.length?kunder.map(e).join(" · "):"–"}</div></div>
       </div>
 
@@ -3921,14 +3933,14 @@ function renderFinans(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
           <select id="fin-ar" style="width:110px">${yrOpts.join("")}</select>
-          <select id="fin-kvartal" style="width:130px"><option value="Helår">Helår</option><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select>
+          <select id="fin-kvartal" style="width:130px"><option value="Helår">${TR("fin_helar")}</option><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select>
         </div>
         <div class="ig">
           ${FIN_FIELDS.map(f=>`<div class="ii" style="display:block"><label>${f.l}</label><input id="fin-${f.k}" type="text" inputmode="decimal" oninput="renderFinResult()" style="width:100%;margin-top:2px"></div>`).join("")}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
           <button class="btn btn-primary btn-sm" onclick="saveFinAnalysis()">💾 Spara period</button>
-          <button class="btn btn-outline btn-sm" onclick="clearFinInputs()">Rensa fält</button>
+          <button class="btn btn-outline btn-sm" onclick="clearFinInputs()">${TR("fin_rensa")}</button>
         </div>
       </div></div>
       <div id="fin-result"></div>
