@@ -1151,6 +1151,8 @@ const I18N={
     sbl_namn:"Namn",sbl_tillg:"Tillgänglighet",sbl_stad:"Stad",sbl_dagspris:"Dagspris",sbl_komp:"Kompetenser",sbl_process:"Process",sbl_leads:"Leads",sbl_inga:"Inga underkonsulter",sbl_inga_bolag:"Inga underkonsulter kopplade till detta bolag",
     sgl_hamta_annonser:"Hämta annonser",sgl_hamta_nyheter:"Hämta nyheter",sgl_importera:"Importera bolag",sgl_dolj_fasta:"Dölj fasta igen",sgl_pipeline:"Pipeline",sgl_vem:"Vem",sgl_alder:"Ålder",sgl_nasta_steg:"Nästa steg",sgl_inga:"Inga signaler",
     prl_alla_status:"Alla statusar",prl_aktiva:"Aktiva",prl_pausade:"Pausade",prl_avslutade:"Avslutade",prl_fall_ihop:"Fäll ihop alla",prl_expandera:"Expandera alla",prl_totalt:"Totalt uppdrag",prl_fakt_tim:"Fakturerbara timmar",prl_fakt_underlag:"Fakturaunderlag",
+    tr_fakt_tim:"Fakturerbara timmar",tr_ej_fakt:"Ej fakturerbara",tr_socialt:"Socialt (lunch/AW etc)",tr_underlag:"Fakturaunderlag",tr_datum:"Datum",tr_typ:"Typ",tr_uppgift:"Uppgift",tr_timmar:"Timmar",tr_kategori:"Kategori",tr_fakturatext:"Fakturatext",
+    au_rubrik:"Användare (admin)",au_namn:"Namn",au_epost:"E-post",au_tillf_losen:"Tillfälligt lösenord",au_skapa:"Skapa konto",au_befintliga:"Befintliga användare",au_klicka_uppdatera:'Klicka "Uppdatera" för att hämta listan.',au_hamtar:"Hämtar...",au_ej_inloggad:"Inte inloggad",au_inga:"Inga användare.",au_serverfel:"Serverfel:",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1216,6 +1218,8 @@ const I18N={
     sbl_namn:"Name",sbl_tillg:"Availability",sbl_stad:"City",sbl_dagspris:"Daily rate",sbl_komp:"Skills",sbl_process:"Process",sbl_leads:"Leads",sbl_inga:"No subconsultants",sbl_inga_bolag:"No subconsultants linked to this company",
     sgl_hamta_annonser:"Fetch job ads",sgl_hamta_nyheter:"Fetch news",sgl_importera:"Import company",sgl_dolj_fasta:"Hide permanent again",sgl_pipeline:"Pipeline",sgl_vem:"Who",sgl_alder:"Age",sgl_nasta_steg:"Next step",sgl_inga:"No signals",
     prl_alla_status:"All statuses",prl_aktiva:"Active",prl_pausade:"Paused",prl_avslutade:"Completed",prl_fall_ihop:"Collapse all",prl_expandera:"Expand all",prl_totalt:"Total assignments",prl_fakt_tim:"Billable hours",prl_fakt_underlag:"Invoice basis",
+    tr_fakt_tim:"Billable hours",tr_ej_fakt:"Non-billable",tr_socialt:"Social (lunch/AW etc)",tr_underlag:"Invoice basis",tr_datum:"Date",tr_typ:"Type",tr_uppgift:"Task",tr_timmar:"Hours",tr_kategori:"Category",tr_fakturatext:"Invoice text",
+    au_rubrik:"Users (admin)",au_namn:"Name",au_epost:"Email",au_tillf_losen:"Temporary password",au_skapa:"Create account",au_befintliga:"Existing users",au_klicka_uppdatera:'Click "Refresh" to load the list.',au_hamtar:"Loading...",au_ej_inloggad:"Not logged in",au_inga:"No users.",au_serverfel:"Server error:",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -1374,7 +1378,7 @@ function renderAdminUsers(){
     <div class="fg" style="margin-top:10px"><div class="fl"><label>Namn</label><input id="newuser-namn" placeholder="t.ex. Anna Svensson"></div><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div></div>
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="createNewUser()">Skapa konto</button>
     <div id="newuser-result" style="margin-top:10px;font-size:13px"></div>
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cream)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">Befintliga användare</div><button class="btn btn-outline btn-xs" onclick="loadAdminUserList()">↻ Uppdatera</button></div><div id="admin-user-list"><p style="color:#aaa;font-size:13px">Klicka "Uppdatera" för att hämta listan.</p></div></div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cream)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">${TR("au_befintliga")}</div><button class="btn btn-outline btn-xs" onclick="loadAdminUserList()">↻ Uppdatera</button></div><div id="admin-user-list"><p style="color:#aaa;font-size:13px">${TR("au_klicka_uppdatera")}</p></div></div>
   </div></div>`;
 }
 async function loadAdminUserList(){
@@ -1386,7 +1390,7 @@ async function loadAdminUserList(){
     const data=await r.json().catch(()=>({}));
     if(!r.ok){box.innerHTML=`<p style="color:var(--red)">${e(data.error||"Kunde inte hämta")}</p>`;return;}
     const users=(data.users||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-    box.innerHTML=users.length?users.map(u=>`<div class="fup-row"><div class="fup-info"><strong>${e(u.namn||"")}</strong>${u.id===me.id?' <span style="font-size:10px;color:var(--accent)">(du)</span>':''}<div class="fup-meta">${e(u.email||"")} · skapad ${e((u.created_at||"").slice(0,10))}</div></div>${u.id!==me.id?`<button class="btn-icon" style="color:var(--red)" title="Radera användare" onclick="adminDeleteUser('${u.id}','${e(u.email||"")}')">🗑</button>`:""}</div>`).join(""):'<p style="color:#aaa;font-size:13px">Inga användare.</p>';
+    box.innerHTML=users.length?users.map(u=>`<div class="fup-row"><div class="fup-info"><strong>${e(u.namn||"")}</strong>${u.id===me.id?' <span style="font-size:10px;color:var(--accent)">(du)</span>':''}<div class="fup-meta">${e(u.email||"")} · skapad ${e((u.created_at||"").slice(0,10))}</div></div>${u.id!==me.id?`<button class="btn-icon" style="color:var(--red)" title="Radera användare" onclick="adminDeleteUser('${u.id}','${e(u.email||"")}')">🗑</button>`:""}</div>`).join(""):'<p style="color:#aaa;font-size:13px">${TR("au_inga")}</p>';
   }catch(err){box.innerHTML=`<p style="color:var(--red)">Serverfel: ${e(err.message)}</p>`;}
 }
 function adminDeleteUser(id,email){
@@ -2129,10 +2133,10 @@ function renderTidrapport(){
 
   document.getElementById("tidrapport-content").innerHTML=`
     <div class="kpi-grid" style="margin-bottom:18px">
-      <div class="kpi c-green"><div class="kpi-n">${totBill.toFixed(1)}</div><div class="kpi-l">Fakturerbara timmar</div></div>
-      <div class="kpi c-blue"><div class="kpi-n">${totNonBill.toFixed(1)}</div><div class="kpi-l">Ej fakturerbara</div></div>
-      <div class="kpi c-warm"><div class="kpi-n">${totSocial.toFixed(1)}</div><div class="kpi-l">Socialt (lunch/AW etc)</div></div>
-      <div class="kpi c-gold"><div class="kpi-n" style="font-size:18px">${money(totInvoice)}</div><div class="kpi-l">Fakturaunderlag</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${totBill.toFixed(1)}</div><div class="kpi-l">${TR("tr_fakt_tim")}</div></div>
+      <div class="kpi c-blue"><div class="kpi-n">${totNonBill.toFixed(1)}</div><div class="kpi-l">${TR("tr_ej_fakt")}</div></div>
+      <div class="kpi c-warm"><div class="kpi-n">${totSocial.toFixed(1)}</div><div class="kpi-l">${TR("tr_socialt")}</div></div>
+      <div class="kpi c-gold"><div class="kpi-n" style="font-size:18px">${money(totInvoice)}</div><div class="kpi-l">${TR("tr_underlag")}</div></div>
     </div>
     ${Object.entries(byProj).map(([pid,ents])=>{
       const p=projects.find(x=>x.id===pid);if(!p)return"";const co=projCompany(p);const bill=ents.filter(d=>d.billable!==false).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);const nonbill=ents.filter(d=>d.billable===false).reduce((s,d)=>s+(parseFloat(d.hours)||0),0);const est=Number(p.estimerad_tid)||0;
@@ -2143,7 +2147,7 @@ function renderTidrapport(){
         </div>
         <div style="padding:12px 14px">
           ${est?`<div style="margin-bottom:10px">${progressBar(projLoggedHours(p.id),est,240)}</div>`:""}
-          <div class="tw" style="overflow-x:auto"><table><thead><tr><th>Datum</th><th>Typ</th><th>Uppgift</th><th>Timmar</th><th>Kategori</th><th>Fakturatext</th></tr></thead><tbody>
+          <div class="tw" style="overflow-x:auto"><table><thead><tr><th>${TR("tr_datum")}</th><th>${TR("tr_typ")}</th><th>${TR("tr_uppgift")}</th><th>${TR("tr_timmar")}</th><th>${TR("tr_kategori")}</th><th>${TR("tr_fakturatext")}</th></tr></thead><tbody>
           ${ents.sort((a,b)=>String(a.datum).localeCompare(String(b.datum))).map(d=>{const t=tasks.find(x=>x.id===d.task_id);return`<tr><td>${e(d.datum)}</td><td><span class="diary-entry-type ${ACT_TYPE_CLASS[d.aktivitet_typ||"uppdrag"]||"dt-ovrigt"}" style="padding:1px 6px;font-size:10px">${ACT_TYPE_LABEL[d.aktivitet_typ||"uppdrag"]||d.aktivitet_typ||"Uppdrag"}</span></td><td>${t?e(t.title):"--"}</td><td>${Number(d.hours||0).toFixed(1)}${d.billable===false?" *":""}</td><td>${e(d.work_category||"")}</td><td>${e(d.invoice_note||d.description||"")}</td></tr>`;}).join("")}
           </tbody></table></div>
         </div>
