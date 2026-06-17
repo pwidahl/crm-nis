@@ -1164,6 +1164,7 @@ const I18N={
     nw_bolagskort:"Bolagskort",nw_inga_traffar:"Inga träffar – ändra filter",
     cc_lead_score:"Lead-score",cc_agare:"Ägare",cc_oppna:"Öppna",cc_lead_score_regel:"Lead-score (regelbaserad)",cc_inga_signaler:"Inga signaler",cc_inga_kontakter:"Inga egna kontakter",cc_inga_projekt:"Inga projekt",cc_arkivera:"Arkivera",cc_redigera:"Redigera",
     sc_passande:"Passande leads",sc_oppna_cv:"Öppna CV",sc_inga_akt:"Inga aktiviteter ännu.",sc_inga_kopplade:"Inga kopplade kontakter ännu.",sc_ingen_match:"Ingen kompetensmatch",sc_aktiviteter:"Aktiviteter",sc_bolag:"Bolag",sc_kanner:"Känner",sc_niva:"Nivå",
+    ld_signal:"Signal",ld_pipeline:"Lead-pipeline",ld_agare:"Ägare:",ld_nasta_steg:"Nästa steg",ld_datum:"Datum",ld_bolagsinfo:"Bolagsinformation",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Öppna bolagskort",ld_flytta:"Flytta i pipeline",ld_fristaende:"Fristående lead (inget bolag):",ld_koppla:"Koppla befintligt bolag",ld_ej_kopplat:"Bolag ej kopplat",ld_inga_kontakter:"Inga kontakter kopplade",ld_kvalificering:"Lead-kvalificering",ld_antal_anstallda:"Antal anställda",ld_okant:"Okänt",ld_omsattning:"Omsättning (MSEK)",ld_cfo_fraga:"Har de en CFO/ekonomichef idag?",ld_cfo_ja:"Ja, tillsatt",ld_cfo_vakant:"Vakant/söker",ld_cfo_nej:"Nej – saknar helt",ld_tillvaxt:"Tillväxttakt",ld_tillvaxt_stabil:"Stabil/negativ",ld_tillvaxt_mattlig:"Måttlig (0–20%)",ld_tillvaxt_snabb:"Snabb (20%+)",ld_agarstruktur:"Ägarstruktur",ld_bors:"Börsnoterat",ld_familj:"Familjeägt/grundarlett",ld_pe:"PE/riskkapital",ld_agarskifte:"Nytt ägarskifte",ld_ekonomisystem:"Ekonomisystem",ld_sys_modernt:"Modernt (SAP/D365/NetSuite)",ld_sys_gammalt:"Gammalt/okänt",ld_sys_byter:"Byter system just nu",ld_fritext:"Vad vet du om bolaget? (fritext)",ld_noteringar:"Noteringar om detta lead",ld_spara_notering:"Spara notering",ld_ignorera:"Ignorera lead",ld_nasta:"Nästa ›",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1242,6 +1243,7 @@ const I18N={
     nw_bolagskort:"Company card",nw_inga_traffar:"No matches – change filter",
     cc_lead_score:"Lead score",cc_agare:"Owner",cc_oppna:"Open",cc_lead_score_regel:"Lead score (rule-based)",cc_inga_signaler:"No signals",cc_inga_kontakter:"No own contacts",cc_inga_projekt:"No assignments",cc_arkivera:"Archive",cc_redigera:"Edit",
     sc_passande:"Matching leads",sc_oppna_cv:"Open CV",sc_inga_akt:"No activities yet.",sc_inga_kopplade:"No linked contacts yet.",sc_ingen_match:"No skill match",sc_aktiviteter:"Activities",sc_bolag:"Companies",sc_kanner:"Knows",sc_niva:"Level",
+    ld_signal:"Signal",ld_pipeline:"Lead pipeline",ld_agare:"Owner:",ld_nasta_steg:"Next step",ld_datum:"Date",ld_bolagsinfo:"Company information",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Open company card",ld_flytta:"Move in pipeline",ld_fristaende:"Standalone lead (no company):",ld_koppla:"Link existing company",ld_ej_kopplat:"Company not linked",ld_inga_kontakter:"No contacts linked",ld_kvalificering:"Lead qualification",ld_antal_anstallda:"Number of employees",ld_okant:"Unknown",ld_omsattning:"Revenue (MSEK)",ld_cfo_fraga:"Do they have a CFO/finance manager today?",ld_cfo_ja:"Yes, in place",ld_cfo_vakant:"Vacant/recruiting",ld_cfo_nej:"No – none at all",ld_tillvaxt:"Growth rate",ld_tillvaxt_stabil:"Stable/negative",ld_tillvaxt_mattlig:"Moderate (0–20%)",ld_tillvaxt_snabb:"Fast (20%+)",ld_agarstruktur:"Ownership structure",ld_bors:"Publicly listed",ld_familj:"Family-owned/founder-led",ld_pe:"PE/venture capital",ld_agarskifte:"Recent ownership change",ld_ekonomisystem:"Finance system",ld_sys_modernt:"Modern (SAP/D365/NetSuite)",ld_sys_gammalt:"Old/unknown",ld_sys_byter:"Changing system right now",ld_fritext:"What do you know about the company? (free text)",ld_noteringar:"Notes about this lead",ld_spara_notering:"Save note",ld_ignorera:"Ignore lead",ld_nasta:"Next ›",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -5617,11 +5619,11 @@ function openLead(sigId){
 
       <!-- PIPELINE & NÄSTA STEG -->
       <div style="grid-column:1/-1;background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Lead-pipeline</div><div style="font-size:11px;color:#888">Ägare: <strong>${e(userName(s.user_id))}</strong>${s.senast_agerad_av?` · senast: ${e(userName(s.senast_agerad_av))} ${s.senast_agerad_datum?"("+e((s.senast_agerad_datum||"").slice(0,10))+")":""}`:""}</div></div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${TR("ld_pipeline")}</div><div style="font-size:11px;color:#888">Ägare: <strong>${e(userName(s.user_id))}</strong>${s.senast_agerad_av?` · senast: ${e(userName(s.senast_agerad_av))} ${s.senast_agerad_datum?"("+e((s.senast_agerad_datum||"").slice(0,10))+")":""}`:""}</div></div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
           ${LEAD_PIPELINE.map(st=>{const active=(s.pipeline_steg||"Signal")===st;return`<button class="btn btn-xs ${active?'btn-primary':'btn-outline'}" onclick="setLeadSteg('${s.id}','${st}')">${LEAD_PIPE_LABEL[st]}</button>`;}).join("")}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:2;min-width:160px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Nästa steg</label><input id="lead-nasta" value="${e(s.nasta_steg||"")}" placeholder="t.ex. Ring ekonomichefen" style="width:100%"></div>
+          <div style="flex:2;min-width:160px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${TR("ld_nasta_steg")}</label><input id="lead-nasta" value="${e(s.nasta_steg||"")}" placeholder="t.ex. Ring ekonomichefen" style="width:100%"></div>
           <div style="flex:1;min-width:110px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Datum</label><input id="lead-nasta-datum" type="date" value="${e(s.nasta_steg_datum||"")}" style="width:100%"></div>
           <button class="btn btn-primary btn-sm" onclick="saveLeadNasta('${s.id}')" data-i18n="btn_spara">Spara</button>
         </div>
@@ -5632,7 +5634,7 @@ function openLead(sigId){
 
       <!-- BOLAGSINFO -->
       <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Bolagsinformation</div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${TR("ld_bolagsinfo")}</div>
         ${co?`
           <div style="font-size:13px;line-height:1.8">
             ${co.orgnr?`<div><span style="color:#888">Org.nr:</span> ${e(co.orgnr)}</div>`:""}
@@ -5643,10 +5645,10 @@ function openLead(sigId){
             ${co.anteckningar?`<div style="margin-top:8px;font-size:12px;color:#666;white-space:pre-line">${e(co.anteckningar)}</div>`:""}
           </div>
           <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="closeM('m-lead');openCompanyCard('${co.id}')">Öppna bolagskort</button>
-            <button class="btn btn-primary btn-sm" onclick="movePipeline('${co.id}')">Flytta i pipeline</button>
+            <button class="btn btn-outline btn-sm" onclick="closeM('m-lead');openCompanyCard('${co.id}')">${TR("ld_oppna_bolag")}</button>
+            <button class="btn btn-primary btn-sm" onclick="movePipeline('${co.id}')">${TR("ld_flytta")}</button>
           </div>
-        `:s.fritt_namn?`<p style="color:#aaa;font-size:13px;margin-bottom:8px">Fristående lead (inget bolag): <strong>${e(s.fritt_namn)}</strong></p><button class="btn btn-primary btn-sm" onclick="createCompanyFromLead('${s.id}')">+ Skapa bolag "${e(s.fritt_namn)}"</button><button class="btn btn-outline btn-sm" style="margin-left:6px" onclick="openEditSignal('${s.id}')">Koppla befintligt bolag</button>`:`<p style="color:#aaa;font-size:13px">Bolag ej kopplat</p><button class="btn btn-primary btn-sm" onclick="closeM('m-lead');openNewCompany('${e(s.companies?.namn||"")}')">+ Skapa bolag</button>`}
+        `:s.fritt_namn?`<p style="color:#aaa;font-size:13px;margin-bottom:8px">Fristående lead (inget bolag): <strong>${e(s.fritt_namn)}</strong></p><button class="btn btn-primary btn-sm" onclick="createCompanyFromLead('${s.id}')">+ Skapa bolag "${e(s.fritt_namn)}"</button><button class="btn btn-outline btn-sm" style="margin-left:6px" onclick="openEditSignal('${s.id}')">${TR("ld_koppla")}</button>`:`<p style="color:#aaa;font-size:13px">${TR("ld_ej_kopplat")}</p><button class="btn btn-primary btn-sm" onclick="closeM('m-lead');openNewCompany('${e(s.companies?.namn||"")}')">+ Skapa bolag</button>`}
       </div>
 
       <!-- KONTAKTER -->
@@ -5661,7 +5663,7 @@ function openLead(sigId){
             <button class="btn btn-warm btn-xs" onclick="closeM('m-lead');openLogModal('${c.id}')">Logga</button>
             <button class="btn btn-outline btn-xs" onclick="closeM('m-lead');openCard('${c.id}')">↗</button>
           </div>`;}).join("")
-        :`<p style="color:#aaa;font-size:13px">Inga kontakter kopplade</p>`}
+        :`<p style="color:#aaa;font-size:13px">${TR("ld_inga_kontakter")}</p>`}
         <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="closeM('m-lead');openNewContact();setTimeout(()=>{const el=document.getElementById('f-co');if(el)el.value='${e(co?.namn||s.companies?.namn||"")}';},100)">+ Lägg till kontakt</button>
       </div>
 
@@ -5679,10 +5681,10 @@ function openLead(sigId){
 
       <!-- LEAD KVALIFICERING -->
       <div style="grid-column:1/-1">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Lead-kvalificering</div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${TR("ld_kvalificering")}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
 
-          <div class="fl"><label>Antal anställda</label>
+          <div class="fl"><label>${TR("ld_antal_anstallda")}</label>
             <select id="lq-size-${s.id}">
               <option value="">Okänt</option>
               <option value="1">1–10</option>
@@ -5693,7 +5695,7 @@ function openLead(sigId){
             </select>
           </div>
 
-          <div class="fl"><label>Omsättning (MSEK)</label>
+          <div class="fl"><label>${TR("ld_omsattning")}</label>
             <select id="lq-rev-${s.id}">
               <option value="">Okänt</option>
               <option value="1">&lt;10 MSEK</option>
@@ -5704,44 +5706,44 @@ function openLead(sigId){
             </select>
           </div>
 
-          <div class="fl"><label>Har de en CFO/ekonomichef idag?</label>
+          <div class="fl"><label>${TR("ld_cfo_fraga")}</label>
             <select id="lq-cfo-${s.id}">
               <option value="">Okänt</option>
-              <option value="0">Ja, tillsatt</option>
-              <option value="2">Vakant/söker</option>
-              <option value="3">Nej – saknar helt</option>
+              <option value="0">${TR("ld_cfo_ja")}</option>
+              <option value="2">${TR("ld_cfo_vakant")}</option>
+              <option value="3">${TR("ld_cfo_nej")}</option>
             </select>
           </div>
 
-          <div class="fl"><label>Tillväxttakt</label>
+          <div class="fl"><label>${TR("ld_tillvaxt")}</label>
             <select id="lq-growth-${s.id}">
               <option value="">Okänt</option>
-              <option value="1">Stabil/negativ</option>
-              <option value="2">Måttlig (0–20%)</option>
-              <option value="3">Snabb (20%+)</option>
+              <option value="1">${TR("ld_tillvaxt_stabil")}</option>
+              <option value="2">${TR("ld_tillvaxt_mattlig")}</option>
+              <option value="3">${TR("ld_tillvaxt_snabb")}</option>
             </select>
           </div>
 
-          <div class="fl"><label>Ägarstruktur</label>
+          <div class="fl"><label>${TR("ld_agarstruktur")}</label>
             <select id="lq-owner-${s.id}">
               <option value="">Okänt</option>
-              <option value="1">Börsnoterat</option>
-              <option value="2">Familjeägt/grundarlett</option>
-              <option value="3">PE/riskkapital</option>
-              <option value="3">Nytt ägarskifte</option>
+              <option value="1">${TR("ld_bors")}</option>
+              <option value="2">${TR("ld_familj")}</option>
+              <option value="3">${TR("ld_pe")}</option>
+              <option value="3">${TR("ld_agarskifte")}</option>
             </select>
           </div>
 
-          <div class="fl"><label>Ekonomisystem</label>
+          <div class="fl"><label>${TR("ld_ekonomisystem")}</label>
             <select id="lq-erp-${s.id}">
               <option value="">Okänt</option>
-              <option value="1">Modernt (SAP/D365/NetSuite)</option>
-              <option value="2">Gammalt/okänt</option>
-              <option value="3">Byter system just nu</option>
+              <option value="1">${TR("ld_sys_modernt")}</option>
+              <option value="2">${TR("ld_sys_gammalt")}</option>
+              <option value="3">${TR("ld_sys_byter")}</option>
             </select>
           </div>
 
-          <div class="fl full"><label>Vad vet du om bolaget? (fritext)</label>
+          <div class="fl full"><label>${TR("ld_fritext")}</label>
             <textarea id="lq-notes-${s.id}" rows="2" placeholder="T.ex: Ny VD tillträdde mars, söker controller på LinkedIn..."></textarea>
           </div>
 
@@ -5758,17 +5760,17 @@ function openLead(sigId){
 
       <!-- NOTERINGAR -->
       <div style="grid-column:1/-1">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Noteringar om detta lead</div>
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${TR("ld_noteringar")}</div>
         <textarea id="lead-notes-${s.id}" style="width:100%;min-height:80px;font-size:13px" placeholder="Skriv dina tankar, nästa steg, vad du vet om bolaget...">${e(co?.anteckningar||"")}</textarea>
-        <button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveLeadNotes('${s.id}','${co?.id||""}')">Spara notering</button>
+        <button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveLeadNotes('${s.id}','${co?.id||""}')">${TR("ld_spara_notering")}</button>
       </div>
 
     </div>
 
     <div class="mfoot">
-      <button class="btn btn-outline btn-sm" onclick="sigStatusThenNext('${s.id}','ignorerad')">Ignorera lead</button>
+      <button class="btn btn-outline btn-sm" onclick="sigStatusThenNext('${s.id}','ignorerad')">${TR("ld_ignorera")}</button>
       <div style="flex:1"></div>
-      ${leadNavList.length>1?`<button class="btn btn-outline btn-sm" onclick="leadPrev('${s.id}')" title="Föregående lead">‹ Förra</button><span style="font-size:12px;color:#888;align-self:center">${leadNavList.indexOf(s.id)+1}/${leadNavList.length}</span><button class="btn btn-outline btn-sm" onclick="leadNext('${s.id}')" title="Nästa lead">Nästa ›</button>`:""}
+      ${leadNavList.length>1?`<button class="btn btn-outline btn-sm" onclick="leadPrev('${s.id}')" title="Föregående lead">‹ Förra</button><span style="font-size:12px;color:#888;align-self:center">${leadNavList.indexOf(s.id)+1}/${leadNavList.length}</span><button class="btn btn-outline btn-sm" onclick="leadNext('${s.id}')" title="Nästa lead">${TR("ld_nasta")}</button>`:""}
       <button class="btn btn-outline" onclick="navClear();closeM('m-lead')" data-i18n="u_stang">Stäng</button>
       <button class="btn btn-warm" onclick="sigStatusThenNext('${s.id}','granskad')">✓ Granskad + nästa</button>
     </div>
