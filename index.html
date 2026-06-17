@@ -1173,7 +1173,7 @@ const I18N={
     sch_forslag:"⭐ Dagens förslag",sch_uppgifter:"uppgifter",sch_ej_inpl:"📥 Ej inplanerade",sch_syns_inte:"st – syns inte i kalendern förrän du ger dem en dag",sch_forsenade:"⚠ Försenade",sch_uppdatera:"🔄 Uppdatera",sch_dagens_kal:"📲 Dagens till kalender",sch_hela_schemat:"📲 Hela schemat",sch_kalender_info:"Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.",
     kpi_soliditet:"Soliditet",kpi_skuld:"Skuldsättningsgrad",kpi_balanslik:"Balanslikviditet",kpi_kassalik:"Kassalikviditet",kpi_roe:"Räntabilitet eget kapital (ROE)",kpi_roa:"Räntabilitet totalt kapital (ROA)",kpi_rormarginal:"Rörelsemarginal",kpi_vinstmarginal:"Vinstmarginal",kpi_omsattningstillvaxt:"Omsättningstillväxt",kpi_runway:"Runway",kpi_pe_bors:"P/E (börsvärde/resultat)",kpi_pe_pris:"P/E (pris/EPS)",
     mh_info:"Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.",
-    kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",
+    kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",li_kat_sasong:"Säsong",li_kat_marknad:"Marknad & aktuellt",li_kat_lagar:"Lagar & regler",lead_het:TR("lead_het"),lead_bra:TR("lead_bra"),lead_mojligt:TR("lead_mojligt"),lead_svagt:TR("lead_svagt"),
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1261,7 +1261,7 @@ const I18N={
     sch_forslag:"⭐ Today's suggestions",sch_uppgifter:"tasks",sch_ej_inpl:"📥 Unscheduled",sch_syns_inte:"unscheduled – not shown in the calendar until you assign a day",sch_forsenade:"⚠ Overdue",sch_uppdatera:"🔄 Refresh",sch_dagens_kal:"📲 Today to calendar",sch_hela_schemat:"📲 Full schedule",sch_kalender_info:"Calendar of your open tasks. Move a task with ← → to the previous/next day. Tasks without a set day are placed automatically by deadline and priority.",
     kpi_soliditet:"Equity ratio",kpi_skuld:"Debt-to-equity ratio",kpi_balanslik:"Current ratio",kpi_kassalik:"Quick ratio",kpi_roe:"Return on equity (ROE)",kpi_roa:"Return on assets (ROA)",kpi_rormarginal:"Operating margin",kpi_vinstmarginal:"Profit margin",kpi_omsattningstillvaxt:"Revenue growth",kpi_runway:"Runway",kpi_pe_bors:"P/E (market cap/profit)",kpi_pe_pris:"P/E (price/EPS)",
     mh_info:"Companies marked as brokers/intermediaries (recruitment agencies, consultant brokers, etc.). These are not counted as direct clients or as companies with their own consulting needs.",
-    kbh_info:"Companies ranked by indicated need, based on saved key figures and new signals. Top = most urgent.",
+    kbh_info:"Companies ranked by indicated need, based on saved key figures and new signals. Top = most urgent.",li_kat_sasong:"Season",li_kat_marknad:"Market & current",li_kat_lagar:"Laws & regulations",lead_het:"Hot lead – prioritize now",lead_bra:"Good lead – follow up within a week",lead_mojligt:"Possible lead – monitor",lead_svagt:"Weak lead – low priority",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -4154,6 +4154,37 @@ function fmtISO(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,
 
 // Periodanpassade vinkelförslag utifrån månad
 function angleBank(month){ // month 0-11
+  if(LANG==="en"){
+    const marknad=[
+      "A current finance news item + your take on what it means for the finance function",
+      "The current interest rate/economic climate – what it means for liquidity and planning",
+      "A topic being discussed in the industry this week – your angle"
+    ];
+    const lagar=[
+      "A new or upcoming law/regulatory change affecting the finance function",
+      "Sustainability reporting (CSRD) – what companies need to be aware of",
+      "A tax or accounting news item and its practical consequences"
+    ];
+    const saong={
+      0:["Year-end & new year: what the finance function prioritizes in January","New year – new key figures to track"],
+      1:["Year-end work in full swing – common pitfalls","Prepare for the audit"],
+      2:["Annual report approaching – what the board wants to see","Q1 ending soon – quarterly review"],
+      3:["AGM season – the finance manager's role","Tax return & income tax"],
+      4:["Spring mid-point review against budget","Liquidity planning ahead of summer"],
+      5:["Holiday pay liability & summer staffing","Half-year close approaching"],
+      6:["Half-year reporting – what matters most","Quieter period – time to review processes"],
+      7:["Prepare for autumn budgeting","Restart after the holidays – the finance function's checklist"],
+      8:["Budget season: how to build a budget that holds","Forecasting ahead of Q4"],
+      9:["Q3 review and reconciliation against full year","Plan the year-end close in good time"],
+      10:["Prepare for year-end and closing","Inventory & accruals"],
+      11:["Year-end: checklist for the finance function","Reflection: the year's lessons for the industry (not own assignments)"]
+    };
+    return [
+      {kat:"📅 "+TR("li_kat_sasong"),tips:saong[month]||[]},
+      {kat:"📰 "+TR("li_kat_marknad"),tips:marknad},
+      {kat:"⚖️ "+TR("li_kat_lagar"),tips:lagar}
+    ];
+  }
   const marknad=[
     "En aktuell finansnyhet + din tolkning av vad den betyder för ekonomifunktionen",
     "Ränteläget/konjunkturen just nu – vad det innebär för likviditet och planering",
@@ -4179,9 +4210,9 @@ function angleBank(month){ // month 0-11
     11:["År-slut: checklista för ekonomifunktionen","Reflektion: årets lärdomar för branschen (ej egna uppdrag)"]
   };
   return [
-    {kat:"📅 Säsong",tips:saong[month]||[]},
-    {kat:"📰 Marknad & aktuellt",tips:marknad},
-    {kat:"⚖️ Lagar & regler",tips:lagar}
+    {kat:"📅 "+TR("li_kat_sasong"),tips:saong[month]||[]},
+    {kat:"📰 "+TR("li_kat_marknad"),tips:marknad},
+    {kat:"⚖️ "+TR("li_kat_lagar"),tips:lagar}
   ];
 }
 
@@ -5239,10 +5270,10 @@ function updateGdprHint(){
   const hint=document.getElementById("gdpr-hint");if(!hint)return;
   if(fd&&lg!=="Samtycke"){
     hint.style.color="#8a6d00";hint.style.background="#fdf6e3";hint.style.borderColor="var(--gold)";
-    hint.innerHTML='⚠️ Du har fyllt i <strong>födelsedag</strong> (en privat uppgift) men grunden är inte <strong>samtycke</strong>. Överväg att sätta laglig grund till "Samtycke", eller ta bort födelsedagen om personen inte gett sitt godkännande.';
+    hint.innerHTML=TR("gdpr_varning");
   }else{
     hint.style.color="#777";hint.style.background="var(--paper)";hint.style.borderColor="var(--cream)";
-    hint.innerHTML='💡 <strong>Berättigat intresse</strong> räcker oftast för yrkesuppgifter (namn, titel, arbetsgivare, jobbmejl). Privata uppgifter som födelsedag eller privat mobil bör vila på <strong>samtycke</strong>. Personen har alltid rätt att få veta och att bli raderad.';
+    hint.innerHTML=TR("gdpr_info");
   }
 }
 function gdprBadge(kind,o){
