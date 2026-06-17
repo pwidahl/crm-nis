@@ -483,7 +483,7 @@ textarea{resize:vertical;min-height:68px}
         <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="" data-i18n="co_alla_steg">Alla steg</option></select>
         <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         <select id="co-typ-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="" data-i18n="sig_alla_typer">Alla typer</option><option value="direkt" data-i18n="co_direktkunder">Direktkunder</option><option value="formedlare" data-i18n="co_mellanhander">Mellanhänder</option></select>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> Börsnoterade</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);cursor:pointer;font-weight:400;white-space:nowrap;flex-shrink:0"><input type="checkbox" id="co-listed-filter" onchange="renderCompanies()" style="width:auto;padding:0;border:none"> <span data-i18n="flt_borsnoterade">Börsnoterade</span></label>
       </div>
       <div id="companies-content"></div>
     </div>
@@ -497,9 +497,9 @@ textarea{resize:vertical;min-height:68px}
         <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
         <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt" data-i18n="sig_sort_kand">👤 Känd kontakt först</option><option value="inkommen" data-i18n="sig_sort_senast">🆕 Senast inkomna</option><option value="datum" data-i18n="sig_sort_pub">📅 Publiceringsdatum</option><option value="styrka" data-i18n="sig_sort_stark">★ Starkast först</option><option value="score" data-i18n="sig_sort_ai">📊 AI-score först</option><option value="bolag" data-i18n="sig_sort_az">🔤 Bolag A–Ö</option></select>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto">🤝 Dölj mellanhänder</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto">🔒 Dölj fastanställningar</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto">✍️ Bara mina manuella</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto">${TR("flt_dolj_mellan")}</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto">${TR("flt_dolj_fasta")}</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto">${TR("flt_bara_mina")}</label>
       </div>
       <div id="signals-content"></div>
     </div>
@@ -701,7 +701,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="l_hemsida">Hemsida</label><input id="co-hemsida"></div>
         <div class="fl"><label data-i18n="l_pipeline">Pipeline</label><select id="co-pipe"></select></div>
         <div class="fl full"><label data-i18n="l_moderbolag">Moderbolag (koncern)</label><select id="co-parent"><option value="" data-i18n="o_inget_frist">– Inget (fristående) –</option></select></div>
-        <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-bors" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-bors">Börsnoterat bolag</label></div>
+        <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-bors" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-bors">${TR("chk_borsnoterat")}</label></div>
         <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="co-formedlare" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-formedlare">🤝 Förmedlare / mellanhand (t.ex. rekryteringsbyrå)</label></div>
         <div class="fl full fl-row"><input type="checkbox" id="co-auto-proj" style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="co-auto-proj">Skapa projekt automatiskt när "Vunnet"</label></div>
         <div class="fl full"><label data-i18n="l_anteckningar">Anteckningar</label><textarea id="co-notes"></textarea></div>
@@ -1165,6 +1165,11 @@ const I18N={
     cc_lead_score:"Lead-score",cc_agare:"Ägare",cc_oppna:"Öppna",cc_lead_score_regel:"Lead-score (regelbaserad)",cc_inga_signaler:"Inga signaler",cc_inga_kontakter:"Inga egna kontakter",cc_inga_projekt:"Inga projekt",cc_arkivera:"Arkivera",cc_redigera:"Redigera",
     sc_passande:"Passande leads",sc_oppna_cv:"Öppna CV",sc_inga_akt:"Inga aktiviteter ännu.",sc_inga_kopplade:"Inga kopplade kontakter ännu.",sc_ingen_match:"Ingen kompetensmatch",sc_aktiviteter:"Aktiviteter",sc_bolag:"Bolag",sc_kanner:"Känner",sc_niva:"Nivå",
     ld_signal:"Signal",ld_pipeline:"Lead-pipeline",ld_agare:"Ägare:",ld_nasta_steg:"Nästa steg",ld_datum:"Datum",ld_bolagsinfo:"Bolagsinformation",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Öppna bolagskort",ld_flytta:"Flytta i pipeline",ld_fristaende:"Fristående lead (inget bolag):",ld_koppla:"Koppla befintligt bolag",ld_ej_kopplat:"Bolag ej kopplat",ld_inga_kontakter:"Inga kontakter kopplade",ld_kvalificering:"Lead-kvalificering",ld_antal_anstallda:"Antal anställda",ld_okant:"Okänt",ld_omsattning:"Omsättning (MSEK)",ld_cfo_fraga:"Har de en CFO/ekonomichef idag?",ld_cfo_ja:"Ja, tillsatt",ld_cfo_vakant:"Vakant/söker",ld_cfo_nej:"Nej – saknar helt",ld_tillvaxt:"Tillväxttakt",ld_tillvaxt_stabil:"Stabil/negativ",ld_tillvaxt_mattlig:"Måttlig (0–20%)",ld_tillvaxt_snabb:"Snabb (20%+)",ld_agarstruktur:"Ägarstruktur",ld_bors:"Börsnoterat",ld_familj:"Familjeägt/grundarlett",ld_pe:"PE/riskkapital",ld_agarskifte:"Nytt ägarskifte",ld_ekonomisystem:"Ekonomisystem",ld_sys_modernt:"Modernt (SAP/D365/NetSuite)",ld_sys_gammalt:"Gammalt/okänt",ld_sys_byter:"Byter system just nu",ld_fritext:"Vad vet du om bolaget? (fritext)",ld_noteringar:"Noteringar om detta lead",ld_spara_notering:"Spara notering",ld_ignorera:"Ignorera lead",ld_nasta:"Nästa ›",
+    fr_nasta_steg:"Nästa steg",fr_saker_vantar:"saker väntar",
+    flt_dolj_mellan:"🤝 Dölj mellanhänder",flt_dolj_fasta:"🔒 Dölj fastanställningar",flt_bara_mina:"✍️ Bara mina manuella",
+    flt_borsnoterade:"Börsnoterade",chk_borsnoterat:"Börsnoterat bolag",
+    sig_fasta_dolda_a:"troliga fasta tjänster är dolda (interim/konsult visas).",sig_visa_fasta:"Visa fasta",
+    co_dotterbolag:"dotterbolag",co_lagg_dotter:"Lägg till dotterbolag under",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1244,6 +1249,11 @@ const I18N={
     cc_lead_score:"Lead score",cc_agare:"Owner",cc_oppna:"Open",cc_lead_score_regel:"Lead score (rule-based)",cc_inga_signaler:"No signals",cc_inga_kontakter:"No own contacts",cc_inga_projekt:"No assignments",cc_arkivera:"Archive",cc_redigera:"Edit",
     sc_passande:"Matching leads",sc_oppna_cv:"Open CV",sc_inga_akt:"No activities yet.",sc_inga_kopplade:"No linked contacts yet.",sc_ingen_match:"No skill match",sc_aktiviteter:"Activities",sc_bolag:"Companies",sc_kanner:"Knows",sc_niva:"Level",
     ld_signal:"Signal",ld_pipeline:"Lead pipeline",ld_agare:"Owner:",ld_nasta_steg:"Next step",ld_datum:"Date",ld_bolagsinfo:"Company information",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Open company card",ld_flytta:"Move in pipeline",ld_fristaende:"Standalone lead (no company):",ld_koppla:"Link existing company",ld_ej_kopplat:"Company not linked",ld_inga_kontakter:"No contacts linked",ld_kvalificering:"Lead qualification",ld_antal_anstallda:"Number of employees",ld_okant:"Unknown",ld_omsattning:"Revenue (MSEK)",ld_cfo_fraga:"Do they have a CFO/finance manager today?",ld_cfo_ja:"Yes, in place",ld_cfo_vakant:"Vacant/recruiting",ld_cfo_nej:"No – none at all",ld_tillvaxt:"Growth rate",ld_tillvaxt_stabil:"Stable/negative",ld_tillvaxt_mattlig:"Moderate (0–20%)",ld_tillvaxt_snabb:"Fast (20%+)",ld_agarstruktur:"Ownership structure",ld_bors:"Publicly listed",ld_familj:"Family-owned/founder-led",ld_pe:"PE/venture capital",ld_agarskifte:"Recent ownership change",ld_ekonomisystem:"Finance system",ld_sys_modernt:"Modern (SAP/D365/NetSuite)",ld_sys_gammalt:"Old/unknown",ld_sys_byter:"Changing system right now",ld_fritext:"What do you know about the company? (free text)",ld_noteringar:"Notes about this lead",ld_spara_notering:"Save note",ld_ignorera:"Ignore lead",ld_nasta:"Next ›",
+    fr_nasta_steg:"Next step",fr_saker_vantar:"items waiting",
+    flt_dolj_mellan:"🤝 Hide intermediaries",flt_dolj_fasta:"🔒 Hide permanent positions",flt_bara_mina:"✍️ Only my manual",
+    flt_borsnoterade:"Publicly listed",chk_borsnoterat:"Publicly listed company",
+    sig_fasta_dolda_a:"likely permanent positions hidden (interim/consulting shown).",sig_visa_fasta:"Show permanent",
+    co_dotterbolag:"subsidiaries",co_lagg_dotter:"Add subsidiary under",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -1816,7 +1826,7 @@ function nextStepHtml(){
   return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#fdf3e7,#fff);border:1px solid var(--cream);border-left:4px solid var(--warm);border-radius:var(--r);margin-bottom:12px">
     <span style="font-size:22px">${top.icon}</span>
     <div style="flex:1;min-width:0">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--warm);font-weight:600;margin-bottom:2px">Nästa steg${cands.length>1?` · ${cands.length} saker väntar`:""}</div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--warm);font-weight:600;margin-bottom:2px">Nästa steg${cands.length>1?` · ${cands.length} ${TR("fr_saker_vantar")}`:""}</div>
       <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(top.txt)}</div>
       <div style="font-size:12px;color:#888">${e(top.sub)}</div>
     </div>
@@ -3059,7 +3069,7 @@ function renderKoncern(){
       const subs=companies.filter(c=>c.parent_company_id===parent.id).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
       const isTarget=moving&&moving.id!==parent.id&&moving.parent_company_id!==parent.id;
       return`<div class="week-sec" style="margin-bottom:18px">
-        <div class="week-sec-hdr"><h3>🏢 ${e(parent.namn)}-koncernen</h3><span style="font-size:12px;color:#888">${subs.length} dotterbolag</span><button class="btn btn-outline btn-xs" onclick="openAddSubsidiary('${parent.id}')">+ Dotterbolag</button></div>
+        <div class="week-sec-hdr"><h3>🏢 ${e(parent.namn)}-koncernen</h3><span style="font-size:12px;color:#888">${subs.length} ${TR("co_dotterbolag")}</span><button class="btn btn-outline btn-xs" onclick="openAddSubsidiary('${parent.id}')">+ Dotterbolag</button></div>
         <div style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:0">
           <div class="${isTarget?"move-target":""}" style="border-radius:8px" ${isTarget?`onclick="dropKoncern('${parent.id}')"`:""}>${koncernCard(parent,true)}</div>
           ${subs.length?`
