@@ -218,6 +218,7 @@ textarea{resize:vertical;min-height:68px}
 .focus-hidden{display:none!important}
 .focus-banner{background:var(--warm);color:#fff;text-align:center;padding:6px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:50}
 .privacy-note{background:#fff7e8;border:1px solid #f1d3a6;color:#5f4212;border-radius:var(--r);padding:9px 12px;font-size:12px;line-height:1.4;margin-bottom:12px}
+.co-ac-item.ac-active,.lg-ac-item.ac-active{background:var(--cream)!important}
 #co-autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .co-ac-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--cream)}
 .co-ac-item:hover{background:var(--paper)}
@@ -645,7 +646,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="f_efternamn">Efternamn *</label><input id="f-en"></div>
         <div class="fl" style="position:relative">
           <label data-i18n="f_foretag">Företag</label>
-          <input id="f-co" autocomplete="off" oninput="acCompany(this.value)" onblur="setTimeout(()=>hideAC(),200)" placeholder="Börja skriva bolagsnamn...">
+          <input id="f-co" autocomplete="off" oninput="acCompany(this.value)" onkeydown="acKeyNav(event,'co-autocomplete','.co-ac-item')" onblur="setTimeout(()=>hideAC(),200)" placeholder="Börja skriva bolagsnamn...">
           <div id="co-autocomplete" style="display:none"></div>
         </div>
         <div class="fl"><label data-i18n="f_orgnr">Org.nr</label><input id="f-orgnr"></div>
@@ -855,7 +856,7 @@ textarea{resize:vertical;min-height:68px}
       <!-- Kontaktsök -->
       <div class="fl" style="margin-bottom:12px;position:relative">
         <label data-i18n="l_kontakt_obl">Kontakt *</label>
-        <input id="lg-contact-search" placeholder="Sök kontakt..." autocomplete="off" oninput="searchLogContact(this.value)" onblur="setTimeout(()=>hideLgAC(),200)">
+        <input id="lg-contact-search" placeholder="Sök kontakt..." autocomplete="off" oninput="searchLogContact(this.value)" onkeydown="acKeyNav(event,'lg-contact-ac','.lg-ac-item')" onblur="setTimeout(()=>hideLgAC(),200)">
         <div id="lg-contact-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-radius:0 0 var(--r) var(--r);z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
         <input type="hidden" id="lg-contact-id">
       </div>
@@ -1018,6 +1019,23 @@ let knowledgeNotes=[];
 let subActivity=[],subCompanies=[],subContacts=[];
 let goals=[];
 let activityTypes=[];
+let contactCompanies=[];
+async function loadContactCompanies(){const r=await sb.from("contact_companies").select("*").eq("user_id",me.id);contactCompanies=r.data||[];}
+function companiesForContact(cid){return contactCompanies.filter(cc=>cc.contact_id===cid).map(cc=>({...cc,company:companies.find(c=>c.id===cc.company_id)})).filter(x=>x.company);}
+function contactsForCompany(coid){return contactCompanies.filter(cc=>cc.company_id===coid).map(cc=>({...cc,contact:contacts.find(c=>c.id===cc.contact_id)})).filter(x=>x.contact);}
+async function linkContactCompany(contactId,companyId,roll,arNuvarande){
+  if(!contactId||!companyId)return{error:{message:"Saknar kontakt eller bolag"}};
+  const existing=contactCompanies.find(cc=>cc.contact_id===contactId&&cc.company_id===companyId);
+  if(existing)return{data:existing};
+  const r=await sb.from("contact_companies").insert({contact_id:contactId,company_id:companyId,roll:roll||null,ar_nuvarande:arNuvarande!==false,user_id:me.id}).select().single();
+  if(!r.error&&r.data)contactCompanies.push(r.data);
+  return r;
+}
+async function unlinkContactCompany(id){
+  const r=await sb.from("contact_companies").delete().eq("id",id);
+  if(!r.error)contactCompanies=contactCompanies.filter(cc=>cc.id!==id);
+  return r;
+}
 async function loadActivityTypes(){const r=await sb.from("activity_types").select("*").eq("user_id",me.id).order("sort_order",{ascending:true});activityTypes=r.data||[];}
 function actTypeOptions(selected){const list=activityTypes.length?activityTypes:[{varde:"Mote",namn:"Möte",ikon:"📅"},{varde:"Telefonsamtal",namn:"Telefonsamtal",ikon:"📞"},{varde:"LinkedIn",namn:"LinkedIn",ikon:"💼"},{varde:"E-post",namn:"E-post",ikon:"✉️"},{varde:"Lunch",namn:"Lunch",ikon:"🍽️"}];return list.map(a=>`<option value="${a.varde}"${selected===a.varde?" selected":""}>${a.ikon?a.ikon+" ":""}${e(a.namn)}</option>`).join("");}
 function fillActTypeSelects(){["lg-typ","sa-typ"].forEach(id=>{const el=document.getElementById(id);if(el){const cur=el.value;el.innerHTML=actTypeOptions(cur);}});}
@@ -1056,7 +1074,7 @@ function sigIsFast(s){
   if(s.dold_fast===false&&s.ar_fastanstallning)return true; // manuellt visad men flaggad
   return s.ar_fastanstallning||isLikelyFast(s);
 }
-const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",annat:"Annat"};
+const CONN_TYPES={kanner:"Känner",kollega:"Kollega (nuv./tidigare)",studie:"Studievän",styrelse:"Styrelse",van:"Vän",familj:"Familj",introducerade:"Introducerade",annat:"Annat"};
 const KB_CATS=["IFRS","Moms","Bokslut","Skatt","Lön/HR","Revision","ERP/system","Övrigt"];
 const KB_LANDS=["Generellt/EU","Sverige","Norge","Danmark","Finland"];
 const GOAL_TYPES={aktiviteter:"gt_aktiviteter",luncher:"gt_luncher",samtal:"gt_samtal",moten:"gt_moten",nya_kontakter:"gt_nya_kontakter",kontakter_framat:"gt_kontakter_framat",nya_kunder:"gt_nya_kunder",sub_aktiviteter:"gt_sub_aktiviteter",nya_underkonsulter:"gt_nya_underkonsulter",kcc:"gt_kcc"};
@@ -1174,6 +1192,9 @@ const I18N={
     kpi_soliditet:"Soliditet",kpi_skuld:"Skuldsättningsgrad",kpi_balanslik:"Balanslikviditet",kpi_kassalik:"Kassalikviditet",kpi_roe:"Räntabilitet eget kapital (ROE)",kpi_roa:"Räntabilitet totalt kapital (ROA)",kpi_rormarginal:"Rörelsemarginal",kpi_vinstmarginal:"Vinstmarginal",kpi_omsattningstillvaxt:"Omsättningstillväxt",kpi_runway:"Runway",kpi_pe_bors:"P/E (börsvärde/resultat)",kpi_pe_pris:"P/E (pris/EPS)",
     mh_info:"Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.",
     kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",li_kat_sasong:"Säsong",li_kat_marknad:"Marknad & aktuellt",li_kat_lagar:"Lagar & regler",lead_het:"Hett lead – prioritera nu",lead_bra:"Bra lead – följ upp inom en vecka",lead_mojligt:"Möjligt lead – bevaka",lead_svagt:"Svagt lead – låg prioritet",
+    relmap_titel:"Relationskarta",relmap_info:"Bolag och kontakter och hur de hänger ihop. Kontakter som delat samma bolag är länkade.",relmap_oversikt:"Översikt",relmap_fokus:"Fokus",relmap_valj_nod:"Klicka på en nod för att fokusera",relmap_aterstall:"Visa hela nätverket",relmap_delat:"Delat bolag",relmap_inga:"Inga kopplingar att visa ännu.",
+    cco_rubrik:"Kopplade bolag",cco_lagg_till:"Koppla bolag",cco_roll:"Roll (valfritt)",cco_nuvarande:"Nuvarande",cco_tidigare:"Tidigare",cco_ta_bort:"Ta bort koppling",cco_valj_bolag:"Välj bolag",cco_inga:"Inga bolag kopplade",cco_kopplat:"Bolag kopplat ✓",cco_borttaget:"Koppling borttagen",cco_bekrafta:"Ta bort kopplingen till detta bolag?",
+    ldk_koppla_kontakt:"Koppla kontakt",ldk_valj_kontakt:"Välj kontakt",ldk_kopplad:"Kontakt kopplad till bolaget ✓",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -1262,6 +1283,9 @@ const I18N={
     kpi_soliditet:"Equity ratio",kpi_skuld:"Debt-to-equity ratio",kpi_balanslik:"Current ratio",kpi_kassalik:"Quick ratio",kpi_roe:"Return on equity (ROE)",kpi_roa:"Return on assets (ROA)",kpi_rormarginal:"Operating margin",kpi_vinstmarginal:"Profit margin",kpi_omsattningstillvaxt:"Revenue growth",kpi_runway:"Runway",kpi_pe_bors:"P/E (market cap/profit)",kpi_pe_pris:"P/E (price/EPS)",
     mh_info:"Companies marked as brokers/intermediaries (recruitment agencies, consultant brokers, etc.). These are not counted as direct clients or as companies with their own consulting needs.",
     kbh_info:"Companies ranked by indicated need, based on saved key figures and new signals. Top = most urgent.",li_kat_sasong:"Season",li_kat_marknad:"Market & current",li_kat_lagar:"Laws & regulations",lead_het:"Hot lead – prioritize now",lead_bra:"Good lead – follow up within a week",lead_mojligt:"Possible lead – monitor",lead_svagt:"Weak lead – low priority",
+    relmap_titel:"Relationship map",relmap_info:"Companies and contacts and how they connect. Contacts who shared the same company are linked.",relmap_oversikt:"Overview",relmap_fokus:"Focus",relmap_valj_nod:"Click a node to focus",relmap_aterstall:"Show full network",relmap_delat:"Shared company",relmap_inga:"No connections to show yet.",
+    cco_rubrik:"Linked companies",cco_lagg_till:"Link company",cco_roll:"Role (optional)",cco_nuvarande:"Current",cco_tidigare:"Previous",cco_ta_bort:"Remove link",cco_valj_bolag:"Select company",cco_inga:"No companies linked",cco_kopplat:"Company linked ✓",cco_borttaget:"Link removed",cco_bekrafta:"Remove the link to this company?",
+    ldk_koppla_kontakt:"Link contact",ldk_valj_kontakt:"Select contact",ldk_kopplad:"Contact linked to the company ✓",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
   }
 };
@@ -1561,7 +1585,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -1776,7 +1800,7 @@ function renderDashboard(){
     links:()=>{const inner=quickLinks.length?quickLinks.map(l=>`<div class="week-row" style="cursor:pointer"><div style="flex:1;min-width:0" onclick="openQuickLink('${l.id}')"><div class="week-rn">🔗 ${e(l.titel)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(l.url)}</div></div><button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="deleteQuickLink('${l.id}')">🗑</button></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga länkar ännu.</p>';return`<div class="dash-sec week-sec" data-sec="links" style="margin-bottom:0"><div class="week-sec-hdr"><h3>${t("dash_lankar")}</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="openAddQuickLink()">${t("dash_lagg_till")}</button></div><div style="padding:4px 14px">${inner}</div></div>`;},
     birthdays:()=>{const bd=upcomingBirthdays(60);const inner=bd.length?bd.map(({c,days,date})=>`<div class="week-row" onclick="openCard('${c.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🎂 ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")}${c.foretag?" · ":""}${days===0?"<strong style='color:var(--accent)'>idag!</strong>":days===1?"imorgon":"om "+days+" dagar"} (${e(date)})</div></div></div>`).join(""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga födelsedagar inom 60 dagar.</p>';return`<div class="dash-sec week-sec" data-sec="birthdays" style="margin-bottom:0"><div class="week-sec-hdr"><h3>🎂 Kommande födelsedagar</h3></div><div style="padding:4px 14px">${inner}</div></div>`;},
     gdpr:()=>{const cutoff=new Date();cutoff.setFullYear(cutoff.getFullYear()-3);const cut=cutoff.toISOString().slice(0,10);const noBasis=contacts.filter(c=>!c.laglig_grund&&c.ar_aktiv!==false&&c.status!=="Inaktiv");const oldSub=subs.filter(s=>s.status!=="Arkiverad"&&(!s.samtycke_datum||s.samtycke_datum<cut));const items=[...noBasis.map(c=>({n:`${c.fornamn} ${c.efternamn}`,sub:"kontakt – laglig grund saknas",act:`openCard('${c.id}')`})),...oldSub.map(s=>({n:`${s.fornamn} ${s.efternamn}`,sub:s.samtycke_datum?"underkonsult – samtycke >3 år":"underkonsult – samtycke saknas",act:`openSubCard('${s.id}')`}))];const inner=items.length?items.slice(0,10).map(it=>`<div class="week-row" onclick="${it.act}" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">⚖️ ${e(it.n)}</div><div class="week-rs">${e(it.sub)}</div></div></div>`).join("")+(items.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${items.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Inga GDPR-flaggor 🎉</p>';return`<div class="dash-sec week-sec" data-sec="gdpr" style="margin-bottom:0;${items.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>⚖️ GDPR att se över</h3><span style="font-size:12px;color:#888;margin-left:auto">${items.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
-    leadsnext:()=>{const open=signals.filter(s=>s.status!=="ignorerad"&&(s.pipeline_steg||"Signal")!=="Uppdrag"&&!(sigIsFast(s)&&s.dold_fast!==false)&&!s.nasta_steg);open.sort((a,b)=>{if((b.signal_styrka||0)!==(a.signal_styrka||0))return(b.signal_styrka||0)-(a.signal_styrka||0);return String(b.created_at||"").localeCompare(String(a.created_at||""));});const inner=open.length?open.slice(0,12).map(s=>`<div class="week-row" onclick="openLead('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${"★".repeat(s.signal_styrka||1)} ${e(sigName(s))}</div><div class="week-rs">${LEAD_PIPE_LABEL[s.pipeline_steg||"Signal"]} · ${e((s.rubrik||"").slice(0,50))}</div></div></div>`).join("")+(open.length>12?`<div class="week-row" style="color:#888;font-size:12px">+${open.length-12} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla leads har nästa steg 🎉</p>';return`<div class="dash-sec week-sec" data-sec="leadsnext" style="margin-bottom:0;${open.length?"border-left:4px solid var(--red)":""}"><div class="week-sec-hdr"><h3>⚠ Leads utan nästa steg</h3><span style="font-size:12px;color:#888;margin-left:auto">${open.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    leadsnext:()=>{const open=signals.filter(s=>s.status!=="ignorerad"&&(s.pipeline_steg||"Signal")!=="Uppdrag"&&!(sigIsFast(s)&&s.dold_fast!==false)&&!s.nasta_steg&&!(()=>{const co=companies.find(c=>c.id===s.company_id);return co&&co.ar_formedlare;})());open.sort((a,b)=>{if((b.signal_styrka||0)!==(a.signal_styrka||0))return(b.signal_styrka||0)-(a.signal_styrka||0);return String(b.created_at||"").localeCompare(String(a.created_at||""));});const inner=open.length?open.slice(0,12).map(s=>`<div class="week-row" onclick="openLead('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${"★".repeat(s.signal_styrka||1)} ${e(sigName(s))}</div><div class="week-rs">${LEAD_PIPE_LABEL[s.pipeline_steg||"Signal"]} · ${e((s.rubrik||"").slice(0,50))}</div></div></div>`).join("")+(open.length>12?`<div class="week-row" style="color:#888;font-size:12px">+${open.length-12} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla leads har nästa steg 🎉</p>';return`<div class="dash-sec week-sec" data-sec="leadsnext" style="margin-bottom:0;${open.length?"border-left:4px solid var(--red)":""}"><div class="week-sec-hdr"><h3>⚠ Leads utan nästa steg</h3><span style="font-size:12px;color:#888;margin-left:auto">${open.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
     tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
   };
   const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
@@ -1803,7 +1827,7 @@ function nextStepHtml(){
   contacts.forEach(c=>{
     if(c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td){
       const overdueDays=Math.round((new Date(td)-new Date(c.nasta_foljup))/86400000);
-      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:"Logga kontakt",act:`openLogModal('${c.id}')`});
+      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:"Logga kontakt",act:`openLogModal('${c.id}')`,card:`openCard('${c.id}')`});
     }
   });
   // försenade tasks
@@ -1840,6 +1864,7 @@ function nextStepHtml(){
       <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(top.txt)}</div>
       <div style="font-size:12px;color:#888">${e(top.sub)}</div>
     </div>
+    ${top.card?`<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="${top.card}">Öppna kort →</button>`:""}
     <button class="btn btn-warm btn-sm" style="white-space:nowrap" onclick="${top.act}">${e(top.btn)} →</button>
   </div>`;
 }
@@ -2449,7 +2474,20 @@ function openEditSignal(id){
   closeM("m-lead");openM("m-signal");
 }
 async function saveSignal(){const coid=document.getElementById("sig-coid").value,rubrik=v("sig-rubrik");const fritt=v("sig-fritt");if(!rubrik){toast("Rubrik krävs");return;}if(!coid&&!fritt){toast("Välj bolag eller ange fritt kundnamn");return;}
-  const data={company_id:coid||null,fritt_namn:fritt||null,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),efterfragar:v("sig-efter")||null,kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,ar_fastanstallning:document.getElementById("sig-fast")?.checked||false};
+  let companyId=coid||null;
+  // Om inget befintligt bolag valts men ett fritt namn angetts: skapa ett riktigt bolag och koppla leadet till det
+  if(!companyId&&fritt){
+    // Återanvänd befintligt bolag med samma namn om det finns (undvik dubletter)
+    const existing=companies.find(c=>(c.namn||"").trim().toLowerCase()===fritt.trim().toLowerCase());
+    if(existing){companyId=existing.id;}
+    else{
+      const cr=await sb.from("companies").insert({namn:fritt.trim(),user_id:me.id,pipeline_steg:"Watchlist"}).select().single();
+      if(cr.error){alert(cr.error.message);return;}
+      companyId=cr.data.id;
+      companies.push(cr.data);
+    }
+  }
+  const data={company_id:companyId,fritt_namn:fritt||null,signal_typ:document.getElementById("sig-typ").value,rubrik,beskrivning:v("sig-beskr"),efterfragar:v("sig-efter")||null,kalla:v("sig-kalla")||"Manuell",kalla_url:v("sig-url")||null,signal_datum:document.getElementById("sig-datum").value||today(),signal_styrka:parseInt(document.getElementById("sig-styrka").value)||1,ar_fastanstallning:document.getElementById("sig-fast")?.checked||false};
   const r=editSignalId?await sb.from("company_signals").update(data).eq("id",editSignalId):await sb.from("company_signals").insert({...data,user_id:me.id,status:"ny"});
   if(r.error){alert(r.error.message);return;}
   closeM("m-signal");toast(editSignalId?"Lead uppdaterat ✓":"Signal sparad");editSignalId=null;await loadAll();}
@@ -2617,8 +2655,10 @@ async function saveContact(){
     ar_aktiv:arAktiv,
     nasta_foljup:isInaktiv?null:(manualFoljup||undefined)
   };
+  const wasEditing=editCid;
   const r=editCid?await sb.from("contacts").update(data).eq("id",editCid):await sb.from("contacts").insert(data);
   if(r.error){alert(r.error.message);return;}closeM("m-contact");toast("Kontakt sparad");await loadAll();
+  if(wasEditing){try{openCard(wasEditing);}catch(e){}}
 }
 
 function connectionsFor(cid){
@@ -2664,6 +2704,47 @@ function deleteConnection(connId,backToCid){
   });
 }
 
+function ccoSectionHtml(contactId){
+  const links=companiesForContact(contactId);
+  const rows=links.length?links.map(l=>`<div class="week-row" style="display:flex;align-items:center;gap:8px">
+    <span style="cursor:pointer;color:var(--accent);flex:1" onclick="closeM('m-card');openCompanyCard('${l.company.id}')">🏢 ${e(l.company.namn)}</span>
+    ${l.roll?`<span style="font-size:12px;color:#888">${e(l.roll)}</span>`:""}
+    <span style="font-size:11px;padding:2px 7px;border-radius:8px;background:${l.ar_nuvarande?"var(--green)":"#bbb"};color:#fff">${l.ar_nuvarande?TR("cco_nuvarande"):TR("cco_tidigare")}</span>
+    <button class="btn-icon" title="${TR("cco_ta_bort")}" onclick="removeCco('${l.id}','${contactId}')">🗑</button>
+  </div>`).join(""):`<p style="color:#aaa;font-size:13px">${TR("cco_inga")}</p>`;
+  const opts=companies.slice().sort((a,b)=>(a.namn||"").localeCompare(b.namn||"")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  return `<div style="margin:14px 0;padding:12px;background:var(--paper);border-radius:10px">
+    <p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:8px">${TR("cco_rubrik")}</p>
+    <div id="cco-list-${contactId}">${rows}</div>
+    <div class="fg" style="align-items:flex-end;margin-top:10px;gap:6px">
+      <div class="fl" style="flex:2"><label>${TR("cco_valj_bolag")}</label><select id="cco-co-${contactId}">${opts}</select></div>
+      <div class="fl"><label>${TR("cco_roll")}</label><input id="cco-roll-${contactId}" placeholder=""></div>
+      <div class="fl" style="max-width:120px"><label>&nbsp;</label><select id="cco-nuv-${contactId}"><option value="1">${TR("cco_nuvarande")}</option><option value="0">${TR("cco_tidigare")}</option></select></div>
+      <div class="fl" style="max-width:120px"><label>&nbsp;</label><button class="btn btn-primary" onclick="addCco('${contactId}')">${TR("cco_lagg_till")}</button></div>
+    </div>
+  </div>`;
+}
+async function addCco(contactId){
+  const coId=document.getElementById("cco-co-"+contactId).value;
+  const roll=(document.getElementById("cco-roll-"+contactId).value||"").trim();
+  const nuv=document.getElementById("cco-nuv-"+contactId).value!=="0";
+  if(!coId)return;
+  const r=await linkContactCompany(contactId,coId,roll,nuv);
+  if(r.error){toast(r.error.message);return;}
+  const lst=document.getElementById("cco-list-"+contactId);
+  if(lst){const links=companiesForContact(contactId);lst.innerHTML=links.map(l=>`<div class="week-row" style="display:flex;align-items:center;gap:8px"><span style="cursor:pointer;color:var(--accent);flex:1" onclick="closeM('m-card');openCompanyCard('${l.company.id}')">🏢 ${e(l.company.namn)}</span>${l.roll?`<span style="font-size:12px;color:#888">${e(l.roll)}</span>`:""}<span style="font-size:11px;padding:2px 7px;border-radius:8px;background:${l.ar_nuvarande?"var(--green)":"#bbb"};color:#fff">${l.ar_nuvarande?TR("cco_nuvarande"):TR("cco_tidigare")}</span><button class="btn-icon" title="${TR("cco_ta_bort")}" onclick="removeCco('${l.id}','${contactId}')">🗑</button></div>`).join("");}
+  const rollInput=document.getElementById("cco-roll-"+contactId);if(rollInput)rollInput.value="";
+  toast(TR("cco_kopplat"));
+}
+function removeCco(id,contactId){
+  confirm2(TR("cco_bekrafta"),async()=>{
+    const r=await unlinkContactCompany(id);
+    if(r.error){toast(r.error.message);return;}
+    const lst=document.getElementById("cco-list-"+contactId);
+    if(lst){const links=companiesForContact(contactId);lst.innerHTML=links.length?links.map(l=>`<div class="week-row" style="display:flex;align-items:center;gap:8px"><span style="cursor:pointer;color:var(--accent);flex:1" onclick="closeM('m-card');openCompanyCard('${l.company.id}')">🏢 ${e(l.company.namn)}</span>${l.roll?`<span style="font-size:12px;color:#888">${e(l.roll)}</span>`:""}<span style="font-size:11px;padding:2px 7px;border-radius:8px;background:${l.ar_nuvarande?"var(--green)":"#bbb"};color:#fff">${l.ar_nuvarande?TR("cco_nuvarande"):TR("cco_tidigare")}</span><button class="btn-icon" title="${TR("cco_ta_bort")}" onclick="removeCco('${l.id}','${contactId}')">🗑</button></div>`).join(""):`<p style="color:#aaa;font-size:13px">${TR("cco_inga")}</p>`;}
+    toast(TR("cco_borttaget"));
+  });
+}
 async function openCard(id){
   const c=contacts.find(x=>x.id===id);if(!c)return;
   navRegister("contact",id);
@@ -2689,6 +2770,7 @@ async function openCard(id){
         ${c.fodelsedag?`<div class="ii"><label>🎂 Födelsedag</label><span>${e(c.fodelsedag)}</span></div>`:""}
         ${introBy?`<div class="ii full"><label>Introducerad av</label><span style="cursor:pointer;color:var(--accent)" onclick="closeM('m-card');openCard('${introBy.id}')">${e(introBy.fornamn)} ${e(introBy.efternamn)}</span>${c.introduktion_ledde_till?` → ${e(c.introduktion_ledde_till)}`:""}</div>`:""}
       </div>
+      ${ccoSectionHtml(id)}
       ${c.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(c.anteckningar)}</p>`:""}
       ${gdprBadge("contact",c)}
       ${cardTodoHtml("contact",id)}
@@ -4441,6 +4523,14 @@ function renderRelnet(){
   const typF=v("relnet-typ");
 
   let conns=contactConnections.slice();
+  // Lägg till "introducerad av"-relationer (lagras på contacts.introduktion_av)
+  contacts.forEach(c=>{
+    if(c.introduktion_av){
+      const intro=contacts.find(x=>x.id===c.introduktion_av);
+      if(intro&&!conns.some(x=>(x.contact_a===c.id&&x.contact_b===intro.id)||(x.contact_a===intro.id&&x.contact_b===c.id)))
+        conns.push({contact_a:intro.id,contact_b:c.id,relation_typ:"introducerade",_intro:true});
+    }
+  });
   if(typF)conns=conns.filter(x=>x.relation_typ===typF);
 
   // noder = kontakter som ingår i minst en (filtrerad) koppling
@@ -5398,6 +5488,20 @@ function exportTodosICS(){
 
 
 // ══ COMPANY AUTOCOMPLETE ═════════════════════════════════════
+function acKeyNav(ev,boxId,itemSelector){
+  const box=document.getElementById(boxId);
+  if(!box||box.style.display==="none")return;
+  const items=[...box.querySelectorAll(itemSelector)];
+  if(!items.length)return;
+  let idx=items.findIndex(el=>el.classList.contains("ac-active"));
+  if(ev.key==="ArrowDown"){ev.preventDefault();idx=(idx+1)%items.length;}
+  else if(ev.key==="ArrowUp"){ev.preventDefault();idx=(idx-1+items.length)%items.length;}
+  else if(ev.key==="Enter"){if(idx>=0){ev.preventDefault();items[idx].dispatchEvent(new MouseEvent("mousedown"));return;}}
+  else if(ev.key==="Escape"){box.style.display="none";return;}
+  else return;
+  items.forEach(el=>el.classList.remove("ac-active"));
+  if(idx>=0){items[idx].classList.add("ac-active");items[idx].scrollIntoView({block:"nearest"});}
+}
 function acCompany(q){
   const box=document.getElementById("co-autocomplete");
   if(!box)return;
