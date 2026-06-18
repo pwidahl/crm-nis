@@ -1173,7 +1173,7 @@ const I18N={
     sch_forslag:"⭐ Dagens förslag",sch_uppgifter:"uppgifter",sch_ej_inpl:"📥 Ej inplanerade",sch_syns_inte:"st – syns inte i kalendern förrän du ger dem en dag",sch_forsenade:"⚠ Försenade",sch_uppdatera:"🔄 Uppdatera",sch_dagens_kal:"📲 Dagens till kalender",sch_hela_schemat:"📲 Hela schemat",sch_kalender_info:"Kalender över dina öppna uppgifter. Flytta en uppgift med ← → till dag före/efter. Uppgifter utan satt dag placeras automatiskt efter deadline och prioritet.",
     kpi_soliditet:"Soliditet",kpi_skuld:"Skuldsättningsgrad",kpi_balanslik:"Balanslikviditet",kpi_kassalik:"Kassalikviditet",kpi_roe:"Räntabilitet eget kapital (ROE)",kpi_roa:"Räntabilitet totalt kapital (ROA)",kpi_rormarginal:"Rörelsemarginal",kpi_vinstmarginal:"Vinstmarginal",kpi_omsattningstillvaxt:"Omsättningstillväxt",kpi_runway:"Runway",kpi_pe_bors:"P/E (börsvärde/resultat)",kpi_pe_pris:"P/E (pris/EPS)",
     mh_info:"Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.",
-    kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",li_kat_sasong:"Säsong",li_kat_marknad:"Marknad & aktuellt",li_kat_lagar:"Lagar & regler",lead_het:TR("lead_het"),lead_bra:TR("lead_bra"),lead_mojligt:TR("lead_mojligt"),lead_svagt:TR("lead_svagt"),
+    kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",li_kat_sasong:"Säsong",li_kat_marknad:"Marknad & aktuellt",li_kat_lagar:"Lagar & regler",lead_het:"Hett lead – prioritera nu",lead_bra:"Bra lead – följ upp inom en vecka",lead_mojligt:"Möjligt lead – bevaka",lead_svagt:"Svagt lead – låg prioritet",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
   },
   en:{
@@ -5471,10 +5471,10 @@ async function scoreLead(sigId, coId){
 
   // Rating
   let rating,color,icon;
-  if(total>=70){rating="Hett lead – prioritera nu";color="var(--green)";icon="🔥";}
-  else if(total>=45){rating="Bra lead – följ upp inom en vecka";color="var(--gold)";icon="⭐";}
-  else if(total>=25){rating="Möjligt lead – bevaka";color:"var(--accent)";icon="👀";}
-  else{rating="Svagt lead – låg prioritet";color="#aaa";icon="💤";}
+  if(total>=70){rating=TR("lead_het");color="var(--green)";icon="🔥";}
+  else if(total>=45){rating=TR("lead_bra");color="var(--gold)";icon="⭐";}
+  else if(total>=25){rating=TR("lead_mojligt");color="var(--accent)";icon="👀";}
+  else{rating=TR("lead_svagt");color="#aaa";icon="💤";}
 
   // Questions to ask
   const fragor=[];
