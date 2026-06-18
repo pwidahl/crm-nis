@@ -3506,18 +3506,26 @@ function goalProgress(g){
   const inRange=d=>d&&d>=start&&d<=end;
   const actType=(l)=>{const t=(l.typ||"").toLowerCase(),it=(l.interaktionstyp||"").toLowerCase();return{t,it};};
   if(g.typ==="aktiviteter"){
-    return actLog.filter(l=>inRange(l.datum)).length;
+    return actLog.filter(l=>inRange(l.datum)).length+subActivity.filter(a=>inRange(a.datum)).length;
   }else if(g.typ==="luncher"){
-    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("lunch")||it==="lunch");}).length;
+    const fromLog=actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("lunch")||it==="lunch");}).length;
+    const fromSub=subActivity.filter(a=>inRange(a.datum)&&(a.typ||"").toLowerCase().includes("lunch")).length;
+    return fromLog+fromSub;
   }else if(g.typ==="samtal"){
-    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||it==="samtal");}).length;
+    const fromLog=actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||it==="samtal");}).length;
+    const fromSub=subActivity.filter(a=>inRange(a.datum)&&(a.typ||"").toLowerCase().includes("telefon")).length;
+    return fromLog+fromSub;
   }else if(g.typ==="moten"){
-    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("mote")||t.includes("möte")||it==="mote");}).length;
+    const fromLog=actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("mote")||t.includes("möte")||it==="mote");}).length;
+    const fromSub=subActivity.filter(a=>inRange(a.datum)&&((a.typ||"").toLowerCase().includes("mote")||(a.typ||"").toLowerCase().includes("möte"))).length;
+    return fromLog+fromSub;
   }else if(g.typ==="nya_kontakter"){
     return contacts.filter(c=>inRange((c.created_at||"").slice(0,10))).length;
   }else if(g.typ==="kontakter_framat"){
     // aktiviteter som flyttar relationen uppåt (samtal/lunch/möte) loggade i perioden
-    return actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||t.includes("lunch")||t.includes("mote")||t.includes("möte")||["samtal","lunch","mote"].includes(it));}).length;
+    const fromLog=actLog.filter(l=>{const{t,it}=actType(l);return inRange(l.datum)&&(t.includes("telefon")||t.includes("lunch")||t.includes("mote")||t.includes("möte")||["samtal","lunch","mote"].includes(it));}).length;
+    const fromSub=subActivity.filter(a=>{const t=(a.typ||"").toLowerCase();return inRange(a.datum)&&(t.includes("telefon")||t.includes("lunch")||t.includes("mote")||t.includes("möte"));}).length;
+    return fromLog+fromSub;
   }else if(g.typ==="nya_kunder"){
     return companies.filter(c=>c.pipeline_status==="Kund"&&inRange(c.kund_datum)).length;
   }else if(g.typ==="sub_aktiviteter"){
