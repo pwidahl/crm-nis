@@ -431,7 +431,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-grp" id="grp-relationer">
       <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span><span data-i18n="nav_kontakter">Kontakter</span><span class="nav-badge" id="badge-linkedin">0</span></div>
       <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span><span data-i18n="nav_natverk_item">Nätverk</span></div>
-      <div class="nav-item" data-v="relnet" onclick="gotoView('relnet')"><span class="nav-icon">🕸️</span><span data-i18n="nav_relnet">Relationsnät</span></div><div class="nav-item" data-v="relmap" onclick="gotoView('relmap')"><span class="nav-icon">🗺️</span><span data-i18n="nav_relmap">Relationskarta</span></div>
+      <div class="nav-item" data-v="relmap" onclick="gotoView('relmap')"><span class="nav-icon">🗺️</span><span data-i18n="nav_relmap">Relationskarta</span></div>
       <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span><span data-i18n="nav_uppfoljningar">Uppföljningar</span><span class="nav-badge" id="badge-followups">0</span></div>
       <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span><span data-i18n="nav_underkonsulter">Underkonsulter</span></div>
     </div>
@@ -1201,7 +1201,7 @@ const I18N={
     kpi_soliditet:"Soliditet",kpi_skuld:"Skuldsättningsgrad",kpi_balanslik:"Balanslikviditet",kpi_kassalik:"Kassalikviditet",kpi_roe:"Räntabilitet eget kapital (ROE)",kpi_roa:"Räntabilitet totalt kapital (ROA)",kpi_rormarginal:"Rörelsemarginal",kpi_vinstmarginal:"Vinstmarginal",kpi_omsattningstillvaxt:"Omsättningstillväxt",kpi_runway:"Runway",kpi_pe_bors:"P/E (börsvärde/resultat)",kpi_pe_pris:"P/E (pris/EPS)",
     mh_info:"Bolag markerade som förmedlare/mellanhand (rekryteringsbyråer, konsultmäklare m.fl.). Dessa räknas inte som direktkunder eller som bolag med eget konsultbehov.",
     kbh_info:"Bolag rankade efter indikerat behov, utifrån sparade nyckeltal och nya signaler. Högst upp = mest akut.",li_kat_sasong:"Säsong",li_kat_marknad:"Marknad & aktuellt",li_kat_lagar:"Lagar & regler",lead_het:"Hett lead – prioritera nu",lead_bra:"Bra lead – följ upp inom en vecka",lead_mojligt:"Möjligt lead – bevaka",lead_svagt:"Svagt lead – låg prioritet",
-    nav_relmap:"Relationskarta",relmap_titel:"Relationskarta",relmap_info:"Bolag och kontakter och hur de hänger ihop. Kontakter som delat samma bolag är länkade.",relmap_oversikt:"Översikt",relmap_fokus:"Fokus",relmap_valj_nod:"Klicka på en nod för att fokusera",relmap_aterstall:"Visa hela nätverket",relmap_delat:"Delat bolag",relmap_inga:"Inga kopplingar att visa ännu.",
+    nav_relmap:"Relationsnät",relmap_titel:"Relationskarta",relmap_info:"Bolag och kontakter och hur de hänger ihop. Kontakter som delat samma bolag är länkade.",relmap_oversikt:"Översikt",relmap_fokus:"Fokus",relmap_valj_nod:"Klicka på en nod för att fokusera",relmap_aterstall:"Visa hela nätverket",relmap_delat:"Delat bolag",relmap_inga:"Inga kopplingar att visa ännu.",relmap_sok:"Sök bolag, kontakt eller underkonsult...",relmap_typ_bolag:"Bolag",relmap_typ_kontakt:"Kontakt",relmap_typ_sub:"Underkonsult",relmap_introducerade:"Introducerade",relmap_ingen_traff:"Ingen träff",
     cco_rubrik:"Kopplade bolag",cco_lagg_till:"Koppla bolag",cco_roll:"Roll (valfritt)",cco_nuvarande:"Nuvarande",cco_tidigare:"Tidigare",cco_ta_bort:"Ta bort koppling",cco_valj_bolag:"Välj bolag",cco_inga:"Inga bolag kopplade",cco_kopplat:"Bolag kopplat ✓",cco_borttaget:"Koppling borttagen",cco_bekrafta:"Ta bort kopplingen till detta bolag?",
     ldk_koppla_kontakt:"Koppla kontakt",ldk_valj_kontakt:"Välj kontakt",ldk_kopplad:"Kontakt kopplad till bolaget ✓",gp_visa:"Visa personer",gp_personer:"personer",gp_inga:"Inga personer i denna period ännu.",kcc_krav_rubrik:"Kravlista för KCC",kcc_krav_info:"Skriv dina kriterier för vad som krävs för att någon ska bli KCC.",kcc_krav_spara:"Spara kravlista",kcc_krav_sparad:"Kravlista sparad ✓",kcc_kandidater:"KCC-kandidater",kcc_inga_kand:"Inga kandidater flaggade ännu.",kcc_kandidat_flagga:"KCC-kandidat (på väg mot KCC)",
     db_logga_kontakt:"Logga kontakt",db_till_tasks:"Till tasks",db_oppna_todo:"Öppna todo",db_deadline_idag:"deadline idag",db_oppna_lead:"Öppna lead",db_allt_kontroll:"Allt under kontroll 🎉",db_logga:"Logga",db_klar:"Klar",db_uppfolj:"uppfölj",db_tasks:"tasks",db_signaler:"signaler",db_uppdrag:"uppdrag",db_forsenat:"försenat",db_lead_steg_idag:"lead-steg idag"
@@ -1292,7 +1292,7 @@ const I18N={
     kpi_soliditet:"Equity ratio",kpi_skuld:"Debt-to-equity ratio",kpi_balanslik:"Current ratio",kpi_kassalik:"Quick ratio",kpi_roe:"Return on equity (ROE)",kpi_roa:"Return on assets (ROA)",kpi_rormarginal:"Operating margin",kpi_vinstmarginal:"Profit margin",kpi_omsattningstillvaxt:"Revenue growth",kpi_runway:"Runway",kpi_pe_bors:"P/E (market cap/profit)",kpi_pe_pris:"P/E (price/EPS)",
     mh_info:"Companies marked as brokers/intermediaries (recruitment agencies, consultant brokers, etc.). These are not counted as direct clients or as companies with their own consulting needs.",
     kbh_info:"Companies ranked by indicated need, based on saved key figures and new signals. Top = most urgent.",li_kat_sasong:"Season",li_kat_marknad:"Market & current",li_kat_lagar:"Laws & regulations",lead_het:"Hot lead – prioritize now",lead_bra:"Good lead – follow up within a week",lead_mojligt:"Possible lead – monitor",lead_svagt:"Weak lead – low priority",
-    nav_relmap:"Relationship map",relmap_titel:"Relationship map",relmap_info:"Companies and contacts and how they connect. Contacts who shared the same company are linked.",relmap_oversikt:"Overview",relmap_fokus:"Focus",relmap_valj_nod:"Click a node to focus",relmap_aterstall:"Show full network",relmap_delat:"Shared company",relmap_inga:"No connections to show yet.",
+    nav_relmap:"Relationship map",relmap_titel:"Relationship map",relmap_info:"Companies and contacts and how they connect. Contacts who shared the same company are linked.",relmap_oversikt:"Overview",relmap_fokus:"Focus",relmap_valj_nod:"Click a node to focus",relmap_aterstall:"Show full network",relmap_delat:"Shared company",relmap_inga:"No connections to show yet.",relmap_sok:"Search company, contact or subconsultant...",relmap_typ_bolag:"Company",relmap_typ_kontakt:"Contact",relmap_typ_sub:"Subconsultant",relmap_introducerade:"Introduced",relmap_ingen_traff:"No match",
     cco_rubrik:"Linked companies",cco_lagg_till:"Link company",cco_roll:"Role (optional)",cco_nuvarande:"Current",cco_tidigare:"Previous",cco_ta_bort:"Remove link",cco_valj_bolag:"Select company",cco_inga:"No companies linked",cco_kopplat:"Company linked ✓",cco_borttaget:"Link removed",cco_bekrafta:"Remove the link to this company?",
     ldk_koppla_kontakt:"Link contact",ldk_valj_kontakt:"Select contact",ldk_kopplad:"Contact linked to the company ✓",gp_visa:"Show people",gp_personer:"people",gp_inga:"No people in this period yet.",kcc_krav_rubrik:"KCC requirements",kcc_krav_info:"Write your criteria for what it takes for someone to become a KCC.",kcc_krav_spara:"Save requirements",kcc_krav_sparad:"Requirements saved ✓",kcc_kandidater:"KCC candidates",kcc_inga_kand:"No candidates flagged yet.",kcc_kandidat_flagga:"KCC candidate (working toward KCC)",
     db_logga_kontakt:"Log contact",db_till_tasks:"To tasks",db_oppna_todo:"Open to-do",db_deadline_idag:"deadline today",db_oppna_lead:"Open lead",db_allt_kontroll:"All under control 🎉",db_logga:"Log",db_klar:"Done",db_uppfolj:"follow-ups",db_tasks:"tasks",db_signaler:"signals",db_uppdrag:"assignments",db_forsenat:"overdue",db_lead_steg_idag:"lead step today"
@@ -4569,78 +4569,95 @@ function renderKonsultbehov(){
 
 
 
-let relmapFocus=null; // {type:'company'|'contact', id}
+let relmapFocus=null; // {type, id}
+let relmapQuery="";
 function setRelmapFocus(type,id){relmapFocus=(relmapFocus&&relmapFocus.id===id)?null:{type,id};renderRelmap();}
-function clearRelmapFocus(){relmapFocus=null;renderRelmap();}
-function renderRelmap(){
+function clearRelmapFocus(){relmapFocus=null;relmapQuery="";renderRelmap();}
+function relmapSearch(q){relmapQuery=(q||"").trim().toLowerCase();renderRelmap(true);}
+function relmapNodeName(type,id){
+  if(type==="company"){const c=companies.find(x=>x.id===id);return c?c.namn:"";}
+  if(type==="contact"){const c=contacts.find(x=>x.id===id);return c?(c.fornamn+" "+c.efternamn):"";}
+  if(type==="sub"){const s=subs.find(x=>x.id===id);return s?(s.namn||((s.fornamn||"")+" "+(s.efternamn||"")).trim()):"";}
+  return "";
+}
+function renderRelmap(keepSearchFocus){
   const box=document.getElementById("relmap-content");if(!box)return;
-  // Bygg nodlistor från contact_companies
-  let links=contactCompanies.slice();
-  // Bestäm vilka noder som ska visas
-  let companyIds=new Set(),contactIds=new Set();
+  // Bygg alla kanter
+  const edges=[];
+  contactCompanies.forEach(l=>edges.push({a:{type:"contact",id:l.contact_id},b:{type:"company",id:l.company_id},kind:"cc",cur:l.ar_nuvarande!==false}));
+  contactConnections.forEach(l=>{if(l.contact_a&&l.contact_b)edges.push({a:{type:"contact",id:l.contact_a},b:{type:"contact",id:l.contact_b},kind:"conn",rel:l.relation_typ});});
+  contacts.forEach(c=>{if(c.introduktion_av){edges.push({a:{type:"contact",id:c.introduktion_av},b:{type:"contact",id:c.id},kind:"intro"});}});
+  subContacts.forEach(l=>{if(l.contact_id&&l.subconsultant_id)edges.push({a:{type:"contact",id:l.contact_id},b:{type:"sub",id:l.subconsultant_id},kind:"sc"});});
+  const nodeKey=n=>n.type+":"+n.id;
+  // Fokus/sök-filtrering
+  let activeEdges=edges;
   if(relmapFocus){
-    if(relmapFocus.type==="company"){
-      companyIds.add(relmapFocus.id);
-      links.filter(l=>l.company_id===relmapFocus.id).forEach(l=>contactIds.add(l.contact_id));
-      // även bolag som dessa kontakter delar
-      [...contactIds].forEach(cid=>links.filter(l=>l.contact_id===cid).forEach(l=>companyIds.add(l.company_id)));
-    }else{
-      contactIds.add(relmapFocus.id);
-      links.filter(l=>l.contact_id===relmapFocus.id).forEach(l=>companyIds.add(l.company_id));
-      [...companyIds].forEach(coid=>links.filter(l=>l.company_id===coid).forEach(l=>contactIds.add(l.contact_id)));
-    }
-    links=links.filter(l=>companyIds.has(l.company_id)&&contactIds.has(l.contact_id));
-  }else{
-    links.forEach(l=>{companyIds.add(l.company_id);contactIds.add(l.contact_id);});
+    const fk=relmapFocus.type+":"+relmapFocus.id;
+    const neighborKeys=new Set([fk]);
+    edges.forEach(e=>{if(nodeKey(e.a)===fk)neighborKeys.add(nodeKey(e.b));if(nodeKey(e.b)===fk)neighborKeys.add(nodeKey(e.a));});
+    activeEdges=edges.filter(e=>neighborKeys.has(nodeKey(e.a))&&neighborKeys.has(nodeKey(e.b)));
   }
-  const cos=[...companyIds].map(id=>companies.find(c=>c.id===id)).filter(Boolean);
-  const cts=[...contactIds].map(id=>contacts.find(c=>c.id===id)).filter(Boolean);
-  if(!links.length){box.innerHTML=`<p style="font-size:13px;color:#888;margin-bottom:12px">${TR("relmap_info")}</p><div class="empty"><div class="empty-icon">🗺️</div><p>${TR("relmap_inga")}</p></div>`;return;}
-  // delade bolag (kopplade till >1 kontakt bland visade)
+  // Nodlista från aktiva kanter
+  const nodeMap={};
+  activeEdges.forEach(e=>{[e.a,e.b].forEach(n=>{const k=nodeKey(n);if(!nodeMap[k]){const nm=relmapNodeName(n.type,n.id);if(nm)nodeMap[k]={...n,name:nm,deg:0};}});});
+  activeEdges.forEach(e=>{const ka=nodeKey(e.a),kb=nodeKey(e.b);if(nodeMap[ka])nodeMap[ka].deg++;if(nodeMap[kb])nodeMap[kb].deg++;});
+  let nodes=Object.values(nodeMap);
+  // Sökresultat (för att visa lista + möjliggöra fokus)
+  let searchHits=[];
+  if(relmapQuery){
+    searchHits=nodes.filter(n=>n.name.toLowerCase().includes(relmapQuery)).slice(0,8);
+  }
+  // delade bolag (>1 kontakt) bland visade
   const sharedCo=new Set();
-  cos.forEach(co=>{const n=links.filter(l=>l.company_id===co.id).length;if(n>1)sharedCo.add(co.id);});
-  // Layout: bolag i vänster kolumn, kontakter i höger
-  const W=760,rowH=46,padT=40;
-  const H=Math.max(cos.length,cts.length)*rowH+padT+30;
-  const coX=170,ctX=W-170;
-  const coPos={},ctPos={};
-  cos.forEach((co,i)=>coPos[co.id]=padT+i*rowH+rowH/2);
-  cts.forEach((c,i)=>ctPos[c.id]=padT+i*rowH+rowH/2);
+  nodes.filter(n=>n.type==="company").forEach(co=>{const n=activeEdges.filter(e=>(e.a.type==="company"&&e.a.id===co.id)||(e.b.type==="company"&&e.b.id===co.id)).length;if(n>1)sharedCo.add(co.id);});
+  const searchBox=`<div style="position:relative;margin-bottom:10px"><input id="relmap-search" placeholder="${TR("relmap_sok")}" autocomplete="off" oninput="relmapSearch(this.value)" value="${esvg(relmapQuery)}" style="width:100%">
+    ${searchHits.length?`<div style="position:absolute;z-index:50;background:#fff;border:1px solid var(--cream);border-radius:8px;width:100%;box-shadow:0 4px 14px rgba(0,0,0,.08);margin-top:2px">${searchHits.map(n=>`<div class="week-row" style="cursor:pointer;padding:8px 12px" onmousedown="relmapQuery='';setRelmapFocus('${n.type}','${n.id}')">${n.type==="company"?"🏢":n.type==="sub"?"⚙️":"👤"} ${esvg(n.name)}</div>`).join("")}</div>`:relmapQuery?`<div style="position:absolute;z-index:50;background:#fff;border:1px solid var(--cream);border-radius:8px;width:100%;padding:8px 12px;color:#888;font-size:13px;margin-top:2px">${TR("relmap_ingen_traff")}</div>`:""}
+  </div>`;
+  const focusBar=relmapFocus?`<button class="btn btn-outline btn-sm" onclick="clearRelmapFocus()">← ${TR("relmap_aterstall")}</button> <span style="font-size:13px;color:#666">${esvg(relmapNodeName(relmapFocus.type,relmapFocus.id))}</span>`:`<span style="font-size:12px;color:#888">${TR("relmap_valj_nod")}</span>`;
+  const legend=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#888;margin-left:auto">
+    <span><span style="display:inline-block;width:11px;height:11px;background:#fff;border:1.5px solid var(--cream);border-radius:3px;vertical-align:middle"></span> ${TR("relmap_typ_bolag")}</span>
+    <span><span style="display:inline-block;width:11px;height:11px;background:var(--gold);border-radius:3px;vertical-align:middle"></span> ${TR("relmap_delat")}</span>
+    <span><span style="display:inline-block;width:11px;height:11px;background:#e8f0ff;border:1.5px solid var(--accent);border-radius:50%;vertical-align:middle"></span> ${TR("relmap_typ_kontakt")}</span>
+    <span><span style="display:inline-block;width:11px;height:11px;background:#f3e8ff;border:1.5px solid #9b59b6;border-radius:50%;vertical-align:middle"></span> ${TR("relmap_typ_sub")}</span>
+  </div>`;
+  if(keepSearchFocus){
+    // bara uppdatera sökrutan/dropdown, inte hela kartan (för att inte tappa fokus i inputen)
+    const wrap=document.getElementById("relmap-searchwrap");
+    if(wrap){wrap.innerHTML=searchBox;const inp=document.getElementById("relmap-search");if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}return;}
+  }
+  if(!nodes.length){box.innerHTML=`<p style="font-size:13px;color:#888;margin-bottom:10px">${TR("relmap_info")}</p><div id="relmap-searchwrap">${searchBox}</div><div class="empty"><div class="empty-icon">🗺️</div><p>${TR("relmap_inga")}</p></div>`;return;}
+  // Cirkulär layout
+  const size=Math.max(420,Math.min(720,nodes.length*46));
+  const cx=size/2,cy=size/2,R=size/2-70;
+  const pos={};
+  nodes.forEach((n,i)=>{const ang=(i/nodes.length)*Math.PI*2-Math.PI/2;pos[nodeKey(n)]={x:cx+R*Math.cos(ang),y:cy+R*Math.sin(ang)};});
   // Linjer
   let lines="";
-  links.forEach(l=>{
-    const y1=coPos[l.company_id],y2=ctPos[l.contact_id];
-    if(y1==null||y2==null)return;
-    const cur=l.ar_nuvarande!==false;
-    lines+=`<line x1="${coX}" y1="${y1}" x2="${ctX}" y2="${y2}" stroke="${cur?"var(--accent)":"#ccc"}" stroke-width="${cur?2:1}" stroke-dasharray="${cur?"":"4 3"}" opacity="0.7"/>`;
+  activeEdges.forEach(e=>{const p1=pos[nodeKey(e.a)],p2=pos[nodeKey(e.b)];if(!p1||!p2)return;
+    let col="#ccc",dash="",wdt=1.5;
+    if(e.kind==="cc"){col=e.cur?"var(--accent)":"#ccc";dash=e.cur?"":"4 3";}
+    else if(e.kind==="conn"){col="#7aa5d2";}
+    else if(e.kind==="intro"){col="#e08a3c";dash="5 3";}
+    else if(e.kind==="sc"){col="#9b59b6";}
+    lines+=`<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${col}" stroke-width="${wdt}" stroke-dasharray="${dash}" opacity="0.6"/>`;
   });
-  // Bolagsnoder
-  let coNodes="";
-  cos.forEach(co=>{
-    const y=coPos[co.id];const shared=sharedCo.has(co.id);
-    coNodes+=`<g style="cursor:pointer" onclick="setRelmapFocus('company','${co.id}')">
-      <rect x="20" y="${y-15}" width="${coX-30}" height="30" rx="8" fill="${shared?"var(--gold)":"#fff"}" stroke="${shared?"var(--gold)":"var(--cream)"}" stroke-width="1.5"/>
-      <text x="32" y="${y+5}" font-size="13" fill="${shared?"#fff":"var(--ink)"}" font-weight="${shared?"600":"400"}">${shared?"⭐ ":"🏢 "}${esvg((co.namn||"").slice(0,20))}</text>
-    </g>`;
+  // Noder
+  let nodeSvg="";
+  nodes.forEach(n=>{const p=pos[nodeKey(n)];const label=n.name.slice(0,16);
+    if(n.type==="company"){const shared=sharedCo.has(n.id);
+      nodeSvg+=`<g style="cursor:pointer" onclick="setRelmapFocus('company','${n.id}')"><rect x="${p.x-52}" y="${p.y-13}" width="104" height="26" rx="7" fill="${shared?"var(--gold)":"#fff"}" stroke="${shared?"var(--gold)":"var(--cream)"}" stroke-width="1.5"/><text x="${p.x}" y="${p.y+4}" font-size="11" text-anchor="middle" fill="${shared?"#fff":"var(--ink)"}" font-weight="${shared?"600":"400"}">${shared?"⭐":"🏢"} ${esvg(label)}</text></g>`;
+    }else{const isSub=n.type==="sub";
+      nodeSvg+=`<g style="cursor:pointer" onclick="setRelmapFocus('${n.type}','${n.id}')"><rect x="${p.x-50}" y="${p.y-13}" width="100" height="26" rx="13" fill="${isSub?"#f3e8ff":"#e8f0ff"}" stroke="${isSub?"#9b59b6":"var(--accent)"}" stroke-width="1.5"/><text x="${p.x}" y="${p.y+4}" font-size="11" text-anchor="middle" fill="var(--ink)">${isSub?"⚙️":"👤"} ${esvg(label)}</text></g>`;
+    }
   });
-  // Kontaktnoder
-  let ctNodes="";
-  cts.forEach(c=>{
-    const y=ctPos[c.id];
-    ctNodes+=`<g style="cursor:pointer" onclick="setRelmapFocus('contact','${c.id}')">
-      <rect x="${ctX+10}" y="${y-15}" width="${W-ctX-30}" height="30" rx="8" fill="#fff" stroke="var(--cream)" stroke-width="1.5"/>
-      <text x="${ctX+22}" y="${y+5}" font-size="13" fill="var(--ink)">👤 ${esvg((c.fornamn+" "+c.efternamn).slice(0,20))}</text>
-    </g>`;
-  });
-  const focusBar=relmapFocus?`<button class="btn btn-outline btn-sm" onclick="clearRelmapFocus()">← ${TR("relmap_aterstall")}</button>`:`<span style="font-size:12px;color:#888">${TR("relmap_valj_nod")}</span>`;
   box.innerHTML=`
     <p style="font-size:13px;color:#888;margin-bottom:10px">${TR("relmap_info")}</p>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">${focusBar}
-      <span style="font-size:12px;color:#888;margin-left:auto"><span style="display:inline-block;width:12px;height:12px;background:var(--gold);border-radius:3px;vertical-align:middle"></span> ${TR("relmap_delat")}</span>
-    </div>
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);overflow:auto">
-      <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${W}px;height:${H}px">${lines}${coNodes}${ctNodes}</svg>
+    <div id="relmap-searchwrap">${searchBox}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">${focusBar}${legend}</div>
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);overflow:auto;text-align:center">
+      <svg viewBox="0 0 ${size} ${size}" style="width:100%;max-width:${size}px;height:${size}px">${lines}${nodeSvg}</svg>
     </div>`;
+  if(keepSearchFocus){const inp=document.getElementById("relmap-search");if(inp){inp.focus();}}
 }
 function esvg(str){return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function renderRelnet(){
