@@ -6243,6 +6243,21 @@ function setFocusMode(mode){
   renderCurrent();
 }
 
+// Fånga webbläsarens bakåtknapp så den hanteras i appen i stället för att navigera bort (vilket loggade ut)
+(function setupHistoryGuard(){
+  try{
+    history.pushState({app:true},"");
+    window.addEventListener("popstate",function(ev){
+      // Lägg genast tillbaka en historik-post så vi aldrig lämnar appen
+      history.pushState({app:true},"");
+      // Om en modal är öppen: stäng den
+      const openModal=document.querySelector(".overlay.open");
+      if(openModal&&openModal.id){try{closeM(openModal.id);}catch(e){}return;}
+      // Annars: gå till dashboard om vi inte redan är där
+      try{if(typeof curView!=="undefined"&&curView&&curView!=="dashboard"){gotoView("dashboard");}}catch(e){}
+    });
+  }catch(e){}
+})();
 checkSession();
 </script>
 </body>
