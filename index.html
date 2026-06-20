@@ -1837,6 +1837,8 @@ async function moveContactToSub(id){
       // 3. Ta bort originalkontakten (kopplingar rensas via kontaktradering)
       await deleteContactCascade(c.id);
       contacts=contacts.filter(x=>x.id!==c.id);
+      // Om personen fanns som klar KCC-kandidat: peka om till nya underkonsulten + sätt rätt anställningsform
+      try{const nm=(c.fornamn+" "+c.efternamn).trim().toLowerCase();const kand=kccKandidater.find(k=>(k.namn||"").trim().toLowerCase()===nm);if(kand){await sb.from("kcc_kandidater").update({skapad_som:newId,anstallning:"interim"}).eq("id",kand.id);}}catch(e){}
       toast(TR("mv_klar_sub"));await loadAll();closeM("m-card");gotoView("subconsultants");
     }catch(e){toast(TR("mv_fel"));}
   });
@@ -1855,6 +1857,7 @@ async function moveSubToContact(id){
       for(const a of acts){await sb.from("activity_log").insert({user_id:me.id,contact_id:newId,typ:a.typ||"Övrigt",datum:a.datum,anteckning:a.anteckning||null});}
       await deleteSubCascade(s.id);
       subs=subs.filter(x=>x.id!==s.id);
+      try{const nm=((s.fornamn||"")+" "+(s.efternamn||"")).trim().toLowerCase();const kand=kccKandidater.find(k=>(k.namn||"").trim().toLowerCase()===nm);if(kand){await sb.from("kcc_kandidater").update({skapad_som:newId,anstallning:"fast"}).eq("id",kand.id);}}catch(e){}
       toast(TR("mv_klar_kontakt"));await loadAll();closeM("m-sub-card");gotoView("contacts");
     }catch(e){toast(TR("mv_fel"));}
   });
