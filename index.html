@@ -1836,6 +1836,7 @@ async function moveContactToSub(id){
       for(const l of acts){await sb.from("subconsultant_activity").insert({user_id:me.id,subconsultant_id:newId,typ:l.typ||l.interaktionstyp||"Övrigt",datum:l.datum,anteckning:l.anteckning||null});}
       // 3. Ta bort originalkontakten (kopplingar rensas via kontaktradering)
       await deleteContactCascade(c.id);
+      contacts=contacts.filter(x=>x.id!==c.id);
       toast(TR("mv_klar_sub"));await loadAll();closeM("m-card");gotoView("subconsultants");
     }catch(e){toast(TR("mv_fel"));}
   });
@@ -1853,6 +1854,7 @@ async function moveSubToContact(id){
       const acts=subActivity.filter(a=>a.subconsultant_id===s.id);
       for(const a of acts){await sb.from("activity_log").insert({user_id:me.id,contact_id:newId,typ:a.typ||"Övrigt",datum:a.datum,anteckning:a.anteckning||null});}
       await deleteSubCascade(s.id);
+      subs=subs.filter(x=>x.id!==s.id);
       toast(TR("mv_klar_kontakt"));await loadAll();closeM("m-sub-card");gotoView("contacts");
     }catch(e){toast(TR("mv_fel"));}
   });
@@ -4650,7 +4652,19 @@ function renderKcc(){
   const manuKontakter=contacts.filter(c=>c.kcc_niva).map(c=>({namn:(c.fornamn+" "+c.efternamn).trim(),niva:c.kcc_niva,open:`openCard('${c.id}')`,typ:"kontakt"}));
   const manuSubs=subs.filter(s=>s.kcc_niva).map(s=>({namn:s.namn||((s.fornamn||"")+" "+(s.efternamn||"")).trim(),niva:s.kcc_niva,open:`openSubCard('${s.id}')`,typ:"underkonsult"}));
   const allaKlara=[
-    ...klara.map(k=>({namn:k.namn,niva:"Guld",open:k.skapad_som?(k.anstallning==="interim"?`openSubCard('${k.skapad_som}')`:`openCard('${k.skapad_som}')`):"",typ:k.anstallning==="fast"?"kontakt":"underkonsult"})),
+    ...klara.map(k=>{
+      let openFn="";
+      if(k.skapad_som){openFn=k.anstallning==="interim"?`openSubCard('${k.skapad_som}')`:`openCard('${k.skapad_som}')`;}
+      else{
+        // saknar skapad_som – hitta personen via namn
+        const nm=(k.namn||"").trim().toLowerCase();
+        const sub=subs.find(s=>((s.fornamn||"")+" "+(s.efternamn||"")).trim().toLowerCase()===nm);
+        const con=contacts.find(c=>((c.fornamn||"")+" "+(c.efternamn||"")).trim().toLowerCase()===nm);
+        if(sub)openFn=`openSubCard('${sub.id}')`;
+        else if(con)openFn=`openCard('${con.id}')`;
+      }
+      return {namn:k.namn,niva:"Guld",open:openFn,typ:k.anstallning==="fast"?"kontakt":"underkonsult"};
+    }),
     ...manuKontakter.filter(m=>!klaraNamn.has(m.namn.trim().toLowerCase())),
     ...manuSubs.filter(m=>!klaraNamn.has(m.namn.trim().toLowerCase()))
   ].sort((a,b)=>a.namn.localeCompare(b.namn,"sv"));
