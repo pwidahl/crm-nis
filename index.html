@@ -4619,6 +4619,17 @@ async function toggleKckSteg(id,steg,checked){
 async function kckBlivKcc(k){
   if(!k.anstallning){toast(TR("kck_valj_anst"));return;}
   let nyId=k.skapad_som||null;
+  // om skapad_som saknas, leta upp befintlig person via namn (undvik dubbletter)
+  if(!nyId){
+    const nm=(k.namn||"").trim().toLowerCase();
+    if(k.anstallning==="fast"){const ex=contacts.find(c=>((c.fornamn||"")+" "+(c.efternamn||"")).trim().toLowerCase()===nm);if(ex)nyId=ex.id;}
+    else{const ex=subs.find(s=>((s.fornamn||"")+" "+(s.efternamn||"")).trim().toLowerCase()===nm);if(ex)nyId=ex.id;}
+  }
+  // verifiera att skapad_som faktiskt finns (kan peka på raderad post)
+  if(nyId){
+    const finns=k.anstallning==="interim"?subs.some(s=>s.id===nyId):contacts.some(c=>c.id===nyId);
+    if(!finns)nyId=null;
+  }
   if(!nyId){
     const namnDelar=(k.namn||"").trim().split(" ");
     const fornamn=namnDelar.shift()||k.namn;const efternamn=namnDelar.join(" ");
@@ -4633,6 +4644,8 @@ async function kckBlivKcc(k){
     }
   }
   await sb.from("kcc_kandidater").update({ar_kcc:true,skapad_som:nyId}).eq("id",k.id);
+  // se till att den (ev. återanvända) personen har KCC-nivå
+  try{await sb.from(k.anstallning==="interim"?"subconsultants":"contacts").update({kcc_niva:"Guld"}).eq("id",nyId);}catch(e){}
   k.ar_kcc=true;k.skapad_som=nyId;
   closeM("m-kck-steg");
   toast(TR("kck_klar_kcc"));
@@ -4656,14 +4669,24 @@ function returnKccToProcess(kind,id){
       }
       await sb.from("kcc_kandidater").update({ar_kcc:false}).eq("id",id);
     }else if(kind==="kontakt"){
-      // manuellt satt KCC-kontakt: ta bort nivå + skapa en bearbetnings-post
+      // manuellt satt KCC-kontakt: ta bort nivå + återanvänd ev. befintlig bearbetnings-post
       const c=contacts.find(x=>x.id===id);
       await sb.from("contacts").update({kcc_niva:null}).eq("id",id);
-      if(c)await sb.from("kcc_kandidater").insert({user_id:me.id,namn:(c.fornamn+" "+c.efternamn).trim(),anstallning:"fast",chefsposition:!!c.beslutsfattare,linkedin:c.linkedin||null,epost:c.epost||null,telefon:c.telefon||null,steg:{},skapad_som:c.id});
+      if(c){
+        const nm=(c.fornamn+" "+c.efternamn).trim().toLowerCase();
+        const existing=kccKandidater.find(k=>(k.namn||"").trim().toLowerCase()===nm);
+        if(existing){await sb.from("kcc_kandidater").update({ar_kcc:false,skapad_som:c.id,anstallning:"fast"}).eq("id",existing.id);}
+        else{await sb.from("kcc_kandidater").insert({user_id:me.id,namn:(c.fornamn+" "+c.efternamn).trim(),anstallning:"fast",chefsposition:!!c.beslutsfattare,linkedin:c.linkedin||null,epost:c.epost||null,telefon:c.telefon||null,steg:{},skapad_som:c.id});}
+      }
     }else if(kind==="sub"){
       const s=subs.find(x=>x.id===id);
       await sb.from("subconsultants").update({kcc_niva:null}).eq("id",id);
-      if(s)await sb.from("kcc_kandidater").insert({user_id:me.id,namn:((s.fornamn||"")+" "+(s.efternamn||"")).trim(),anstallning:"interim",linkedin:s.linkedin||null,epost:s.epost||null,telefon:s.telefon||null,steg:{},skapad_som:s.id});
+      if(s){
+        const nm=((s.fornamn||"")+" "+(s.efternamn||"")).trim().toLowerCase();
+        const existing=kccKandidater.find(k=>(k.namn||"").trim().toLowerCase()===nm);
+        if(existing){await sb.from("kcc_kandidater").update({ar_kcc:false,skapad_som:s.id,anstallning:"interim"}).eq("id",existing.id);}
+        else{await sb.from("kcc_kandidater").insert({user_id:me.id,namn:((s.fornamn||"")+" "+(s.efternamn||"")).trim(),anstallning:"interim",linkedin:s.linkedin||null,epost:s.epost||null,telefon:s.telefon||null,steg:{},skapad_som:s.id});}
+      }
     }
     toast(TR("kck_aterford"));
     await loadAll();renderKcc();
@@ -4674,7 +4697,10 @@ function setKccTab(t){kccTab=t;renderKcc();}
 function renderKcc(){
   const box=document.getElementById("kcc-content");if(!box)return;
   const aktiva=kccKandidater.filter(k=>!k.ar_kcc).sort((a,b)=>kckProgress(b)-kckProgress(a));
-  const klara=kccKandidater.filter(k=>k.ar_kcc);
+  const klaraRaw=kccKandidater.filter(k=>k.ar_kcc);
+  // dedupe klara kandidater på namn (rensa ev. gamla dubbletter i visningen)
+  const klaraSeen=new Set();
+  const klara=klaraRaw.filter(k=>{const nm=(k.namn||"").trim().toLowerCase();if(klaraSeen.has(nm))return false;klaraSeen.add(nm);return true;});
   // klara = 5-stegs-klara + manuellt satta (kontakter/subs med kcc_niva), utan dubbletter
   const klaraNamn=new Set(klara.map(k=>(k.namn||"").trim().toLowerCase()));
   const manuKontakter=contacts.filter(c=>c.kcc_niva).map(c=>({namn:(c.fornamn+" "+c.efternamn).trim(),niva:c.kcc_niva,open:`openCard('${c.id}')`,typ:"kontakt",refKind:"kontakt",refId:c.id}));
