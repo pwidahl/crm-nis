@@ -2316,9 +2316,8 @@ async function saveCompany(){
   const data={user_id:me.id,namn,orgnr:cleanOrg(v("co-orgnr")),bransch:v("co-bransch"),stad:v("co-stad"),land:v("co-land")||"Sverige",hemsida:v("co-hemsida"),pipeline_status:newStatus,borsnoterad:document.getElementById("co-bors").checked,ar_formedlare:document.getElementById("co-formedlare").checked,auto_projekt_vid_vunnet:document.getElementById("co-auto-proj").checked,anteckningar:v("co-notes"),parent_company_id:v("co-parent")||null,senast_andrad_av:me.id,senast_andrad_datum:new Date().toISOString()};
   if(newStatus==="Kund"&&prevStatus!=="Kund")data.kund_datum=today();
   let updData={...data};delete updData.user_id; // bevara ursprunglig ägare vid redigering
-  alert("DIAGNOS — Mellanhand-bocken är: "+document.getElementById("co-formedlare").checked+"\nSparar via: "+(editCoid?"UPPDATERING av befintligt bolag":"NYTT bolag")+"\nBolags-id: "+(editCoid||"(inget)"));
   const r=editCoid?await sb.from("companies").update(updData).eq("id",editCoid):await sb.from("companies").insert({...data});
-  if(r.error){alert("FEL vid sparande: "+r.error.message);return;}
+  if(r.error){alert("Fel vid sparande: "+r.error.message);return;}
   // Auto-skapa projekt vid Vunnet
   if(newStatus==="Vunnet"&&prevStatus!=="Vunnet"&&data.auto_projekt_vid_vunnet){const cid=editCoid||(await sb.from("companies").select("id").eq("namn",namn).eq("user_id",me.id).maybeSingle()).data?.id;if(cid){await sb.from("projects").insert({user_id:me.id,company_id:cid,namn:`Uppdrag ${namn}`,status:"Planering",pipeline_status:"Aktiv"});toast("Projekt skapades automatiskt för "+namn);}}
   closeM("m-company");toast("Bolag sparat");await loadAll();
