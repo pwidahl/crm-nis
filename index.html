@@ -4573,7 +4573,7 @@ async function kckBlivKcc(k){
       if(cr.error){toast(cr.error.message);return;}
       nyId=cr.data.id;
     }else{
-      const sr=await sb.from("subconsultants").insert({user_id:me.id,fornamn,efternamn,namn:k.namn,linkedin:k.linkedin||null,epost:k.epost||null,telefon:k.telefon||null,kcc_niva:"Guld",anteckningar:"Skapad från potentiell KCC."}).select("id").single();
+      const sr=await sb.from("subconsultants").insert({user_id:me.id,fornamn,efternamn,linkedin:k.linkedin||null,epost:k.epost||null,telefon:k.telefon||null,kcc_niva:"Guld",anteckningar:"Skapad från potentiell KCC."}).select("id").single();
       if(sr.error){toast(sr.error.message);return;}
       nyId=sr.data.id;
     }
