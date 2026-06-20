@@ -886,6 +886,18 @@ textarea{resize:vertical;min-height:68px}
 <div class="overlay" id="m-goal"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="goal-modal-title">Nytt mål</h2><button class="mclose" onclick="closeM('m-goal')">×</button></div><div class="mbody"><input id="goal-id" type="hidden"><div class="fg"><div class="fl full"><label>Vad vill du mäta?</label><select id="goal-typ"></select></div><div class="fl"><label>Målvärde</label><input id="goal-varde" type="number" min="1" placeholder="t.ex. 20"></div><div class="fl"><label>Period</label><select id="goal-period" onchange="toggleGoalDates()"></select></div></div><div class="fg" id="goal-date-row" style="display:none;margin-top:10px"><div class="fl"><label>Startdatum</label><input id="goal-start" type="date"></div><div class="fl"><label>Slutdatum</label><input id="goal-slut" type="date"></div></div></div><div class="mfoot"><button class="btn btn-danger" id="goal-del-btn" style="display:none" onclick="deleteGoal()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-goal')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveGoal()" data-i18n="btn_spara">Spara</button></div></div></div>
 <div class="overlay" id="m-goal-people"><div class="modal" style="width:460px"><div class="mhdr"><h2 id="goal-people-title">Personer</h2><button class="mclose" onclick="closeM('m-goal-people')">×</button></div><div class="mbody"><div id="goal-people-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-goal-people')" data-i18n="btn_stang">Stäng</button></div></div></div>
 
+<div class="overlay" id="m-kck-form"><div class="modal" style="width:440px"><div class="mhdr"><h2 id="kck-form-title" data-i18n="kck_ny">Ny potentiell KCC</h2><button class="mclose" onclick="closeM('m-kck-form')">×</button></div><div class="mbody">
+  <input type="hidden" id="kck-edit-id">
+  <div class="fl"><label data-i18n="kck_namn">Namn</label><input id="kck-namn"></div>
+  <div class="fl"><label data-i18n="kck_anst">Anställningsform</label><select id="kck-anst"><option value=""></option><option value="fast" data-i18n="kck_fast">Fast anställd</option><option value="interim" data-i18n="kck_interim">Interim</option></select></div>
+  <div class="fl full" style="margin-top:6px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none"><input type="checkbox" id="kck-chef" style="width:auto"><span data-i18n="kck_chef">Har haft chefsposition</span></label></div>
+  <div class="fl"><label data-i18n="kck_linkedin">LinkedIn</label><input id="kck-linkedin"></div>
+  <div class="fl"><label data-i18n="kck_epost">E-post</label><input id="kck-epost"></div>
+  <div class="fl"><label data-i18n="kck_telefon">Telefon</label><input id="kck-telefon"></div>
+</div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-kck-form')" data-i18n="kck_avbryt">Avbryt</button><button class="btn btn-primary" id="kck-form-save" onclick="saveKckKandidat()" data-i18n="kck_spara">Lägg till</button></div></div></div>
+
+<div class="overlay" id="m-kck-steg"><div class="modal" style="width:460px"><div class="mhdr"><h2 id="kck-steg-title">KCC</h2><button class="mclose" onclick="closeM('m-kck-steg')">×</button></div><div class="mbody"><div id="kck-steg-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-kck-steg')" data-i18n="btn_stang">Stäng</button></div></div></div>
+
 <div class="overlay" id="m-cv-result"><div class="modal modal-lg"><div class="mhdr"><h2>CV inläst</h2><button class="mclose" onclick="closeM('m-cv-result')">×</button></div><div class="mbody"><input id="cvres-subid" type="hidden"><div style="margin-bottom:8px;font-size:13px;color:#555">Föreslagna kompetenser (klicka för att lägga till på underkonsulten):</div><div id="cvres-head" style="margin-bottom:10px"></div><div id="cvres-suggest" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text (för att markera mer själv):</div><textarea id="cvres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-cv-result');if(curSubId)openSubCard(curSubId)">Klar</button></div></div></div>
 
 <div class="overlay" id="m-annual-result"><div class="modal modal-lg"><div class="mhdr"><h2>Årsredovisning inläst</h2><button class="mclose" onclick="closeM('m-annual-result')">×</button></div><div class="mbody"><input id="anres-coid" type="hidden"><div id="anres-nyckel" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text:</div><textarea id="anres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-annual-result')">Klar</button></div></div></div>
@@ -1208,7 +1220,7 @@ const I18N={
     nav_relmap:"Relationsnät",relmap_titel:"Relationskarta",relmap_info:"Bolag och kontakter och hur de hänger ihop. Kontakter som delat samma bolag är länkade.",relmap_oversikt:"Översikt",relmap_fokus:"Fokus",relmap_valj_nod:"Klicka på en nod för att fokusera",relmap_aterstall:"Visa hela nätverket",relmap_delat:"Delat bolag",relmap_inga:"Inga kopplingar att visa ännu.",relmap_sok:"Sök bolag, kontakt eller underkonsult...",relmap_typ_bolag:"Bolag",relmap_typ_kontakt:"Kontakt",relmap_typ_sub:"Underkonsult",relmap_introducerade:"Introducerade",relmap_ingen_traff:"Ingen träff",rmp_oppna_kort:"Öppna kort",rmp_hemsida:"Hemsida",rmp_linkedin:"LinkedIn",rmp_inga_lankar:"Inga länkar",rmp_kopplingar:"kopplingar",rmp_roll:"Roll",rmf_alla:"Alla kopplingar",rmf_nuvarande:"Endast nuvarande",rmf_delade:"Endast delade bolag",rmf_filter:"Filter",rm_koncern:"Group (parent/subsidiary)",f_land:"Country",rmf_land:"Country",rm_koncern:"Koncern (mor/dotter)",f_land:"Land",rmf_land:"Land",
     cco_rubrik:"Kopplade bolag",cco_lagg_till:"Koppla bolag",cco_roll:"Roll (valfritt)",cco_nuvarande:"Nuvarande",cco_tidigare:"Tidigare",cco_ta_bort:"Ta bort koppling",cco_valj_bolag:"Välj bolag",cco_inga:"Inga bolag kopplade",cco_kopplat:"Bolag kopplat ✓",cco_borttaget:"Koppling borttagen",cco_bekrafta:"Ta bort kopplingen till detta bolag?",
     ldk_koppla_kontakt:"Koppla kontakt",ldk_valj_kontakt:"Välj kontakt",ldk_kopplad:"Kontakt kopplad till bolaget ✓",gp_visa:"Visa personer",gp_personer:"personer",gp_inga:"Inga personer i denna period ännu.",kcc_krav_rubrik:"Kravlista för KCC",kcc_krav_info:"Skriv dina kriterier för vad som krävs för att någon ska bli KCC.",kcc_krav_spara:"Spara kravlista",kcc_krav_sparad:"Kravlista sparad ✓",kcc_kandidater:"KCC-kandidater",kcc_inga_kand:"Inga kandidater flaggade ännu.",kcc_kandidat_flagga:"KCC-kandidat (på väg mot KCC)",kccb_rubrik:"KCC-bearbetning",kccb_info:"Pågående bearbetningar mot KCC. Status, anteckning och nästa steg per person.",kccb_status:"Status",kccb_anteckning:"Anteckning",kccb_nasta:"Nästa steg",kccb_ej_paborjad:"Ej påbörjad",kccb_pagar:"Pågår",kccb_klar:"Klar/blev KCC",kccb_spara:"Spara",kccb_sparad:"Bearbetning sparad ✓",kccb_inga:"Inga pågående KCC-bearbetningar.",sub_kcc_kandidat:"Potentiell KCC (för bearbetning)",kccb_uppfoljning:"Uppföljning",kccb_uppf_kcc:"KCC-bearbetning",kccb_foljs_upp:"följs upp",kccb_idag:"idag",kccb_forsenad:"försenad",kccb_inget_datum:"Inget uppföljningsdatum",
-    kck_ny:"Ny potentiell KCC",kck_namn:"Namn",kck_chef:"Har haft chefsposition",kck_anst:"Anställningsform",kck_fast:"Fast anställd",kck_interim:"Interim",kck_linkedin:"LinkedIn",kck_epost:"E-post",kck_telefon:"Telefon",kck_spara:"Lägg till",kck_avbryt:"Avbryt",kck_tillagd:"Potentiell KCC tillagd ✓",kck_rubrik:"Potentiella KCC",kck_inga:"Inga potentiella KCC ännu. Lägg till en ovan.",kck_schema:"Arbetsschema",kck_steg1:"Skickat kontaktförfrågan på LinkedIn",kck_steg2:"Godkänd kontakt",kck_steg3:"Tagit kontakt",kck_steg4:"Bokat in lunch",kck_steg5:"Setts på lunch",kck_klar_kcc:"Klar – blev KCC! 🎉",kck_blev_kontakt:"skapad som kontakt",kck_blev_sub:"skapad som underkonsult",kck_ta_bort:"Ta bort",kck_bekrafta_bort:"Ta bort denna potentiella KCC?",kck_valj_anst:"Välj anställningsform först (fast/interim) innan alla steg bockas",
+    kck_ny:"Ny potentiell KCC",kck_namn:"Namn",kck_chef:"Har haft chefsposition",kck_anst:"Anställningsform",kck_fast:"Fast anställd",kck_interim:"Interim",kck_linkedin:"LinkedIn",kck_epost:"E-post",kck_telefon:"Telefon",kck_spara:"Lägg till",kck_avbryt:"Avbryt",kck_tillagd:"Potentiell KCC tillagd ✓",kck_rubrik:"Potentiella KCC",kck_inga:"Inga potentiella KCC ännu. Lägg till en ovan.",kck_schema:"Arbetsschema",kck_steg1:"Skickat kontaktförfrågan på LinkedIn",kck_steg2:"Godkänd kontakt",kck_steg3:"Tagit kontakt",kck_steg4:"Bokat in lunch",kck_steg5:"Setts på lunch",kck_klar_kcc:"Klar – blev KCC! 🎉",kck_blev_kontakt:"skapad som kontakt",kck_blev_sub:"skapad som underkonsult",kck_ta_bort:"Ta bort",kck_bekrafta_bort:"Ta bort denna potentiella KCC?",kck_valj_anst:"Välj anställningsform först (fast/interim) innan alla steg bockas",kck_redigera:"Redigera",kck_spara_andring:"Spara ändringar",kck_klara_rubrik:"Klara KCC",kck_inga_klara:"Inga klara KCC ännu.",kck_oppna:"Öppna",kck_av:"av",kck_steg_klara:"steg klara",
     lc_rubrik:"Lead-checklista",lc_valj_typ:"Vilken typ av tjänst?",lc_fast:"Fast tjänst",lc_interim:"Interim",lc_byt_typ:"Byt typ",
     lc_f1:"Hitta kontaktperson på annonsen",lc_f2:"Lägg till/koppla kontaktpersonen",lc_f3:"Mejla eller ring – fråga om behov av interim under sökandet",lc_f_utfall:"Logga utfall",
     lc_i1:"Lägg till/koppla kontaktpersonen",lc_i2:"Mejla eller ring – berätta om NIS och våra konsulter",lc_i3:"Logga svar / nästa steg",
@@ -1305,7 +1317,7 @@ const I18N={
     nav_relmap:"Relationship map",relmap_titel:"Relationship map",relmap_info:"Companies and contacts and how they connect. Contacts who shared the same company are linked.",relmap_oversikt:"Overview",relmap_fokus:"Focus",relmap_valj_nod:"Click a node to focus",relmap_aterstall:"Show full network",relmap_delat:"Shared company",relmap_inga:"No connections to show yet.",relmap_sok:"Search company, contact or subconsultant...",relmap_typ_bolag:"Company",relmap_typ_kontakt:"Contact",relmap_typ_sub:"Subconsultant",relmap_introducerade:"Introduced",relmap_ingen_traff:"No match",rmp_oppna_kort:"Open card",rmp_hemsida:"Website",rmp_linkedin:"LinkedIn",rmp_inga_lankar:"No links",rmp_kopplingar:"connections",rmp_roll:"Role",rmf_alla:"All connections",rmf_nuvarande:"Current only",rmf_delade:"Shared companies only",rmf_filter:"Filter",
     cco_rubrik:"Linked companies",cco_lagg_till:"Link company",cco_roll:"Role (optional)",cco_nuvarande:"Current",cco_tidigare:"Previous",cco_ta_bort:"Remove link",cco_valj_bolag:"Select company",cco_inga:"No companies linked",cco_kopplat:"Company linked ✓",cco_borttaget:"Link removed",cco_bekrafta:"Remove the link to this company?",
     ldk_koppla_kontakt:"Link contact",ldk_valj_kontakt:"Select contact",ldk_kopplad:"Contact linked to the company ✓",gp_visa:"Show people",gp_personer:"people",gp_inga:"No people in this period yet.",kcc_krav_rubrik:"KCC requirements",kcc_krav_info:"Write your criteria for what it takes for someone to become a KCC.",kcc_krav_spara:"Save requirements",kcc_krav_sparad:"Requirements saved ✓",kcc_kandidater:"KCC candidates",kcc_inga_kand:"No candidates flagged yet.",kcc_kandidat_flagga:"KCC candidate (working toward KCC)",kccb_rubrik:"KCC processing",kccb_info:"Ongoing work toward KCC. Status, note and next step per person.",kccb_status:"Status",kccb_anteckning:"Note",kccb_nasta:"Next step",kccb_ej_paborjad:"Not started",kccb_pagar:"In progress",kccb_klar:"Done/became KCC",kccb_spara:"Save",kccb_sparad:"Processing saved ✓",kccb_inga:"No ongoing KCC processing.",sub_kcc_kandidat:"Potential KCC (for processing)",kccb_uppfoljning:"Follow-up",kccb_uppf_kcc:"KCC processing",kccb_foljs_upp:"follow up",kccb_idag:"today",kccb_forsenad:"overdue",kccb_inget_datum:"No follow-up date",
-    kck_ny:"New potential KCC",kck_namn:"Name",kck_chef:"Has held a management position",kck_anst:"Employment type",kck_fast:"Permanent",kck_interim:"Interim",kck_linkedin:"LinkedIn",kck_epost:"Email",kck_telefon:"Phone",kck_spara:"Add",kck_avbryt:"Cancel",kck_tillagd:"Potential KCC added ✓",kck_rubrik:"Potential KCCs",kck_inga:"No potential KCCs yet. Add one above.",kck_schema:"Workflow",kck_steg1:"Sent connection request on LinkedIn",kck_steg2:"Connection accepted",kck_steg3:"Made contact",kck_steg4:"Lunch booked",kck_steg5:"Met for lunch",kck_klar_kcc:"Done – became KCC! 🎉",kck_blev_kontakt:"created as contact",kck_blev_sub:"created as subconsultant",kck_ta_bort:"Remove",kck_bekrafta_bort:"Remove this potential KCC?",kck_valj_anst:"Choose employment type (permanent/interim) before all steps are checked",
+    kck_ny:"New potential KCC",kck_namn:"Name",kck_chef:"Has held a management position",kck_anst:"Employment type",kck_fast:"Permanent",kck_interim:"Interim",kck_linkedin:"LinkedIn",kck_epost:"Email",kck_telefon:"Phone",kck_spara:"Add",kck_avbryt:"Cancel",kck_tillagd:"Potential KCC added ✓",kck_rubrik:"Potential KCCs",kck_inga:"No potential KCCs yet. Add one above.",kck_schema:"Workflow",kck_steg1:"Sent connection request on LinkedIn",kck_steg2:"Connection accepted",kck_steg3:"Made contact",kck_steg4:"Lunch booked",kck_steg5:"Met for lunch",kck_klar_kcc:"Done – became KCC! 🎉",kck_blev_kontakt:"created as contact",kck_blev_sub:"created as subconsultant",kck_ta_bort:"Remove",kck_bekrafta_bort:"Remove this potential KCC?",kck_valj_anst:"Choose employment type (permanent/interim) before all steps are checked",kck_redigera:"Edit",kck_spara_andring:"Save changes",kck_klara_rubrik:"Completed KCCs",kck_inga_klara:"No completed KCCs yet.",kck_oppna:"Open",kck_av:"of",kck_steg_klara:"steps done",
     lc_rubrik:"Lead checklist",lc_valj_typ:"What type of role?",lc_fast:"Permanent role",lc_interim:"Interim",lc_byt_typ:"Change type",
     lc_f1:"Find the contact person in the ad",lc_f2:"Add/link the contact person",lc_f3:"Email or call – ask about interim needs during the search",lc_f_utfall:"Log outcome",
     lc_i1:"Add/link the contact person",lc_i2:"Email or call – introduce NIS and our consultants",lc_i3:"Log response / next step",
@@ -1770,6 +1782,20 @@ async function doSearch(){const q=v("gsearch");const box=document.getElementById
 function openSearchResult(type,id){document.getElementById("search-drop").classList.remove("open");document.getElementById("gsearch").value="";if(type==="kontakt"){gotoView("contacts");openCard(id);}else if(type==="bolag"){gotoView("companies");openCompanyCard(id);}else if(type==="task"){gotoView("tasks");}else if(type==="underkonsult"){gotoView("subconsultants");}}
 
 // DASHBOARD
+function kccDashSektionHtml(){
+  const aktiva=(typeof kccKandidater!=="undefined"?kccKandidater:[]).filter(k=>!k.ar_kcc);
+  if(!aktiva.length)return "";
+  // sortera efter flest klara steg
+  const sorted=aktiva.slice().sort((a,b)=>kckProgress(b)-kckProgress(a));
+  const rows=sorted.map(k=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer" onclick="openKckSteg('${k.id}')">
+    <span style="flex:0 0 130px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">⭐ ${e(k.namn)}</span>
+    <div style="flex:1">${kckProgressBar(k)}</div>
+  </div>`).join("");
+  return `<div style="padding:12px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid var(--gold);border-radius:var(--r);margin-bottom:14px">
+    <div style="display:flex;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:14px;flex:1">⭐ ${TR("kck_rubrik")} (${aktiva.length})</span><button class="btn btn-outline btn-xs" onclick="gotoView('kcc')">${TR("kck_oppna")}</button></div>
+    ${rows}
+  </div>`;
+}
 function renderDashboard(){
   if(focusMode==="company"&&focusCompanyId){
     renderFocusDashboard();
@@ -1782,7 +1808,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -1884,16 +1910,11 @@ function nextStepHtml(){
     const sw=(s.signal_styrka||1)*15;
     cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:"Öppna lead",act:`openLead('${s.id}')`});
   });
-  // KCC-bearbetningar med uppföljning inom 7 dagar (kontakter + underkonsulter)
-  const kccTd=new Date(td);
-  const kccItems=[...contacts.filter(c=>c.kcc_kandidat&&!c.kcc_niva).map(c=>({p:c,isSub:false})),...subs.filter(s=>s.kcc_kandidat&&!s.kcc_niva).map(s=>({p:s,isSub:true}))];
-  kccItems.forEach(({p,isSub})=>{
-    if(!p.kcc_uppfoljning)return;
-    const days=Math.round((new Date(p.kcc_uppfoljning)-kccTd)/86400000);
-    if(days>7)return; // visas först 7 dagar innan
-    const nm=isSub?(p.namn||((p.fornamn||"")+" "+(p.efternamn||"")).trim()):(p.fornamn+" "+p.efternamn);
-    const overdueDays=days<0?Math.abs(days):0;
-    cands.push({urg:850+overdueDays,icon:"⭐",txt:`KCC: ${nm}${p.kcc_nasta_steg?" – "+p.kcc_nasta_steg:""}`,sub:days<0?`KCC-uppföljning försenad ${overdueDays} dagar`:days===0?"KCC-uppföljning idag":`KCC-uppföljning om ${days} dagar`,btn:"Till KCC",act:`gotoView('kcc')`,card:isSub?`openSubCard('${p.id}')`:`openCard('${p.id}')`});
+  // Potentiella KCC nära klart (4 av 5 steg) i fokusraden
+  kccKandidater.filter(k=>!k.ar_kcc).forEach(k=>{
+    const done=KCK_STEG.filter(st=>(k.steg||{})[st]).length;
+    if(done<4)return; // visa bara de nära klart
+    cands.push({urg:840+done,icon:"⭐",txt:`KCC: ${k.namn}`,sub:`${done}/5 ${TR("kck_steg_klara")}`,btn:"Till KCC",act:`openKckSteg('${k.id}')`});
   });
   if(!cands.length){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#f0f7f0,#fff);border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:12px"><span style="font-size:20px">✨</span><div style="flex:1"><div style="font-weight:600;font-size:14px">${t("dash_allt_kontroll")}</div><div style="font-size:12px;color:#888">Inget försenat eller akut just nu – bra jobbat!</div></div></div>`;
@@ -4429,57 +4450,78 @@ async function setKccStatus(id,isSub,status){if(await kccUpdate(id,isSub,{kcc_st
 async function setKccDate(id,isSub,date){if(await kccUpdate(id,isSub,{kcc_uppfoljning:date||null})){toast(TR("kccb_sparad"));renderKcc();updateBadges&&updateBadges();}}
 async function setKccField(id,isSub,field,val){await kccUpdate(id,isSub,{[field]:val||null});}
 const KCK_STEG=["steg1","steg2","steg3","steg4","steg5"];
-function kckNyHtml(){
-  return `<div class="week-sec" style="margin-bottom:14px"><div style="padding:14px">
-    <p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:10px">${TR("kck_ny")}</p>
-    <div class="fg" style="gap:8px">
-      <div class="fl"><label style="font-size:11px">${TR("kck_namn")}</label><input id="kck-namn"></div>
-      <div class="fl"><label style="font-size:11px">${TR("kck_anst")}</label><select id="kck-anst"><option value=""></option><option value="fast">${TR("kck_fast")}</option><option value="interim">${TR("kck_interim")}</option></select></div>
-    </div>
-    <div class="fl full" style="margin-top:6px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none"><input type="checkbox" id="kck-chef" style="width:auto"><span>${TR("kck_chef")}</span></label></div>
-    <div class="fg" style="gap:8px;margin-top:6px">
-      <div class="fl"><label style="font-size:11px">${TR("kck_linkedin")}</label><input id="kck-linkedin"></div>
-      <div class="fl"><label style="font-size:11px">${TR("kck_epost")}</label><input id="kck-epost"></div>
-      <div class="fl"><label style="font-size:11px">${TR("kck_telefon")}</label><input id="kck-telefon"></div>
-    </div>
-    <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="addKckKandidat()">${TR("kck_spara")}</button></div>
-  </div></div>`;
+function kckProgress(k){const steg=k.steg||{};return KCK_STEG.filter(st=>steg[st]).length;}
+function kckProgressBar(k,big){
+  const done=kckProgress(k);const pct=Math.round(done/5*100);
+  const col=done===5?"var(--green)":"var(--accent)";
+  return `<div style="display:flex;align-items:center;gap:8px">
+    <div style="flex:1;height:${big?"8px":"6px"};background:#eee;border-radius:5px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col};transition:width .3s"></div></div>
+    <span style="font-size:11px;color:#888;white-space:nowrap">${done}/5</span>
+  </div>`;
 }
-async function addKckKandidat(){
+function openKckForm(id){
+  document.getElementById("kck-edit-id").value=id||"";
+  const k=id?kccKandidater.find(x=>x.id===id):null;
+  document.getElementById("kck-form-title").textContent=k?TR("kck_redigera"):TR("kck_ny");
+  document.getElementById("kck-form-save").textContent=k?TR("kck_spara_andring"):TR("kck_spara");
+  document.getElementById("kck-namn").value=k?k.namn||"":"";
+  document.getElementById("kck-anst").value=k?k.anstallning||"":"";
+  document.getElementById("kck-chef").checked=k?!!k.chefsposition:false;
+  document.getElementById("kck-linkedin").value=k?k.linkedin||"":"";
+  document.getElementById("kck-epost").value=k?k.epost||"":"";
+  document.getElementById("kck-telefon").value=k?k.telefon||"":"";
+  openM("m-kck-form");
+}
+async function saveKckKandidat(){
+  const id=v("kck-edit-id");
   const namn=v("kck-namn");if(!namn){toast(TR("kck_namn")+"?");return;}
-  const data={user_id:me.id,namn,chefsposition:document.getElementById("kck-chef").checked,anstallning:v("kck-anst")||null,linkedin:v("kck-linkedin")||null,epost:v("kck-epost")||null,telefon:v("kck-telefon")||null,steg:{}};
-  const r=await sb.from("kcc_kandidater").insert(data);
-  if(r.error){toast(r.error.message);return;}
-  toast(TR("kck_tillagd"));await loadKccKandidater();renderKcc();
+  const fields={namn,chefsposition:document.getElementById("kck-chef").checked,anstallning:v("kck-anst")||null,linkedin:v("kck-linkedin")||null,epost:v("kck-epost")||null,telefon:v("kck-telefon")||null};
+  if(id){
+    const r=await sb.from("kcc_kandidater").update(fields).eq("id",id);
+    if(r.error){toast(r.error.message);return;}
+  }else{
+    const r=await sb.from("kcc_kandidater").insert({user_id:me.id,...fields,steg:{}});
+    if(r.error){toast(r.error.message);return;}
+    toast(TR("kck_tillagd"));
+  }
+  closeM("m-kck-form");await loadKccKandidater();renderKcc();
 }
 function kckKortHtml(k){
-  const steg=k.steg||{};
-  const klar=KCK_STEG.every(st=>steg[st]);
-  const chefBadge=k.chefsposition?'<span style="font-size:11px;background:var(--cream);padding:2px 7px;border-radius:10px">👔 chef</span>':"";
+  const chefBadge=k.chefsposition?'<span style="font-size:11px;background:var(--cream);padding:2px 7px;border-radius:10px">👔</span>':"";
   const anstBadge=k.anstallning?`<span style="font-size:11px;color:#888">${k.anstallning==="fast"?TR("kck_fast"):TR("kck_interim")}</span>`:"";
+  return `<div class="week-sec" style="margin-bottom:8px"><div style="padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="flex:1;font-weight:600;cursor:pointer" onclick="openKckSteg('${k.id}')">${e(k.namn)}</span>
+      ${chefBadge}${anstBadge}
+      <button class="btn btn-outline btn-xs" onclick="openKckForm('${k.id}')">${TR("kck_redigera")}</button>
+      <button class="btn-icon" style="color:var(--red)" onclick="deleteKckKandidat('${k.id}')" title="${TR("kck_ta_bort")}">🗑</button>
+    </div>
+    <div style="cursor:pointer" onclick="openKckSteg('${k.id}')">${kckProgressBar(k)}</div>
+  </div></div>`;
+}
+function openKckSteg(id){
+  const k=kccKandidater.find(x=>x.id===id);if(!k)return;
+  document.getElementById("kck-steg-title").textContent=k.namn;
+  document.getElementById("kck-steg-body").innerHTML=kckStegBodyHtml(k);
+  openM("m-kck-steg");
+}
+function kckStegBodyHtml(k){
+  const steg=k.steg||{};
   const links=[];
   if(k.linkedin)links.push(`<a href="${k.linkedin.startsWith("http")?k.linkedin:"https://"+k.linkedin}" target="_blank" rel="noopener" style="font-size:12px">in LinkedIn</a>`);
   if(k.epost)links.push(`<a href="mailto:${e(k.epost)}" style="font-size:12px">✉️ ${e(k.epost)}</a>`);
   if(k.telefon)links.push(`<a href="tel:${e(k.telefon)}" style="font-size:12px">📞 ${e(k.telefon)}</a>`);
   const stegRows=KCK_STEG.map((st,idx)=>{
     const done=!!steg[st];
-    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0">
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0">
       <input type="checkbox" ${done?"checked":""} onchange="toggleKckSteg('${k.id}','${st}',this.checked)" style="width:auto">
       <span style="${done?"text-decoration:line-through;color:#aaa":""}">${idx+1}. ${TR("kck_"+st)}</span>
     </label>`;
   }).join("");
-  const klarBanner=klar?`<div style="background:var(--green);color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px">${TR("kck_klar_kcc")}${k.anstallning==="fast"?" – "+TR("kck_blev_kontakt"):k.anstallning==="interim"?" – "+TR("kck_blev_sub"):""}</div>`:"";
-  return `<div class="week-sec" style="margin-bottom:10px"><div style="padding:14px">
-    ${klarBanner}
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <span style="font-weight:600;flex:1">${e(k.namn)}</span>
-      ${chefBadge}${anstBadge}
-      <button class="btn-icon" style="color:var(--red)" onclick="deleteKckKandidat('${k.id}')" title="${TR("kck_ta_bort")}">🗑</button>
-    </div>
-    ${links.length?`<div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap">${links.join("")}</div>`:""}
-    <p style="font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin:8px 0 4px">${TR("kck_schema")}</p>
-    ${stegRows}
-  </div></div>`;
+  return `${links.length?`<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">${links.join("")}</div>`:""}
+    <div style="margin-bottom:14px">${kckProgressBar(k,true)}</div>
+    <p style="font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:4px">${TR("kck_schema")}</p>
+    ${stegRows}`;
 }
 async function toggleKckSteg(id,steg,checked){
   const k=kccKandidater.find(x=>x.id===id);if(!k)return;
@@ -4487,25 +4529,25 @@ async function toggleKckSteg(id,steg,checked){
   const r=await sb.from("kcc_kandidater").update({steg:ny}).eq("id",id);
   if(r.error){toast(r.error.message);return;}
   k.steg=ny;
-  // Kolla om alla 5 klara
   const klar=KCK_STEG.every(st=>ny[st]);
   if(klar&&!k.ar_kcc){await kckBlivKcc(k);}
-  else{renderKcc();}
+  else{
+    // uppdatera modal-innehåll om öppen
+    const body=document.getElementById("kck-steg-body");if(body&&document.getElementById("m-kck-steg").classList.contains("open"))body.innerHTML=kckStegBodyHtml(k);
+    renderKcc();
+  }
 }
 async function kckBlivKcc(k){
-  // Skapa kontakt eller underkonsult beroende på anställningsform
-  if(!k.anstallning){toast(TR("kck_valj_anst"));renderKcc();return;}
+  if(!k.anstallning){toast(TR("kck_valj_anst"));return;}
   let nyId=k.skapad_som||null;
   if(!nyId){
+    const namnDelar=(k.namn||"").trim().split(" ");
+    const fornamn=namnDelar.shift()||k.namn;const efternamn=namnDelar.join(" ");
     if(k.anstallning==="fast"){
-      const namnDelar=(k.namn||"").trim().split(" ");
-      const fornamn=namnDelar.shift()||k.namn;const efternamn=namnDelar.join(" ");
       const cr=await sb.from("contacts").insert({user_id:me.id,fornamn,efternamn,linkedin:k.linkedin||null,epost:k.epost||null,telefon:k.telefon||null,kcc_niva:"Guld",beslutsfattare:!!k.chefsposition,anteckningar:"Skapad från potentiell KCC."}).select("id").single();
       if(cr.error){toast(cr.error.message);return;}
       nyId=cr.data.id;
     }else{
-      const namnDelar=(k.namn||"").trim().split(" ");
-      const fornamn=namnDelar.shift()||k.namn;const efternamn=namnDelar.join(" ");
       const sr=await sb.from("subconsultants").insert({user_id:me.id,fornamn,efternamn,namn:k.namn,linkedin:k.linkedin||null,epost:k.epost||null,telefon:k.telefon||null,kcc_niva:"Guld",anteckningar:"Skapad från potentiell KCC."}).select("id").single();
       if(sr.error){toast(sr.error.message);return;}
       nyId=sr.data.id;
@@ -4513,14 +4555,14 @@ async function kckBlivKcc(k){
   }
   await sb.from("kcc_kandidater").update({ar_kcc:true,skapad_som:nyId}).eq("id",k.id);
   k.ar_kcc=true;k.skapad_som=nyId;
+  closeM("m-kck-steg");
   toast(TR("kck_klar_kcc"));
-  await loadAll();
-  gotoView("kcc");
+  await loadAll();gotoView("kcc");
 }
 function deleteKckKandidat(id){
   confirm2(TR("kck_bekrafta_bort"),async()=>{
     await sb.from("kcc_kandidater").delete().eq("id",id);
-    await loadKccKandidater();renderKcc();
+    closeM("m-kck-steg");await loadKccKandidater();renderKcc();
   });
 }
 function renderKcc(){
@@ -4534,10 +4576,15 @@ function renderKcc(){
   const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||t("kcc_kontakt")}</div></div><span class="badge ${badgeStatus(c.status)}">${statusName(c.status)}</span></div>`;
   const sRow=s=>`<div class="week-row" style="cursor:pointer" onclick="openSubCard('${s.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${t("kcc_underkonsult_l")}${s.stad?" · "+e(s.stad):""}</div></div></div>`;
   const aktiva=kccKandidater.filter(k=>!k.ar_kcc);
+  const klara=kccKandidater.filter(k=>k.ar_kcc);
   const kckLista=aktiva.length?aktiva.map(kckKortHtml).join(""):`<p style="color:#aaa;font-size:13px">${TR("kck_inga")}</p>`;
+  const klaraLista=klara.length?klara.map(k=>{
+    const open=k.anstallning==="interim"?`openSubCard('${k.skapad_som}')`:`openCard('${k.skapad_som}')`;
+    return `<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="${k.skapad_som?open:""}"><span style="flex:1">⭐ ${e(k.namn)}</span><span style="font-size:11px;color:#888">${k.anstallning==="fast"?TR("kck_blev_kontakt"):TR("kck_blev_sub")}</span></div>`;
+  }).join(""):`<p style="color:#aaa;font-size:13px">${TR("kck_inga_klara")}</p>`;
   const kravBlock=`<div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:6px">${TR("kcc_krav_rubrik")}</p><p style="font-size:12px;color:#888;margin-bottom:8px">${TR("kcc_krav_info")}</p><textarea id="kcc-krav-text" style="width:100%;min-height:90px;resize:vertical">${e(kccKrav)}</textarea><div style="margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveKccKrav()">${TR("kcc_krav_spara")}</button></div></div></div>`
-    +kckNyHtml()
-    +`<div style="margin-bottom:18px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:8px">${TR("kck_rubrik")} (${aktiva.length})</p>${kckLista}</div>`;
+    +`<div class="week-sec" style="margin-bottom:18px;border:1px solid var(--green)"><div style="padding:16px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--green);margin-bottom:8px">⭐ ${TR("kck_klara_rubrik")} (${klara.length})</p>${klaraLista}</div></div>`
+    +`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;margin-bottom:10px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;flex:1">${TR("kck_rubrik")} (${aktiva.length})</p><button class="btn btn-primary btn-sm" onclick="openKckForm()">+ ${TR("kck_ny")}</button></div>${kckLista}</div>`;
   box.innerHTML=kravBlock+`
     <div style="display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap">
       <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600">${total}</div><div style="font-size:12px;color:#888">${t("kcc_totalt")}</div></div>
@@ -5425,7 +5472,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people","m-kck-form","m-kck-steg"];
 const CARD_MODALS=["m-card","m-company-card","m-sub-card","m-lead"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
