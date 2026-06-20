@@ -1809,14 +1809,19 @@ function startKckFromCard(typ,id){
   // redan i bearbetning?
   if(kccKandidater.some(k=>(k.namn||"").trim().toLowerCase()===namn.trim().toLowerCase()&&!k.ar_kcc)){toast(TR("kck_redan_kandidat"));return;}
   // fråga anställningsform via liten modal
-  window._kckPending={namn,chef,linkedin,epost,telefon};
+  window._kckPending={namn,chef,linkedin,epost,telefon,srcTyp:typ,srcId:id};
   document.getElementById("kck-anst-namn").textContent=namn;
   openM("m-kck-anst");
 }
 async function kckAnstVal(anst){
   const p=window._kckPending;if(!p)return;
   closeM("m-kck-anst");
-  const r=await sb.from("kcc_kandidater").insert({user_id:me.id,namn:p.namn,chefsposition:p.chef,anstallning:anst,linkedin:p.linkedin||null,epost:p.epost||null,telefon:p.telefon||null,steg:{}});
+  // koppla till den befintliga personen om anställningsform matchar typen
+  let skapadSom=null;
+  if(p.srcId){
+    if((anst==="fast"&&p.srcTyp==="contact")||(anst==="interim"&&p.srcTyp==="sub"))skapadSom=p.srcId;
+  }
+  const r=await sb.from("kcc_kandidater").insert({user_id:me.id,namn:p.namn,chefsposition:p.chef,anstallning:anst,linkedin:p.linkedin||null,epost:p.epost||null,telefon:p.telefon||null,steg:{},skapad_som:skapadSom});
   if(r.error){toast(r.error.message);return;}
   window._kckPending=null;
   toast(TR("kck_tillagd"));await loadKccKandidater();if(curView==="kcc")renderKcc();
