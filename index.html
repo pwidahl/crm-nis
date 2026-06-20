@@ -4590,46 +4590,48 @@ function deleteKckKandidat(id){
     closeM("m-kck-steg");await loadKccKandidater();renderKcc();
   });
 }
+let kccTab="bearbetning"; // bearbetning | klara
+function setKccTab(t){kccTab=t;renderKcc();}
 function renderKcc(){
   const box=document.getElementById("kcc-content");if(!box)return;
-  const kccC=contacts.filter(c=>c.kcc_niva);
-  const kccS=subs.filter(s=>s.kcc_niva);
-  const total=kccC.length+kccS.length;
-  const guld=kccC.filter(c=>c.kcc_niva==="Guld").length+kccS.filter(s=>s.kcc_niva==="Guld").length;
-  const silver=total-guld;
-  const nivaSort=(a,b)=>(a.kcc_niva==="Guld"?0:1)-(b.kcc_niva==="Guld"?0:1);
-  const cRow=c=>`<div class="week-row" style="cursor:pointer" onclick="openCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(c.kcc_niva)} ${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e([c.roll,c.foretag].filter(Boolean).join(" – "))||t("kcc_kontakt")}</div></div><span class="badge ${badgeStatus(c.status)}">${statusName(c.status)}</span></div>`;
-  const sRow=s=>`<div class="week-row" style="cursor:pointer" onclick="openSubCard('${s.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${kccBadge(s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">${t("kcc_underkonsult_l")}${s.stad?" · "+e(s.stad):""}</div></div></div>`;
-  const aktiva=kccKandidater.filter(k=>!k.ar_kcc);
+  const aktiva=kccKandidater.filter(k=>!k.ar_kcc).sort((a,b)=>kckProgress(b)-kckProgress(a));
   const klara=kccKandidater.filter(k=>k.ar_kcc);
-  // även manuellt satta KCC (kontakter + underkonsulter med kcc_niva)
+  // klara = 5-stegs-klara + manuellt satta (kontakter/subs med kcc_niva), utan dubbletter
+  const klaraNamn=new Set(klara.map(k=>(k.namn||"").trim().toLowerCase()));
   const manuKontakter=contacts.filter(c=>c.kcc_niva).map(c=>({namn:(c.fornamn+" "+c.efternamn).trim(),niva:c.kcc_niva,open:`openCard('${c.id}')`,typ:"kontakt"}));
   const manuSubs=subs.filter(s=>s.kcc_niva).map(s=>({namn:s.namn||((s.fornamn||"")+" "+(s.efternamn||"")).trim(),niva:s.kcc_niva,open:`openSubCard('${s.id}')`,typ:"underkonsult"}));
-  // undvik dubbletter: en kandidat som blivit KCC syns redan via skapad_som i manu-listorna
-  const klaraNamn=new Set(klara.map(k=>(k.namn||"").trim().toLowerCase()));
   const allaKlara=[
     ...klara.map(k=>({namn:k.namn,niva:"Guld",open:k.skapad_som?(k.anstallning==="interim"?`openSubCard('${k.skapad_som}')`:`openCard('${k.skapad_som}')`):"",typ:k.anstallning==="fast"?"kontakt":"underkonsult"})),
     ...manuKontakter.filter(m=>!klaraNamn.has(m.namn.trim().toLowerCase())),
     ...manuSubs.filter(m=>!klaraNamn.has(m.namn.trim().toLowerCase()))
-  ];
-  const kckLista=aktiva.length?aktiva.map(kckKortHtml).join(""):`<p style="color:#aaa;font-size:13px">${TR("kck_inga")}</p>`;
-  const klaraLista=allaKlara.length?allaKlara.map(k=>{
-    const niva=k.niva==="Guld"?"⭐":"☆";
-    return `<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="${k.open}"><span style="flex:1">${niva} ${e(k.namn)}</span><span style="font-size:11px;color:#888">${k.typ}</span></div>`;
-  }).join(""):`<p style="color:#aaa;font-size:13px">${TR("kck_inga_klara")}</p>`;
-  const kravBlock=`<div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:6px">${TR("kcc_krav_rubrik")}</p><p style="font-size:12px;color:#888;margin-bottom:8px">${TR("kcc_krav_info")}</p><textarea id="kcc-krav-text" style="width:100%;min-height:90px;resize:vertical">${e(kccKrav)}</textarea><div style="margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveKccKrav()">${TR("kcc_krav_spara")}</button></div></div></div>`
-    +`<div class="week-sec" style="margin-bottom:18px;border:1px solid var(--green)"><div style="padding:16px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--green);margin-bottom:8px">⭐ ${TR("kck_klara_rubrik")} (${allaKlara.length})</p>${klaraLista}</div></div>`
-    +`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;margin-bottom:10px"><p style="font-size:12px;font-weight:600;text-transform:uppercase;color:#999;flex:1">${TR("kck_rubrik")} (${aktiva.length})</p><button class="btn btn-primary btn-sm" onclick="openKckForm()">+ ${TR("kck_ny")}</button></div>${kckLista}</div>`;
-  box.innerHTML=kravBlock+`
-    <div style="display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap">
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600">${total}</div><div style="font-size:12px;color:#888">${t("kcc_totalt")}</div></div>
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#d4af37">⭐ ${guld}</div><div style="font-size:12px;color:#888">${t("kcc_guld_l")}</div></div>
-      <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 20px"><div style="font-size:26px;font-weight:600;color:#9aa">☆ ${silver}</div><div style="font-size:12px;color:#888">${t("kcc_silver_l")}</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start" class="li-grid">
-      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${t("kcc_kontakter")} (${kccC.length})</div>${kccC.length?[...kccC].sort(nivaSort).map(cRow).join(""):`<p style="color:#aaa;font-size:13px">${t("kcc_inga_kontakter")}</p>`}</div>
-      <div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${t("kcc_underkonsulter")} (${kccS.length})</div>${kccS.length?[...kccS].sort(nivaSort).map(sRow).join(""):`<p style="color:#aaa;font-size:13px">${t("kcc_inga_subs")}</p>`}</div>
-    </div>`;
+  ].sort((a,b)=>a.namn.localeCompare(b.namn,"sv"));
+
+  const tabBtn=(id,label,n)=>`<button onclick="setKccTab('${id}')" style="border:none;background:none;cursor:pointer;padding:8px 4px;margin-right:18px;font-size:14px;font-weight:${kccTab===id?"600":"400"};color:${kccTab===id?"var(--ink)":"#999"};border-bottom:2px solid ${kccTab===id?"var(--accent)":"transparent"}">${label} (${n})</button>`;
+  const tabs=`<div style="display:flex;align-items:center;border-bottom:1px solid var(--cream);margin-bottom:16px">
+    ${tabBtn("bearbetning",TR("kck_rubrik"),aktiva.length)}
+    ${tabBtn("klara",TR("kck_klara_rubrik"),allaKlara.length)}
+    <div style="flex:1"></div>
+    ${kccTab==="bearbetning"?`<button class="btn btn-primary btn-sm" onclick="openKckForm()">+ ${TR("kck_ny")}</button>`:""}
+  </div>`;
+
+  let body;
+  if(kccTab==="bearbetning"){
+    body=aktiva.length?aktiva.map(kckRadHtml).join(""):`<p style="color:#aaa;font-size:13px;padding:10px 0">${TR("kck_inga")}</p>`;
+  }else{
+    body=allaKlara.length?allaKlara.map(k=>`<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="${k.open}"><span style="flex:1">${k.niva==="Guld"?"⭐":"☆"} ${e(k.namn)}</span><span style="font-size:11px;color:#888">${k.typ}</span></div>`).join(""):`<p style="color:#aaa;font-size:13px;padding:10px 0">${TR("kck_inga_klara")}</p>`;
+  }
+  box.innerHTML=tabs+`<div>${body}</div>`;
+}
+function kckRadHtml(k){
+  const chefBadge=k.chefsposition?'<span style="font-size:11px" title="Chef">👔</span>':"";
+  const anstBadge=k.anstallning?`<span style="font-size:11px;color:#888">${k.anstallning==="fast"?TR("kck_fast"):TR("kck_interim")}</span>`:`<span style="font-size:11px;color:var(--red)">!</span>`;
+  return `<div class="week-row" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openKckSteg('${k.id}')">
+    <span style="flex:0 0 150px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(k.namn)}</span>
+    <span style="flex:0 0 70px">${anstBadge} ${chefBadge}</span>
+    <div style="flex:1">${kckProgressBar(k)}</div>
+    <button class="btn btn-outline btn-xs" onclick="event.stopPropagation();openKckForm('${k.id}')">${TR("kck_redigera")}</button>
+    <button class="btn-icon" style="color:var(--red)" onclick="event.stopPropagation();deleteKckKandidat('${k.id}')">🗑</button>
+  </div>`;
 }
 function renderLinkedin(){
   const box=document.getElementById("linkedin-content");if(!box)return;
