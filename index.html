@@ -3138,6 +3138,7 @@ async function openCard(id){
     <div class="ctpane" id="cc-notes"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openNoteModal('${c.id}')">+ Anteckning</button></div>${cNotes.length?cNotes.map(n=>`<div style="display:flex;gap:7px;padding:8px 0;border-bottom:1px solid var(--cream)"><div class="note-chip" style="flex:1"><span class="chip-cat">${e(n.kategori)}</span>${e(n.anteckning)}</div><button class="btn-icon" onclick="deleteNote('${n.id}','${c.id}')">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga anteckningar</p>'}</div>
     <div class="ctpane" id="cc-conns"><div style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="openConnModal('${c.id}')">+ Lägg till koppling</button></div>${cConns.length?cConns.map(({conn,other})=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream)"><div style="flex:1"><div style="font-size:13px;font-weight:600;cursor:pointer;color:var(--accent)" onclick="closeM('m-card');openCard('${other.id}')">${e(other.fornamn)} ${e(other.efternamn)} ↗</div><div style="font-size:11px;color:#888">${e(CONN_TYPES[conn.relation_typ]||conn.relation_typ)}${other.foretag?" · "+e(other.foretag):""}${conn.anteckning?" · "+e(conn.anteckning):""}</div></div><button class="btn-icon" title="Ta bort koppling" onclick="deleteConnection('${conn.id}','${c.id}')" style="color:var(--red)">🗑</button></div>`).join(""):'<p style="color:#aaa">Inga kopplingar ännu. Lägg till vem denna person känner för att spåra vägar in i bolag.</p>'}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-card');confirmDeleteContact('${c.id}')">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline btn-xs" onclick="exportSingleICS('${c.id}')">📅</button><button class="btn btn-outline" onclick="closeM('m-card');openEditContact('${c.id}')">✎ Redigera</button><button class="btn btn-warm" onclick="closeM('m-card');openLogModal('${c.id}')">Logga aktivitet</button><button class="btn btn-outline" onclick="startKckFromCard('contact','${c.id}')">⭐ ${TR("kck_starta")}</button><button class="btn btn-outline" onclick="flyttaKortTillKcc('contact','${c.id}')">⭐ ${TR("kck_flytta_kcc")}</button><button class="btn btn-outline" onclick="moveContactToSub('${c.id}')">${TR("mv_till_sub")}</button></div>`;
+  try{const liRow=liPersonKortHtml("contact",c.id);if(liRow){const cc=document.getElementById("card-content");if(cc)cc.insertAdjacentHTML("afterbegin",liRow);}}catch(e){}
   openM("m-card");
 }
 
@@ -5079,6 +5080,18 @@ function liSenastInteraktion(typ,id){
   if(!rel.length)return "";
   return rel.map(x=>x.datum).sort().reverse()[0];
 }
+function liPersonKortHtml(typ,id){
+  if(typeof liInteraktion==="undefined")return "";
+  const rel=liInteraktion.filter(x=>x.person_typ===typ&&x.person_id===id);
+  if(!rel.length)return "";
+  const senast=rel.map(x=>x.datum).sort().reverse()[0];
+  const ikon={gillningar:"👍",kommentarer:"💬",kontaktforfragan:"🤝"};
+  const antal={};rel.forEach(x=>{antal[x.typ]=(antal[x.typ]||0)+1;});
+  const summa=Object.entries(antal).map(([t,n])=>`${ikon[t]||"•"} ${n}`).join("  ");
+  return `<div style="background:#eef4fb;border:1px solid #cfe0f5;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px">
+    <span style="color:#0a66c2;font-weight:600">in LinkedIn</span> · senast ${senast} · ${summa}
+  </div>`;
+}
 async function liValjPerson(typ,id,namn){
   const r=await sb.from("linkedin_interaktion").insert({user_id:me.id,datum:liToday(),typ:_liPendingTyp,person_typ:typ,person_id:id,person_namn:namn}).select().single();
   if(!r.error&&r.data)liInteraktion.unshift(r.data);
@@ -5627,6 +5640,7 @@ function openSubCard(id){
         </div>`).join("");
     })()}</div>
     <div class="mfoot"><button class="btn btn-danger" onclick="closeM('m-sub-card');archiveSub('${id}')">Arkivera</button><div style="flex:1"></div><button class="btn btn-outline" onclick="navClear();closeM('m-sub-card')" data-i18n="u_stang">Stäng</button><button class="btn btn-outline" onclick="closeM('m-sub-card');openEditSub('${id}')">✎ Redigera</button><button class="btn btn-warm" onclick="openSubActivity('${id}')">Logga aktivitet</button><button class="btn btn-outline" onclick="startKckFromCard('sub','${id}')">⭐ ${TR("kck_starta")}</button><button class="btn btn-outline" onclick="flyttaKortTillKcc('sub','${id}')">⭐ ${TR("kck_flytta_kcc")}</button><button class="btn btn-outline" onclick="moveSubToContact('${id}')">${TR("mv_till_kontakt")}</button></div>`;
+  try{const liRow=liPersonKortHtml("sub",id);if(liRow){const cc=document.getElementById("sub-card-content");if(cc)cc.insertAdjacentHTML("afterbegin",liRow);}}catch(e){}
   openM("m-sub-card");
 }
 
