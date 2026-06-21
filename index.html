@@ -1064,7 +1064,7 @@ function effectivePerms(){
   return base;
 }
 function canSee(section){return !!effectivePerms()[section];}
-function isAdmin(){return !!(minRollObj&&minRollObj.ar_admin)||myRole==="admin";}
+function isAdmin(){return !!(minRollObj&&minRollObj.ar_admin)||myRole==="admin"||(me&&typeof adminIds!=="undefined"&&adminIds.includes(me.id));}
 async function loadMyRole(){
   try{
     await loadRoller();
@@ -1566,13 +1566,12 @@ async function loadLinkedin(){const r=await sb.from("linkedin_posts").select("*"
 let profilesMap={};
 async function loadProfiles(){const r=await sb.from("profiles").select("id,namn");profilesMap={};(r.data||[]).forEach(p=>{profilesMap[p.id]=p.namn||"Okänd";});}
 function userName(uid){return uid===me?.id?"Du":(profilesMap[uid]||"Annan användare");}
-function isAdmin(){return me&&adminIds.includes(me.id);}
 function renderAdminUsers(){
   const sec=document.getElementById("admin-users-sec");if(!sec)return;
   if(!isAdmin()){sec.innerHTML="";return;}
   sec.innerHTML=`<p class="sec-title">Användare (admin)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px">
     <div class="privacy-note">Skapa ett nytt konto med egen separat CRM. Ange namn, e-post och ett tillfälligt lösenord (minst 8 tecken) som du delar med personen.</div>
-    <div class="fg" style="margin-top:10px"><div class="fl"><label>Namn</label><input id="newuser-namn" placeholder="t.ex. Anna Svensson"></div><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div></div>
+    <div class="fg" style="margin-top:10px"><div class="fl"><label>Namn</label><input id="newuser-namn" placeholder="t.ex. Anna Svensson"></div><div class="fl"><label>E-post</label><input id="newuser-email" type="email" placeholder="namn@exempel.se"></div><div class="fl"><label>Tillfälligt lösenord</label><input id="newuser-pw" type="text" placeholder="minst 8 tecken"></div><div class="fl"><label>Roll</label><select id="newuser-roll"><option value="">(ingen roll)</option>${(allaRoller||[]).map(r=>`<option value="${r.id}">${e(r.namn)}</option>`).join("")}</select></div></div>
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="createNewUser()">Skapa konto</button>
     <div id="newuser-result" style="margin-top:10px;font-size:13px"></div>
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cream)"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;flex:1">${TR("au_befintliga")}</div><button class="btn btn-outline btn-xs" onclick="loadAdminUserList()">↻ Uppdatera</button></div><div id="admin-user-list"><p style="color:#aaa;font-size:13px">${TR("au_klicka_uppdatera")}</p></div></div>
@@ -1617,7 +1616,10 @@ async function createNewUser(){
     const r=await fetch("/api/create-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_token:token,email,password:pw,namn})});
     const data=await r.json();
     if(!r.ok){res.innerHTML=`<span style="color:var(--red)">${e(data.error||"Kunde inte skapa konto")}</span>`;return;}
-    res.innerHTML=`<span style="color:var(--green)">✓ Konto skapat för ${e(data.email)}. Dela e-post och lösenord med personen – de loggar in på vanliga sättet och får en egen tom CRM.</span>`;
+    res.innerHTML=`<span style="color:var(--green)">✓ Konto skapat för ${e(data.email)}. Dela e-post och lösenord med personen – de loggar in med dessa.</span>`;
+    // sätt vald roll på det nya kontot
+    const rollId=document.getElementById("newuser-roll")?.value||"";
+    if(rollId&&data.id){try{await sb.from("profiles").update({roll_id:rollId}).eq("id",data.id);}catch(e){}}
     document.getElementById("newuser-email").value="";
     document.getElementById("newuser-pw").value="";
     if(document.getElementById("newuser-namn"))document.getElementById("newuser-namn").value="";
