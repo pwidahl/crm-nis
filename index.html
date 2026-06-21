@@ -254,6 +254,10 @@ textarea{resize:vertical;min-height:68px}
   .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
   .topbar{padding:9px 12px;gap:7px}
   .topbar-title{font-size:16px}
+  .msg-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .msg-konvlista{max-height:200px;overflow-y:auto;border-bottom:1px solid var(--cream);padding-bottom:8px}
+  .msg-chatt{min-height:340px!important}
+  .msg-chatt .bubbla{max-width:85%!important}
   .topbar-search{order:3;max-width:none;flex-basis:100%}
   .content{padding:11px;flex:1;overflow-y:auto}
   .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
@@ -404,6 +408,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span data-i18n="nav_oversikt">Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
     <div class="nav-grp" id="grp-oversikt">
       <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
+      <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span>Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
       <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
       <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
       <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span><span data-i18n="nav_prio">Prioritering</span></div>
@@ -449,7 +454,6 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
-    <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span>Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
     <div class="nav-item" id="nav-admin" data-v="admin" style="display:none" onclick="gotoView('admin')"><span class="nav-icon">👥</span><span>Användare</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span><span data-i18n="nav_installningar">Inställningar</span></div>
   </nav>
@@ -1872,18 +1876,22 @@ function gotoView(name){
   const wd=new Date().toLocaleDateString(loc,{weekday:"long"});
   document.getElementById("topbar-title").textContent=name==="weekly"?(wd.charAt(0).toUpperCase()+wd.slice(1)):(t("vt_"+name)!=="vt_"+name?t("vt_"+name):VIEW_TITLE[name]);
   const tr=document.getElementById("topbar-right");tr.innerHTML="";
-  if(name==="contacts")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewContact()">${t("tb_ny_kontakt")}</button><button class="btn btn-green" onclick="openExportContacts()">${t("tb_exportera")}</button>`;
-  else if(name==="projects")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewProject()">${t("tb_nytt_projekt")}</button>`;
-  else if(name==="companies")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewCompany()">${t("tb_nytt_bolag")}</button>`;
-  else if(name==="signals")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewSignal()">${t("tb_manuell_signal")}</button>`;
-  else if(name==="tasks")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewTaskGlobal()">${t("tb_ny_uppgift")}</button>`;
-  else if(name==="subconsultants")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewSub()">${t("tb_ny_underkonsult")}</button>`;
-  else if(name==="followups")tr.innerHTML=`<button class="btn btn-green" onclick="exportAllICS()">${t("tb_exportera_alla")}</button>`;
-  else if(name==="dagbok")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewDiaryEntry()">${t("tb_ny_logg")}</button>`;
-  else if(name==="kb")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewKB()">${t("tb_ny_notering")}</button>`;
-  else if(name==="cv")tr.innerHTML=`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
-  else if(name==="goals")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
-  else if(name==="finans")tr.innerHTML=`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
+  // Meddelande-ikon (alltid synlig, öppnar meddelanden, visar olästa)
+  const olast=(typeof olastaMeddelanden==="function")?olastaMeddelanden():0;
+  const msgBtn=`<button class="btn btn-outline" onclick="gotoView('meddelanden')" title="Meddelanden" style="position:relative;padding:6px 10px">✉️${olast>0?`<span style="position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center">${olast}</span>`:""}</button>`;
+  tr.innerHTML=msgBtn;
+  if(name==="contacts")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewContact()">${t("tb_ny_kontakt")}</button><button class="btn btn-green" onclick="openExportContacts()">${t("tb_exportera")}</button>`;
+  else if(name==="projects")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewProject()">${t("tb_nytt_projekt")}</button>`;
+  else if(name==="companies")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewCompany()">${t("tb_nytt_bolag")}</button>`;
+  else if(name==="signals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewSignal()">${t("tb_manuell_signal")}</button>`;
+  else if(name==="tasks")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewTaskGlobal()">${t("tb_ny_uppgift")}</button>`;
+  else if(name==="subconsultants")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewSub()">${t("tb_ny_underkonsult")}</button>`;
+  else if(name==="followups")tr.innerHTML=msgBtn+`<button class="btn btn-green" onclick="exportAllICS()">${t("tb_exportera_alla")}</button>`;
+  else if(name==="dagbok")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewDiaryEntry()">${t("tb_ny_logg")}</button>`;
+  else if(name==="kb")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewKB()">${t("tb_ny_notering")}</button>`;
+  else if(name==="cv")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
+  else if(name==="goals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
+  else if(name==="finans")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
   const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
@@ -2053,7 +2061,7 @@ async function renderMeddelanden(){
       const fromMe=m.avsandare_id===me.id;
       const lank=m.lank_typ?`<div style="margin-top:6px"><button class="btn btn-outline btn-xs" onclick="oppnaLank('${m.lank_typ}','${m.lank_id}')">${lankIkon(m.lank_typ)} ${e(m.lank_namn||"Öppna")}</button></div>`:"";
       return `<div style="display:flex;justify-content:${fromMe?'flex-end':'flex-start'};margin-bottom:8px">
-        <div style="max-width:70%;background:${fromMe?'#0a66c2':'#fff'};color:${fromMe?'#fff':'var(--ink)'};border:1px solid ${fromMe?'#0a66c2':'var(--cream)'};border-radius:12px;padding:8px 12px">
+        <div class="bubbla" style="max-width:70%;background:${fromMe?'#0a66c2':'#fff'};color:${fromMe?'#fff':'var(--ink)'};border:1px solid ${fromMe?'#0a66c2':'var(--cream)'};border-radius:12px;padding:8px 12px">
           <div style="font-size:14px;white-space:pre-wrap">${e(m.text)}</div>${lank}
           <div style="font-size:10px;opacity:.6;margin-top:3px">${(m.created_at||"").slice(5,16).replace("T"," ")}</div>
         </div>
@@ -2079,9 +2087,9 @@ async function renderMeddelanden(){
       <select id="ny-konv-mottagare" style="padding:8px"><option value="">Nytt meddelande till…</option>${userOpts}</select>
       <button class="btn btn-primary btn-sm" onclick="startaNyKonversation()">Starta</button>
     </div>
-    <div style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start">
-      <div>${konvLista}</div>
-      <div class="week-sec" style="padding:16px;min-height:420px">${hoger}</div>
+    <div class="msg-grid" style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start">
+      <div class="msg-konvlista">${konvLista}</div>
+      <div class="week-sec msg-chatt" style="padding:16px;min-height:420px">${hoger}</div>
     </div>`;
 }
 function lankIkon(typ){return {company:"🏢",contact:"👤",signal:"⚡"}[typ]||"🔗";}
