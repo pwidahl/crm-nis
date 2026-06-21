@@ -449,6 +449,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-spacer"></div>
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
     <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
+    <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span>Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
     <div class="nav-item" id="nav-admin" data-v="admin" style="display:none" onclick="gotoView('admin')"><span class="nav-icon">👥</span><span>Användare</span></div>
     <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span><span data-i18n="nav_installningar">Inställningar</span></div>
   </nav>
@@ -628,7 +629,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-cv">
       <div id="cv-content"></div>
     </div>
-    <div class="view" id="view-admin"><div id="admin-content"></div></div>
+    <div class="view" id="view-meddelanden"><div id="meddelanden-content"></div></div>
+<div class="view" id="view-admin"><div id="admin-content"></div></div>
 <div class="view" id="view-settings"><div id="settings-content"></div></div>
   </div>
 </div>
@@ -900,6 +902,10 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-kck-steg"><div class="modal" style="width:460px"><div class="mhdr"><h2 id="kck-steg-title">KCC</h2><button class="mclose" onclick="closeM('m-kck-steg')">×</button></div><div class="mbody"><div id="kck-steg-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-kck-steg')" data-i18n="btn_stang">Stäng</button></div></div></div>
 
+<div class="overlay" id="m-msg-lank"><div class="modal" style="width:420px"><div class="mhdr"><h2>Länka till meddelande</h2><button class="mclose" onclick="closeM('m-msg-lank')">×</button></div><div class="mbody">
+  <input id="msg-lank-search" placeholder="Sök bolag, kontakt eller lead…" oninput="msgLankSearch(this.value)" style="width:100%;padding:8px;margin-bottom:8px">
+  <div id="msg-lank-results" style="max-height:280px;overflow-y:auto"></div>
+</div></div></div>
 <div class="overlay" id="m-li-person"><div class="modal" style="width:420px"><div class="mhdr"><h2 id="li-person-title">Vem interagerade du med?</h2><button class="mclose" onclick="closeM('m-li-person')">×</button></div><div class="mbody">
   <p style="font-size:13px;color:#888;margin-bottom:10px">Valfritt – välj en person för att logga interaktionen, eller hoppa över.</p>
   <input id="li-person-search" placeholder="Sök kontakt, underkonsult eller KCC…" oninput="liPersonSearch(this.value)" style="width:100%;padding:8px;margin-bottom:8px">
@@ -1041,6 +1047,9 @@ let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],se
 let myRole="kam",myPerms={};
 let allaRoller=[],minRollObj=null;
 let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
+let meddelanden=[];
+async function loadMeddelanden(){try{const r=await sb.from("meddelanden").select("*").order("created_at",{ascending:true});meddelanden=r.data||[];}catch(e){meddelanden=[];}}
+function olastaMeddelanden(){return meddelanden.filter(m=>m.mottagare_id===me.id&&!m.last).length;}
 async function loadLinkedin(){
   try{const a=await sb.from("linkedin_aktivitet").select("*").eq("user_id",me.id).order("datum",{ascending:false});liAktivitet=a.data||[];}catch(e){liAktivitet=[];}
   try{const i=await sb.from("linkedin_inlagg").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInlagg=i.data||[];}catch(e){liInlagg=[];}
@@ -1082,7 +1091,7 @@ async function loadMyRole(){
   }catch(e){myRole="kam";myPerms={};minRollObj=null;}
 }
 // Mappar varje nav-vy (data-v) till en behörighetssektion
-const VIEW_SECTION={dashboard:"dashboard",weekly:"veckoplan",dagbok:"veckoplan",goals:"goals",prio:"dashboard",schema:"veckoplan",companies:"companies",signals:"signals",koncern:"companies",finans:"companies",konsultbehov:"subconsultants",linkedin:"contacts",kcc:"kcc",mellanhander:"companies",projects:"projects",contacts:"contacts",subconsultants:"subconsultants",relmap:"relmap",followups:"contacts",tasks:"projects",todos:"dashboard"};
+const VIEW_SECTION={dashboard:"dashboard",weekly:"veckoplan",dagbok:"veckoplan",goals:"goals",prio:"dashboard",schema:"veckoplan",companies:"companies",signals:"signals",koncern:"companies",finans:"companies",konsultbehov:"subconsultants",linkedin:"contacts",kcc:"kcc",mellanhander:"companies",projects:"projects",contacts:"contacts",subconsultants:"subconsultants",relmap:"relmap",followups:"contacts",tasks:"projects",todos:"dashboard",meddelanden:"dashboard",admin:"dashboard"};
 function applyPermissions(){
   const perms=effectivePerms();
   document.querySelectorAll(".nav-item[data-v]").forEach(el=>{
@@ -1722,7 +1731,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -1733,6 +1742,7 @@ async function loadAll(){
   try{if(!rtChannel)setupRT();}catch(e){}
   try{await loadUserLang();}catch(e){}
   try{await loadMyRole();applyPermissions();}catch(e){}
+  try{updateMsgBadge();}catch(e){}
   try{applyStaticI18n();}catch(e){}
   renderCurrent();
   check2FAReminder();
@@ -1874,7 +1884,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML=`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
   else if(name==="goals")tr.innerHTML=`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
   else if(name==="finans")tr.innerHTML=`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
 }
@@ -2003,6 +2013,128 @@ async function flyttaKortTillKcc(typ,id){
 let adminUsers=[];
 let adminTab="anvandare"; // anvandare | roller
 function setAdminTab(t){adminTab=t;renderAdmin();}
+let aktivKonversation=null;
+async function renderMeddelanden(){
+  const box=document.getElementById("meddelanden-content");if(!box)return;
+  await loadMeddelanden();
+  // hämta användare att skriva till
+  let users=[];
+  try{const r=await sb.from("profiles").select("id,namn");users=(r.data||[]).filter(u=>u.id!==me.id);}catch(e){}
+  // gruppera meddelanden per motpart
+  const konvMap={};
+  meddelanden.forEach(m=>{
+    const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;
+    if(!konvMap[other])konvMap[other]=[];
+    konvMap[other].push(m);
+  });
+  const namnAv=id=>users.find(u=>u.id===id)?.namn||(id===me.id?"Du":"Användare");
+  // lista över konversationer (vänster), aktiv konversation (höger)
+  const konvIds=Object.keys(konvMap).sort((a,b)=>{
+    const la=konvMap[a][konvMap[a].length-1].created_at,lb=konvMap[b][konvMap[b].length-1].created_at;
+    return String(lb).localeCompare(String(la));
+  });
+  if(!aktivKonversation&&konvIds.length)aktivKonversation=konvIds[0];
+  const konvLista=konvIds.map(id=>{
+    const msgs=konvMap[id];const sista=msgs[msgs.length-1];
+    const olast=msgs.filter(m=>m.mottagare_id===me.id&&!m.last).length;
+    return `<div onclick="oppnaKonversation('${id}')" style="cursor:pointer;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:${aktivKonversation===id?'var(--cream)':'transparent'}">
+      <div style="display:flex;align-items:center;gap:6px"><strong style="flex:1;font-size:14px">${e(namnAv(id))}</strong>${olast?`<span style="background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px">${olast}</span>`:""}</div>
+      <div style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e((sista.avsandare_id===me.id?"Du: ":"")+sista.text)}</div>
+    </div>`;
+  }).join("")||'<p style="color:#aaa;font-size:13px;padding:10px">Inga konversationer än.</p>';
+  // ny-konversation-väljare
+  const userOpts=users.map(u=>`<option value="${u.id}">${e(u.namn||"Användare")}</option>`).join("");
+  let hoger="";
+  if(aktivKonversation){
+    const msgs=(konvMap[aktivKonversation]||[]).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
+    // markera olästa som lästa
+    msgs.filter(m=>m.mottagare_id===me.id&&!m.last).forEach(m=>{sb.from("meddelanden").update({last:true}).eq("id",m.id).then(()=>{m.last=true;updateMsgBadge();});});
+    const bubblor=msgs.map(m=>{
+      const fromMe=m.avsandare_id===me.id;
+      const lank=m.lank_typ?`<div style="margin-top:6px"><button class="btn btn-outline btn-xs" onclick="oppnaLank('${m.lank_typ}','${m.lank_id}')">${lankIkon(m.lank_typ)} ${e(m.lank_namn||"Öppna")}</button></div>`:"";
+      return `<div style="display:flex;justify-content:${fromMe?'flex-end':'flex-start'};margin-bottom:8px">
+        <div style="max-width:70%;background:${fromMe?'#0a66c2':'#fff'};color:${fromMe?'#fff':'var(--ink)'};border:1px solid ${fromMe?'#0a66c2':'var(--cream)'};border-radius:12px;padding:8px 12px">
+          <div style="font-size:14px;white-space:pre-wrap">${e(m.text)}</div>${lank}
+          <div style="font-size:10px;opacity:.6;margin-top:3px">${(m.created_at||"").slice(5,16).replace("T"," ")}</div>
+        </div>
+      </div>`;
+    }).join("");
+    hoger=`<div style="display:flex;flex-direction:column;height:100%">
+      <div style="font-weight:600;padding-bottom:10px;border-bottom:1px solid var(--cream);margin-bottom:10px">${e(namnAv(aktivKonversation))}</div>
+      <div style="flex:1;overflow-y:auto;min-height:300px;max-height:50vh">${bubblor}</div>
+      <div style="border-top:1px solid var(--cream);padding-top:10px;margin-top:10px">
+        <div id="msg-lank-display" style="font-size:12px;color:#0a66c2;margin-bottom:6px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="msg-input" placeholder="Skriv ett meddelande…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')skickaMeddelande('${aktivKonversation}')">
+          <button class="btn btn-outline btn-sm" onclick="oppnaLankValjare()" title="Länka bolag/kontakt/lead">🔗</button>
+          <button class="btn btn-primary btn-sm" onclick="skickaMeddelande('${aktivKonversation}')">Skicka</button>
+        </div>
+      </div>
+    </div>`;
+  }else{
+    hoger='<p style="color:#aaa;padding:20px">Välj en konversation eller starta en ny.</p>';
+  }
+  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:14px">Meddelanden</h2>
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <select id="ny-konv-mottagare" style="padding:8px"><option value="">Nytt meddelande till…</option>${userOpts}</select>
+      <button class="btn btn-primary btn-sm" onclick="startaNyKonversation()">Starta</button>
+    </div>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start">
+      <div>${konvLista}</div>
+      <div class="week-sec" style="padding:16px;min-height:420px">${hoger}</div>
+    </div>`;
+}
+function lankIkon(typ){return {company:"🏢",contact:"👤",signal:"⚡"}[typ]||"🔗";}
+function oppnaKonversation(id){aktivKonversation=id;renderMeddelanden();}
+function startaNyKonversation(){const id=v("ny-konv-mottagare");if(!id){toast("Välj en mottagare");return;}aktivKonversation=id;renderMeddelanden();}
+let _msgLank=null;
+async function skickaMeddelande(mottagareId){
+  const txt=(document.getElementById("msg-input")?.value||"").trim();
+  if(!txt&&!_msgLank){return;}
+  const data={avsandare_id:me.id,mottagare_id:mottagareId,text:txt||"(länk)",last:false};
+  if(_msgLank){data.lank_typ=_msgLank.typ;data.lank_id=_msgLank.id;data.lank_namn=_msgLank.namn;}
+  const r=await sb.from("meddelanden").insert(data).select().single();
+  if(r.error){toast(r.error.message);return;}
+  meddelanden.push(r.data);
+  _msgLank=null;
+  renderMeddelanden();
+}
+function oppnaLank(typ,id){
+  if(typ==="company")openCompanyCard(id);
+  else if(typ==="contact")openCard(id);
+  else if(typ==="signal"){gotoView("signals");}
+}
+function updateMsgBadge(){
+  const n=olastaMeddelanden();
+  const b=document.getElementById("msg-badge");
+  if(b){if(n>0){b.textContent=n;b.style.display="";}else{b.style.display="none";}}
+}
+function oppnaLankValjare(){openLankValjare();}
+function openLankValjare(){
+  document.getElementById("msg-lank-search").value="";
+  document.getElementById("msg-lank-results").innerHTML="";
+  openM("m-msg-lank");
+  setTimeout(()=>{const el=document.getElementById("msg-lank-search");if(el)el.focus();},100);
+}
+function msgLankSearch(q){
+  const box=document.getElementById("msg-lank-results");if(!box)return;
+  q=(q||"").trim().toLowerCase();
+  if(q.length<1){box.innerHTML="";return;}
+  const results=[];
+  companies.forEach(c=>{if((c.namn||"").toLowerCase().includes(q))results.push({typ:"company",id:c.id,namn:c.namn,label:"Bolag"});});
+  contacts.forEach(c=>{const nm=((c.fornamn||"")+" "+(c.efternamn||"")).trim();if(nm.toLowerCase().includes(q))results.push({typ:"contact",id:c.id,namn:nm,label:"Kontakt"});});
+  signals.forEach(s=>{const nm=s.rubrik||s.companies?.namn||"";if(nm.toLowerCase().includes(q))results.push({typ:"signal",id:s.id,namn:nm.slice(0,50),label:"Lead"});});
+  if(!results.length){box.innerHTML='<p style="color:#aaa;font-size:13px;padding:8px">Ingen träff.</p>';return;}
+  box.innerHTML=results.slice(0,30).map(r=>`<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px" onclick="valjLank('${r.typ}','${r.id}','${e(r.namn).replace(/'/g,"\\'")}')">
+    <span>${lankIkon(r.typ)}</span><span style="flex:1">${e(r.namn)} <span style="font-size:11px;color:#888">${r.label}</span></span>
+  </div>`).join("");
+}
+function valjLank(typ,id,namn){
+  _msgLank={typ,id,namn};
+  closeM("m-msg-lank");
+  const disp=document.getElementById("msg-lank-display");
+  if(disp)disp.innerHTML=`${lankIkon(typ)} ${e(namn)} <span style="cursor:pointer;color:var(--red)" onclick="_msgLank=null;document.getElementById('msg-lank-display').innerHTML='';">✕</span>`;
+}
 async function renderAdmin(){
   const box=document.getElementById("admin-content");if(!box)return;
   if(!isAdmin()){box.innerHTML='<div class="empty"><p>Endast admin har åtkomst till denna vy.</p></div>';return;}
@@ -5979,7 +6111,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people","m-kck-form","m-kck-steg","m-kck-anst","m-li-person"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people","m-kck-form","m-kck-steg","m-kck-anst","m-li-person","m-msg-lank"];
 const CARD_MODALS=["m-card","m-company-card","m-sub-card","m-lead"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
