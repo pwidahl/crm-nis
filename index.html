@@ -1034,6 +1034,8 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],settings=null,subs=[],subSkills=[];
 let myRole="kam",myPerms={};
+let allaRoller=[],minRollObj=null;
+async function loadRoller(){try{const r=await sb.from("roller").select("*").order("namn");allaRoller=r.data||[];}catch(e){allaRoller=[];}}
 // Standardbehörigheter per roll (mall). true=ser sektionen.
 const ALL_SECTIONS=["dashboard","contacts","companies","signals","subconsultants","kcc","projects","goals","relmap","veckoplan"];
 const SECTION_LABELS={dashboard:"Översikt",contacts:"Kontakter",companies:"Bolag",signals:"Leads/Signaler",subconsultants:"Underkonsulter",kcc:"KCC",projects:"Projekt",goals:"Mål",relmap:"Relationskarta",veckoplan:"Veckoplan"};
@@ -1043,15 +1045,28 @@ const ROLE_DEFAULTS={
   konsult:{dashboard:true,contacts:true,companies:true,signals:false,subconsultants:false,kcc:false,projects:false,goals:false,relmap:true,veckoplan:false}
 };
 function effectivePerms(){
-  // admin ser allt oavsett bockar
+  // admin (via roll med ar_admin eller gammal admin-text) ser allt
+  if(isAdmin&&typeof isAdmin==="function"&&isAdmin())return Object.fromEntries(ALL_SECTIONS.map(s=>[s,true]));
   if(myRole==="admin")return Object.fromEntries(ALL_SECTIONS.map(s=>[s,true]));
-  // annars: rollens mall överlagrad med individuella bockar
+  // tilldelad roll: använd dess sektioner
+  if(minRollObj&&minRollObj.sektioner){const sek=minRollObj.sektioner;return Object.fromEntries(ALL_SECTIONS.map(s=>[s,!!sek[s]]));}
+  // fallback: gammal rollmall
   const base={...(ROLE_DEFAULTS[myRole]||ROLE_DEFAULTS.konsult)};
   if(myPerms&&typeof myPerms==="object")for(const k of ALL_SECTIONS)if(k in myPerms)base[k]=!!myPerms[k];
   return base;
 }
 function canSee(section){return !!effectivePerms()[section];}
-async function loadMyRole(){try{const r=await sb.from("profiles").select("roll,behorigheter").eq("id",me.id).maybeSingle();if(r&&r.data){myRole=r.data.roll||"kam";myPerms=r.data.behorigheter||{};}}catch(e){myRole="kam";myPerms={};}}
+function isAdmin(){return !!(minRollObj&&minRollObj.ar_admin)||myRole==="admin";}
+async function loadMyRole(){
+  try{
+    await loadRoller();
+    const r=await sb.from("profiles").select("roll,roll_id,behorigheter").eq("id",me.id).maybeSingle();
+    if(r&&r.data){
+      myRole=r.data.roll||"kam";myPerms=r.data.behorigheter||{};
+      minRollObj=r.data.roll_id?allaRoller.find(x=>x.id===r.data.roll_id)||null:null;
+    }
+  }catch(e){myRole="kam";myPerms={};minRollObj=null;}
+}
 // Mappar varje nav-vy (data-v) till en behörighetssektion
 const VIEW_SECTION={dashboard:"dashboard",weekly:"veckoplan",dagbok:"veckoplan",goals:"goals",prio:"dashboard",schema:"veckoplan",companies:"companies",signals:"signals",koncern:"companies",finans:"companies",konsultbehov:"subconsultants",linkedin:"contacts",kcc:"kcc",mellanhander:"companies",projects:"projects",contacts:"contacts",subconsultants:"subconsultants",relmap:"relmap",followups:"contacts",tasks:"projects",todos:"dashboard"};
 function applyPermissions(){
@@ -1061,7 +1076,7 @@ function applyPermissions(){
     if(sec&&perms[sec]===false)el.style.display="none";else el.style.display="";
   });
   // visa admin-nav bara för admin
-  const adminNav=document.getElementById("nav-admin");if(adminNav)adminNav.style.display=myRole==="admin"?"":"none";
+  const adminNav=document.getElementById("nav-admin");if(adminNav)adminNav.style.display=isAdmin()?"":"none";
 }
 let contactConnections=[];
 let knowledgeNotes=[];
@@ -1820,7 +1835,7 @@ function gotoView(name){
   if(!document.getElementById("view-"+name))name="dashboard";
   // behörighetsvakt: blockera förbjudna vyer (admin alltid OK)
   const sec=VIEW_SECTION[name];
-  if(sec&&myRole!=="admin"&&effectivePerms()[sec]===false){toast("Du har inte behörighet till den vyn");name="dashboard";}
+  if(sec&&!isAdmin()&&effectivePerms()[sec]===false){toast("Du har inte behörighet till den vyn");name="dashboard";}
   curView=name;
   try{localStorage.setItem("lastView",name);}catch{}
   document.querySelectorAll(".view").forEach(v2=>v2.classList.remove("active"));
@@ -1970,45 +1985,89 @@ async function flyttaKortTillKcc(typ,id){
   });
 }
 let adminUsers=[];
+let adminTab="anvandare"; // anvandare | roller
+function setAdminTab(t){adminTab=t;renderAdmin();}
 async function renderAdmin(){
   const box=document.getElementById("admin-content");if(!box)return;
-  if(myRole!=="admin"){box.innerHTML='<div class="empty"><p>Endast admin har åtkomst till denna vy.</p></div>';return;}
-  box.innerHTML='<p style="color:#888">Laddar användare…</p>';
+  if(!isAdmin()){box.innerHTML='<div class="empty"><p>Endast admin har åtkomst till denna vy.</p></div>';return;}
+  box.innerHTML='<p style="color:#888">Laddar…</p>';
+  await loadRoller();
   let users=[];
-  try{const r=await sb.from("profiles").select("id,namn,roll,behorigheter,sprak");users=r.data||[];}catch(e){box.innerHTML='<p style="color:var(--red)">Kunde inte ladda användare.</p>';return;}
+  try{const r=await sb.from("profiles").select("id,namn,roll,roll_id,behorigheter");users=r.data||[];}catch(e){box.innerHTML='<p style="color:var(--red)">Kunde inte ladda användare.</p>';return;}
   adminUsers=users;
-  const roleLabel={admin:"Admin",kam:"KAM",konsult:"Konsult"};
-  const rows=users.map(u=>{
-    const perms=u.roll==="admin"?Object.fromEntries(ALL_SECTIONS.map(s=>[s,true])):{...(ROLE_DEFAULTS[u.roll]||ROLE_DEFAULTS.konsult),...(u.behorigheter||{})};
-    const chips=ALL_SECTIONS.map(sec=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0;font-size:12px;${u.roll==="admin"?"opacity:.5":""}"><input type="checkbox" ${perms[sec]?"checked":""} ${u.roll==="admin"?"disabled":""} onchange="toggleUserPerm('${u.id}','${sec}',this.checked)" style="width:auto"> ${SECTION_LABELS[sec]}</label>`).join("");
-    return `<div class="week-sec" style="margin-bottom:12px"><div style="padding:14px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+  const tabBtn=(id,label)=>`<button onclick="setAdminTab('${id}')" style="border:none;background:none;cursor:pointer;padding:8px 4px;margin-right:18px;font-size:14px;font-weight:${adminTab===id?"600":"400"};color:${adminTab===id?"var(--ink)":"#999"};border-bottom:2px solid ${adminTab===id?"var(--accent)":"transparent"}">${label}</button>`;
+  const tabs=`<div style="display:flex;align-items:center;border-bottom:1px solid var(--cream);margin-bottom:18px">${tabBtn("anvandare","Användare")}${tabBtn("roller","Roller")}</div>`;
+  let body;
+  if(adminTab==="roller"){
+    const rollRows=allaRoller.map(r=>{
+      const antalAnv=users.filter(u=>u.roll_id===r.id).length;
+      const chips=ALL_SECTIONS.map(sec=>`<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0;font-size:12px;${r.ar_admin?"opacity:.5":""}"><input type="checkbox" ${r.ar_admin||r.sektioner?.[sec]?"checked":""} ${r.ar_admin?"disabled":""} onchange="toggleRollSektion('${r.id}','${sec}',this.checked)" style="width:auto"> ${SECTION_LABELS[sec]}</label>`).join("");
+      return `<div class="week-sec" style="margin-bottom:12px"><div style="padding:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <strong style="flex:1">${e(r.namn)}${r.ar_admin?' <span style="font-size:11px;color:var(--gold)">★ admin (ser allt)</span>':''}</strong>
+          <span style="font-size:11px;color:#888">${antalAnv} användare</span>
+          ${!r.ar_admin?`<button class="btn-icon" style="color:var(--red)" onclick="deleteRoll('${r.id}','${e(r.namn)}',${antalAnv})" title="Ta bort roll">🗑</button>`:""}
+        </div>
+        ${!r.ar_admin?`<div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Ser dessa sektioner</div><div>${chips}</div>`:'<div style="font-size:12px;color:#888">Adminroller ser alla sektioner och kan hantera roller och användare.</div>'}
+      </div></div>`;
+    }).join("");
+    body=`<div style="margin-bottom:14px"><input id="ny-roll-namn" placeholder="Ny roll, t.ex. Researcher" style="padding:8px;width:220px;margin-right:8px"><button class="btn btn-primary btn-sm" onclick="createRoll()">+ Skapa roll</button></div>${rollRows}`;
+  }else{
+    const rollOptions=u=>allaRoller.map(r=>`<option value="${r.id}"${u.roll_id===r.id?" selected":""}>${e(r.namn)}</option>`).join("");
+    body=users.map(u=>{
+      const rollNamn=allaRoller.find(r=>r.id===u.roll_id)?.namn||"(ingen roll)";
+      return `<div class="week-row" style="display:flex;align-items:center;gap:10px;padding:10px 0">
         <strong style="flex:1">${e(u.namn||"(namnlös)")}</strong>
-        <select onchange="setUserRole('${u.id}',this.value)" style="font-size:13px">
-          ${["konsult","kam","admin"].map(r=>`<option value="${r}"${u.roll===r?" selected":""}>${roleLabel[r]}</option>`).join("")}
+        <select onchange="assignRoll('${u.id}',this.value)" style="font-size:13px">
+          <option value="">(ingen roll)</option>
+          ${rollOptions(u)}
         </select>
-      </div>
-      <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:4px">Ser dessa sektioner</div>
-      <div>${chips}</div>
-    </div></div>`;
-  }).join("");
-  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:6px">Användare & behörigheter</h2>
-    <p style="color:#888;font-size:13px;margin-bottom:18px">Sätt roll (mall) och finjustera vilka sektioner varje person ser. Admin ser alltid allt.</p>
-    ${rows||'<p style="color:#aaa">Inga användare hittades.</p>'}`;
-}
-async function setUserRole(id,roll){
-  // skydd: hindra att man tar bort sin EGEN admin-roll (skulle låsa ut en själv)
-  if(id===me.id&&myRole==="admin"&&roll!=="admin"){
-    const others=adminUsers.filter(u=>u.id!==me.id&&u.roll==="admin").length;
-    if(others===0){alert("Du kan inte ta bort din egen admin-roll – då skulle ingen kunna hantera användare. Gör först någon annan till admin.");renderAdmin();return;}
-    if(!confirm("Är du säker på att du vill ta bort DIN EGEN admin-roll? Du förlorar åtkomst till användarhanteringen.")){renderAdmin();return;}
+      </div>`;
+    }).join("")||'<p style="color:#aaa">Inga användare.</p>';
   }
-  try{await sb.from("profiles").update({roll}).eq("id",id);toast("Roll uppdaterad");if(id===me.id){myRole=roll;applyPermissions();}renderAdmin();}catch(e){toast("Kunde inte uppdatera roll");}
+  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:6px">Användare & roller</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:14px">Skapa roller och bestäm vilka sektioner de ger. Tilldela sedan en roll till varje användare.</p>
+    ${tabs}${body}`;
 }
-async function toggleUserPerm(id,sec,val){
-  const u=adminUsers.find(x=>x.id===id);if(!u)return;
-  const perms={...(u.behorigheter||{})};perms[sec]=val;
-  try{await sb.from("profiles").update({behorigheter:perms}).eq("id",id);u.behorigheter=perms;if(id===me.id){myPerms=perms;applyPermissions();}}catch(e){toast("Kunde inte spara behörighet");}
+async function createRoll(){
+  const namn=v("ny-roll-namn");if(!namn){toast("Ge rollen ett namn");return;}
+  const sektioner=Object.fromEntries(ALL_SECTIONS.map(s=>[s,false]));
+  const r=await sb.from("roller").insert({namn,sektioner,ar_admin:false});
+  if(r.error){toast(r.error.message);return;}
+  toast("Roll skapad");await renderAdmin();
+}
+async function toggleRollSektion(id,sec,val){
+  const r=allaRoller.find(x=>x.id===id);if(!r)return;
+  const sek={...(r.sektioner||{})};sek[sec]=val;
+  const res=await sb.from("roller").update({sektioner:sek}).eq("id",id);
+  if(res.error){toast(res.error.message);return;}
+  r.sektioner=sek;
+  // om det är min egen roll, uppdatera direkt
+  if(minRollObj&&minRollObj.id===id){minRollObj.sektioner=sek;applyPermissions();}
+}
+function deleteRoll(id,namn,antalAnv){
+  if(antalAnv>0){alert(`Rollen "${namn}" används av ${antalAnv} användare. Ta bort rollen från dem först.`);return;}
+  confirm2(`Ta bort rollen "${namn}"?`,async()=>{
+    await sb.from("roller").delete().eq("id",id);
+    toast("Roll borttagen");await renderAdmin();
+  });
+}
+async function assignRoll(userId,rollId){
+  // skydd: hindra att man tar bort sin egen admin-roll om man är enda admin
+  if(userId===me.id){
+    const nyRoll=rollId?allaRoller.find(r=>r.id===rollId):null;
+    const blirAdmin=nyRoll&&nyRoll.ar_admin;
+    if(isAdmin()&&!blirAdmin){
+      const andraAdmins=adminUsers.filter(u=>u.id!==me.id&&allaRoller.find(r=>r.id===u.roll_id)?.ar_admin).length;
+      if(andraAdmins===0){alert("Du kan inte ta bort din egen admin-roll – ingen annan är admin. Gör först någon annan till admin.");renderAdmin();return;}
+      if(!confirm("Är du säker? Du förlorar admin-åtkomst.")){renderAdmin();return;}
+    }
+  }
+  const res=await sb.from("profiles").update({roll_id:rollId||null}).eq("id",userId);
+  if(res.error){toast(res.error.message);return;}
+  toast("Roll tilldelad");
+  if(userId===me.id){await loadMyRole();applyPermissions();}
+  renderAdmin();
 }
 function renderDashboard(){
   if(focusMode==="company"&&focusCompanyId){
