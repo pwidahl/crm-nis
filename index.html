@@ -1997,6 +1997,12 @@ async function renderAdmin(){
     ${rows||'<p style="color:#aaa">Inga användare hittades.</p>'}`;
 }
 async function setUserRole(id,roll){
+  // skydd: hindra att man tar bort sin EGEN admin-roll (skulle låsa ut en själv)
+  if(id===me.id&&myRole==="admin"&&roll!=="admin"){
+    const others=adminUsers.filter(u=>u.id!==me.id&&u.roll==="admin").length;
+    if(others===0){alert("Du kan inte ta bort din egen admin-roll – då skulle ingen kunna hantera användare. Gör först någon annan till admin.");renderAdmin();return;}
+    if(!confirm("Är du säker på att du vill ta bort DIN EGEN admin-roll? Du förlorar åtkomst till användarhanteringen.")){renderAdmin();return;}
+  }
   try{await sb.from("profiles").update({roll}).eq("id",id);toast("Roll uppdaterad");if(id===me.id){myRole=roll;applyPermissions();}renderAdmin();}catch(e){toast("Kunde inte uppdatera roll");}
 }
 async function toggleUserPerm(id,sec,val){
