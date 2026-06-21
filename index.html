@@ -1035,6 +1035,14 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],settings=null,subs=[],subSkills=[];
 let myRole="kam",myPerms={};
 let allaRoller=[],minRollObj=null;
+let liAktivitet=[],liInlagg=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
+async function loadLinkedin(){
+  try{const a=await sb.from("linkedin_aktivitet").select("*").eq("user_id",me.id).order("datum",{ascending:false});liAktivitet=a.data||[];}catch(e){liAktivitet=[];}
+  try{const i=await sb.from("linkedin_inlagg").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInlagg=i.data||[];}catch(e){liInlagg=[];}
+  try{const p=await sb.from("profiles").select("li_mal").eq("id",me.id).maybeSingle();if(p&&p.data&&p.data.li_mal)liMal=p.data.li_mal;}catch(e){}
+}
+function liToday(){return new Date().toISOString().slice(0,10);}
+function liTodayRow(){return liAktivitet.find(a=>a.datum===liToday())||{datum:liToday(),gillningar:0,kommentarer:0,kontaktforfragan:0};}
 async function loadRoller(){try{const r=await sb.from("roller").select("*").order("namn");allaRoller=r.data||[];}catch(e){allaRoller=[];}}
 // Standardbehörigheter per roll (mall). true=ser sektionen.
 const ALL_SECTIONS=["dashboard","contacts","companies","signals","subconsultants","kcc","projects","goals","relmap","veckoplan"];
@@ -1706,7 +1714,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedin",loadLinkedin],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -2081,7 +2089,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${liDashHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -4958,7 +4966,70 @@ function kckRadHtml(k){
 }
 function renderLinkedin(){
   const box=document.getElementById("linkedin-content");if(!box)return;
-  box.innerHTML=linkedinViewMode==="year"?linkedinYearHtml():linkedinViewMode==="overview"?linkedinOverviewHtml():linkedinMonthHtml();
+  const inner=linkedinViewMode==="year"?linkedinYearHtml():linkedinViewMode==="overview"?linkedinOverviewHtml():linkedinMonthHtml();
+  box.innerHTML=liChecklistHtml()+inner;
+}
+function liBar(done,mal){const pct=mal>0?Math.min(100,Math.round(done/mal*100)):0;const col=done>=mal?"var(--green)":"var(--accent)";return `<div style="flex:1;height:7px;background:#eee;border-radius:5px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div>`;}
+function liDashHtml(){
+  if(typeof liTodayRow!=="function")return "";
+  const row=liTodayRow();
+  const items=[["gillningar","👍"],["kommentarer","💬"],["kontaktforfragan","🤝"]];
+  const klart=items.every(([k])=>(row[k]||0)>=(liMal[k]||0));
+  if(klart)return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:14px;font-size:13px;cursor:pointer" onclick="gotoView('linkedin')"><strong>in LinkedIn</strong> <span style="color:var(--green)">✓ Dagens aktivitet klar!</span></div>`;
+  const parts=items.map(([k,icon])=>{const done=row[k]||0,mal=liMal[k]||0;const ok=done>=mal;return `<span style="white-space:nowrap;color:${ok?"var(--green)":"#666"}">${icon} ${done}/${mal}</span>`;}).join('<span style="color:#ddd">·</span> ');
+  return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid #0a66c2;border-radius:var(--r);margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <strong style="font-size:14px">in Dagens LinkedIn</strong>
+      <div style="display:flex;gap:10px;align-items:center;font-size:13px;flex:1">${parts}</div>
+      <button class="btn-icon" onclick="liStep('gillningar',1)" title="+1 gillning">👍+</button>
+      <button class="btn-icon" onclick="liStep('kommentarer',1)" title="+1 kommentar">💬+</button>
+      <button class="btn-icon" onclick="liStep('kontaktforfragan',1)" title="+1 kontaktförfrågan">🤝+</button>
+      <button class="btn btn-outline btn-xs" onclick="gotoView('linkedin')">Öppna</button>
+    </div>
+  </div>`;
+}
+function liChecklistHtml(){
+  const row=liTodayRow();
+  const items=[["gillningar","👍 Gillningar"],["kommentarer","💬 Kommentarer"],["kontaktforfragan","🤝 Kontaktförfrågningar"]];
+  const klart=items.every(([k])=>(row[k]||0)>=(liMal[k]||0));
+  const rows=items.map(([k,label])=>{
+    const done=row[k]||0,mal=liMal[k]||0;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <span style="flex:0 0 180px;font-size:13px">${label}</span>
+      <button class="btn-icon" onclick="liStep('${k}',-1)" style="font-size:16px">−</button>
+      <strong style="min-width:54px;text-align:center">${done} / ${mal}</strong>
+      <button class="btn-icon" onclick="liStep('${k}',1)" style="font-size:16px">+</button>
+      ${liBar(done,mal)}
+    </div>`;
+  }).join("");
+  return `<div class="week-sec" style="margin-bottom:18px;border-left:4px solid #0a66c2"><div style="padding:16px">
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <span style="font-weight:600;font-size:15px;flex:1">in Dagens LinkedIn-aktivitet ${klart?'<span style="color:var(--green);font-size:13px">✓ klart för idag!</span>':''}</span>
+      <button class="btn btn-outline btn-xs" onclick="openLiMal()">Mål</button>
+    </div>
+    ${rows}
+  </div></div>`;
+}
+async function liStep(field,delta){
+  const row=liTodayRow();
+  const nyttVarde=Math.max(0,(row[field]||0)+delta);
+  const data={user_id:me.id,datum:liToday(),gillningar:row.gillningar||0,kommentarer:row.kommentarer||0,kontaktforfragan:row.kontaktforfragan||0};
+  data[field]=nyttVarde;
+  // upsert på user_id+datum
+  const r=await sb.from("linkedin_aktivitet").upsert(data,{onConflict:"user_id,datum"}).select().single();
+  if(r.error){toast(r.error.message);return;}
+  // uppdatera lokal array
+  const idx=liAktivitet.findIndex(a=>a.datum===liToday());
+  if(idx>=0)liAktivitet[idx]=r.data;else liAktivitet.unshift(r.data);
+  if(curView==="linkedin")renderLinkedin();
+  if(curView==="dashboard")renderDashboard();
+}
+function openLiMal(){
+  const g=prompt("Mål gillningar/dag:",liMal.gillningar||5);if(g===null)return;
+  const k=prompt("Mål kommentarer/dag:",liMal.kommentarer||3);if(k===null)return;
+  const kf=prompt("Mål kontaktförfrågningar/dag:",liMal.kontaktforfragan||2);if(kf===null)return;
+  liMal={gillningar:parseInt(g)||0,kommentarer:parseInt(k)||0,kontaktforfragan:parseInt(kf)||0};
+  sb.from("profiles").update({li_mal:liMal}).eq("id",me.id).then(()=>{toast("Mål sparade");if(curView==="linkedin")renderLinkedin();if(curView==="dashboard")renderDashboard();});
 }
 function linkedinTrendStats(){
   const pub=linkedinPosts.filter(p=>p.status==="publicerad");
