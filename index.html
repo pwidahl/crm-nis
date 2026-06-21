@@ -900,6 +900,11 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-kck-steg"><div class="modal" style="width:460px"><div class="mhdr"><h2 id="kck-steg-title">KCC</h2><button class="mclose" onclick="closeM('m-kck-steg')">×</button></div><div class="mbody"><div id="kck-steg-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-kck-steg')" data-i18n="btn_stang">Stäng</button></div></div></div>
 
+<div class="overlay" id="m-li-person"><div class="modal" style="width:420px"><div class="mhdr"><h2 id="li-person-title">Vem interagerade du med?</h2><button class="mclose" onclick="closeM('m-li-person')">×</button></div><div class="mbody">
+  <p style="font-size:13px;color:#888;margin-bottom:10px">Valfritt – välj en person för att logga interaktionen, eller hoppa över.</p>
+  <input id="li-person-search" placeholder="Sök kontakt, underkonsult eller KCC…" oninput="liPersonSearch(this.value)" style="width:100%;padding:8px;margin-bottom:8px">
+  <div id="li-person-results" style="max-height:280px;overflow-y:auto"></div>
+</div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-li-person')">Hoppa över</button></div></div></div>
 <div class="overlay" id="m-kck-anst"><div class="modal" style="width:380px"><div class="mhdr"><h2 data-i18n="kck_valj_anst_fraga">Vilken anställningsform?</h2><button class="mclose" onclick="closeM('m-kck-anst')">×</button></div><div class="mbody"><p style="margin-bottom:14px"><strong id="kck-anst-namn"></strong></p><div style="display:flex;gap:10px"><button class="btn btn-primary" style="flex:1" onclick="kckAnstVal('fast')" data-i18n="kck_fast">Fast anställd</button><button class="btn btn-primary" style="flex:1" onclick="kckAnstVal('interim')" data-i18n="kck_interim">Interim</button></div></div></div></div>
 
 <div class="overlay" id="m-cv-result"><div class="modal modal-lg"><div class="mhdr"><h2>CV inläst</h2><button class="mclose" onclick="closeM('m-cv-result')">×</button></div><div class="mbody"><input id="cvres-subid" type="hidden"><div style="margin-bottom:8px;font-size:13px;color:#555">Föreslagna kompetenser (klicka för att lägga till på underkonsulten):</div><div id="cvres-head" style="margin-bottom:10px"></div><div id="cvres-suggest" style="margin-bottom:14px"></div><div style="font-size:13px;color:#555;margin-bottom:4px">Inläst text (för att markera mer själv):</div><textarea id="cvres-text" readonly style="width:100%;height:220px;font-size:12px;font-family:monospace"></textarea></div><div class="mfoot"><div style="flex:1"></div><button class="btn btn-primary" onclick="closeM('m-cv-result');if(curSubId)openSubCard(curSubId)">Klar</button></div></div></div>
@@ -1035,10 +1040,11 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],settings=null,subs=[],subSkills=[];
 let myRole="kam",myPerms={};
 let allaRoller=[],minRollObj=null;
-let liAktivitet=[],liInlagg=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
+let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
 async function loadLinkedin(){
   try{const a=await sb.from("linkedin_aktivitet").select("*").eq("user_id",me.id).order("datum",{ascending:false});liAktivitet=a.data||[];}catch(e){liAktivitet=[];}
   try{const i=await sb.from("linkedin_inlagg").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInlagg=i.data||[];}catch(e){liInlagg=[];}
+  try{const x=await sb.from("linkedin_interaktion").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInteraktion=x.data||[];}catch(e){liInteraktion=[];}
   try{const p=await sb.from("profiles").select("li_mal").eq("id",me.id).maybeSingle();if(p&&p.data&&p.data.li_mal)liMal=p.data.li_mal;}catch(e){}
 }
 function liToday(){return new Date().toISOString().slice(0,10);}
@@ -5010,21 +5016,75 @@ function liChecklistHtml(){
       <button class="btn btn-outline btn-xs" onclick="openLiMal()">Mål</button>
     </div>
     ${rows}
+    ${liInteraktionHistorikHtml()}
   </div></div>`;
+}
+function liInteraktionHistorikHtml(){
+  if(!liInteraktion||!liInteraktion.length)return "";
+  const senaste=liInteraktion.slice(0,8);
+  const ikon={gillningar:"👍",kommentarer:"💬",kontaktforfragan:"🤝"};
+  const rows=senaste.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;color:#666">
+    <span>${ikon[x.typ]||"•"}</span>
+    <span style="flex:1">${e(x.person_namn||"")}</span>
+    <span style="color:#aaa">${x.datum}</span>
+  </div>`).join("");
+  return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--cream)">
+    <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">Senaste interaktioner</div>
+    ${rows}
+  </div>`;
 }
 async function liStep(field,delta){
   const row=liTodayRow();
   const nyttVarde=Math.max(0,(row[field]||0)+delta);
   const data={user_id:me.id,datum:liToday(),gillningar:row.gillningar||0,kommentarer:row.kommentarer||0,kontaktforfragan:row.kontaktforfragan||0};
   data[field]=nyttVarde;
-  // upsert på user_id+datum
   const r=await sb.from("linkedin_aktivitet").upsert(data,{onConflict:"user_id,datum"}).select().single();
   if(r.error){toast(r.error.message);return;}
-  // uppdatera lokal array
   const idx=liAktivitet.findIndex(a=>a.datum===liToday());
   if(idx>=0)liAktivitet[idx]=r.data;else liAktivitet.unshift(r.data);
   if(curView==="linkedin")renderLinkedin();
   if(curView==="dashboard")renderDashboard();
+  // vid uppräkning: erbjud att koppla en person (frivilligt)
+  if(delta>0){openLiPerson(field);}
+}
+let _liPendingTyp=null;
+function openLiPerson(typ){
+  _liPendingTyp=typ;
+  const label={gillningar:"gillning",kommentarer:"kommentar",kontaktforfragan:"kontaktförfrågan"}[typ]||typ;
+  document.getElementById("li-person-title").textContent="Vem fick din "+label+"?";
+  document.getElementById("li-person-search").value="";
+  document.getElementById("li-person-results").innerHTML="";
+  openM("m-li-person");
+  setTimeout(()=>{const el=document.getElementById("li-person-search");if(el)el.focus();},100);
+}
+function liPersonSearch(q){
+  const box=document.getElementById("li-person-results");if(!box)return;
+  q=(q||"").trim().toLowerCase();
+  if(q.length<1){box.innerHTML="";return;}
+  const results=[];
+  contacts.forEach(c=>{const nm=((c.fornamn||"")+" "+(c.efternamn||"")).trim();if(nm.toLowerCase().includes(q))results.push({typ:"contact",id:c.id,namn:nm,label:"Kontakt"});});
+  subs.forEach(s=>{const nm=((s.fornamn||"")+" "+(s.efternamn||"")).trim();if(nm.toLowerCase().includes(q))results.push({typ:"sub",id:s.id,namn:nm,label:"Underkonsult"});});
+  (typeof kccKandidater!=="undefined"?kccKandidater:[]).forEach(k=>{if((k.namn||"").toLowerCase().includes(q))results.push({typ:"kcc",id:k.id,namn:k.namn,label:"KCC"});});
+  if(!results.length){box.innerHTML='<p style="color:#aaa;font-size:13px;padding:8px">Ingen träff. Stäng för att hoppa över.</p>';return;}
+  box.innerHTML=results.slice(0,30).map(r=>{
+    const sen=liSenastInteraktion(r.typ,r.id);
+    return `<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px" onclick="liValjPerson('${r.typ}','${r.id}','${e(r.namn).replace(/'/g,"\\'")}')">
+      <span style="flex:1">${e(r.namn)} <span style="font-size:11px;color:#888">${r.label}</span></span>
+      ${sen?`<span style="font-size:11px;color:#aaa">senast ${sen}</span>`:""}
+    </div>`;
+  }).join("");
+}
+function liSenastInteraktion(typ,id){
+  const rel=liInteraktion.filter(x=>x.person_typ===typ&&x.person_id===id);
+  if(!rel.length)return "";
+  return rel.map(x=>x.datum).sort().reverse()[0];
+}
+async function liValjPerson(typ,id,namn){
+  const r=await sb.from("linkedin_interaktion").insert({user_id:me.id,datum:liToday(),typ:_liPendingTyp,person_typ:typ,person_id:id,person_namn:namn}).select().single();
+  if(!r.error&&r.data)liInteraktion.unshift(r.data);
+  closeM("m-li-person");
+  toast("Interaktion loggad med "+namn);
+  if(curView==="linkedin")renderLinkedin();
 }
 function openLiMal(){
   const g=prompt("Mål gillningar/dag:",liMal.gillningar||5);if(g===null)return;
@@ -5905,7 +5965,7 @@ function exportAllICS(){const events=contacts.filter(c=>c.nasta_foljup).map(c=>{
 
 // INIT
 // Formulär med inmatning som INTE ska stängas av klick utanför / Escape (skydd mot dataförlust)
-const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people","m-kck-form","m-kck-steg","m-kck-anst"];
+const PROTECTED_MODALS=["m-contact","m-company","m-project","m-task","m-diary-entry","m-signal","m-goal","m-kb","m-sub","m-todo-edit","m-conn","m-sub-act","m-sub-co","m-sub-ct","m-mfa","m-log","m-note","m-export-contacts","m-veckoplan-entry","m-quicklink","m-linkedin-editor","m-goal-people","m-kck-form","m-kck-steg","m-kck-anst","m-li-person"];
 const CARD_MODALS=["m-card","m-company-card","m-sub-card","m-lead"];
 document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o&&!PROTECTED_MODALS.includes(o.id)){o.classList.remove("open");if(CARD_MODALS.includes(o.id))navClear();}}));
 document.addEventListener("click",ev=>{if(!ev.target.closest(".topbar-search"))document.getElementById("search-drop").classList.remove("open");});
