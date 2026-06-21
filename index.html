@@ -1900,8 +1900,8 @@ function renderCurrent(){gotoView(curView);}
 
 // GLOBAL SEARCH
 function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(doSearch,260);}
-async function doSearch(){const q=v("gsearch");const box=document.getElementById("search-drop");if(q.length<2){box.classList.remove("open");return;}const r=await sb.rpc("search_crm",{p_user_id:me.id,p_query:q});const tm=tasks.filter(t=>t.title?.toLowerCase().includes(q.toLowerCase())).slice(0,4).map(t=>{const p=projects.find(x=>x.id===t.project_id);return{typ:"task",id:t.id,titel:t.title,undertitel:p?.namn||"",extra:t.status};});const all=[...(r.data||[]),...tm];box.innerHTML=all.length?all.map(x=>`<div class="search-item" onclick="openSearchResult('${x.typ}','${x.id}')"><div class="search-item-type">${e(x.typ)}</div><strong>${e(x.titel)}</strong><div style="font-size:12px;color:#888">${e(x.undertitel||"")}${x.extra?" · "+e(x.extra):""}</div></div>`).join(""):'<div class="search-item"><span style="color:#aaa">Inga träffar</span></div>';box.classList.add("open");}
-function openSearchResult(type,id){document.getElementById("search-drop").classList.remove("open");document.getElementById("gsearch").value="";if(type==="kontakt"){gotoView("contacts");openCard(id);}else if(type==="bolag"){gotoView("companies");openCompanyCard(id);}else if(type==="task"){gotoView("tasks");}else if(type==="underkonsult"){gotoView("subconsultants");}}
+async function doSearch(){const q=v("gsearch");const box=document.getElementById("search-drop");if(q.length<2){box.classList.remove("open");return;}const r=await sb.rpc("search_crm",{p_user_id:me.id,p_query:q});const tm=tasks.filter(t=>t.title?.toLowerCase().includes(q.toLowerCase())).slice(0,4).map(t=>{const p=projects.find(x=>x.id===t.project_id);return{typ:"task",id:t.id,titel:t.title,undertitel:p?.namn||"",extra:t.status};});const all=[...(r.data||[]),...tm];const mm=(typeof meddelanden!=="undefined"?meddelanden:[]).filter(m=>{const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;const pn=(profilesMap[other]||"").toLowerCase();return (m.text||"").toLowerCase().includes(q.toLowerCase())||pn.includes(q.toLowerCase());}).slice(0,4).map(m=>{const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;return{typ:"meddelande",id:other,titel:(profilesMap[other]||"Meddelande"),undertitel:(m.text||"").slice(0,50),extra:""};});all.push(...mm);box.innerHTML=all.length?all.map(x=>`<div class="search-item" onclick="openSearchResult('${x.typ}','${x.id}')"><div class="search-item-type">${e(x.typ)}</div><strong>${e(x.titel)}</strong><div style="font-size:12px;color:#888">${e(x.undertitel||"")}${x.extra?" · "+e(x.extra):""}</div></div>`).join(""):'<div class="search-item"><span style="color:#aaa">Inga träffar</span></div>';box.classList.add("open");}
+function openSearchResult(type,id){document.getElementById("search-drop").classList.remove("open");document.getElementById("gsearch").value="";if(type==="kontakt"){gotoView("contacts");openCard(id);}else if(type==="bolag"){gotoView("companies");openCompanyCard(id);}else if(type==="task"){gotoView("tasks");}else if(type==="underkonsult"){gotoView("subconsultants");}else if(type==="meddelande"){msgSokQ="";aktivKonversation=id;gotoView("meddelanden");}}
 
 // DASHBOARD
 function kccDashSektionHtml(){
@@ -2022,6 +2022,29 @@ let adminUsers=[];
 let adminTab="anvandare"; // anvandare | roller
 function setAdminTab(t){adminTab=t;renderAdmin();}
 let aktivKonversation=null;
+let msgSokQ="";
+function msgSok(q){msgSokQ=(q||"").trim();renderMeddelanden();setTimeout(()=>{const el=document.getElementById("msg-sok");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},30);}
+function msgSokResultatHtml(namnAv){
+  const q=msgSokQ.toLowerCase();
+  const trf=meddelanden.filter(m=>{
+    const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;
+    const personNamn=(namnAv(other)||"").toLowerCase();
+    return (m.text||"").toLowerCase().includes(q)||personNamn.includes(q)||(m.lank_namn||"").toLowerCase().includes(q);
+  }).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  if(!trf.length)return `<p style="color:#aaa;padding:14px">Inga meddelanden matchar "${e(msgSokQ)}".</p>`;
+  return `<div style="margin-bottom:8px;color:#888;font-size:13px">${trf.length} träffar</div>`+trf.map(m=>{
+    const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;
+    const fromMe=m.avsandare_id===me.id;
+    return `<div class="week-row" style="cursor:pointer;padding:10px 12px" onclick="msgSokQ='';aktivKonversation='${other}';renderMeddelanden()">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <strong style="font-size:13px">${e(namnAv(other))}</strong>
+        <span style="font-size:11px;color:#aaa">${fromMe?"du skrev":"skrev"} · ${(m.created_at||"").slice(5,16).replace("T"," ")}</span>
+      </div>
+      <div style="font-size:13px;color:#555">${e(m.text)}</div>
+      ${m.lank_namn?`<div style="font-size:12px;color:#0a66c2;margin-top:2px">${lankIkon(m.lank_typ)} ${e(m.lank_namn)}</div>`:""}
+    </div>`;
+  }).join("");
+}
 async function renderMeddelanden(){
   const box=document.getElementById("meddelanden-content");if(!box)return;
   await loadMeddelanden();
@@ -2083,14 +2106,17 @@ async function renderMeddelanden(){
     hoger='<p style="color:#aaa;padding:20px">Välj en konversation eller starta en ny.</p>';
   }
   box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:14px">Meddelanden</h2>
-    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <input id="msg-sok" placeholder="🔍 Sök i meddelanden (text eller person)…" value="${e(msgSokQ||"")}" oninput="msgSok(this.value)" style="flex:1;padding:8px">
+    </div>
+    ${msgSokQ?msgSokResultatHtml(namnAv):`<div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
       <select id="ny-konv-mottagare" style="padding:8px"><option value="">Nytt meddelande till…</option>${userOpts}</select>
       <button class="btn btn-primary btn-sm" onclick="startaNyKonversation()">Starta</button>
     </div>
     <div class="msg-grid" style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start">
       <div class="msg-konvlista">${konvLista}</div>
       <div class="week-sec msg-chatt" style="padding:16px;min-height:420px">${hoger}</div>
-    </div>`;
+    </div>`}`;
 }
 function lankIkon(typ){return {company:"🏢",contact:"👤",signal:"⚡"}[typ]||"🔗";}
 function oppnaKonversation(id){aktivKonversation=id;renderMeddelanden();}
