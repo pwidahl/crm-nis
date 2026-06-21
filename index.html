@@ -2463,7 +2463,7 @@ async function saveCompany(){
   const r=editCoid?await sb.from("companies").update(updData).eq("id",editCoid):await sb.from("companies").insert({...data});
   if(r.error){alert("Fel vid sparande: "+r.error.message);return;}
   // Auto-skapa projekt vid Vunnet
-  if(newStatus==="Vunnet"&&prevStatus!=="Vunnet"&&data.auto_projekt_vid_vunnet){const cid=editCoid||(await sb.from("companies").select("id").eq("namn",namn).eq("user_id",me.id).maybeSingle()).data?.id;if(cid){await sb.from("projects").insert({user_id:me.id,company_id:cid,namn:`Uppdrag ${namn}`,status:"Planering",pipeline_status:"Aktiv"});toast("Projekt skapades automatiskt för "+namn);}}
+  if(newStatus==="Vunnet"&&prevStatus!=="Vunnet"&&data.auto_projekt_vid_vunnet){const cid=editCoid||(await sb.from("companies").select("id").eq("namn",namn).maybeSingle()).data?.id;if(cid){await sb.from("projects").insert({user_id:me.id,company_id:cid,namn:`Uppdrag ${namn}`,status:"Planering",pipeline_status:"Aktiv"});toast("Projekt skapades automatiskt för "+namn);}}
   closeM("m-company");toast("Bolag sparat");await loadAll();
 }
 
