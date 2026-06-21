@@ -426,27 +426,9 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
       <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Dagbok</span></div>
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
-      <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span><span data-i18n="nav_tidrapport">Tidrapport</span></div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
       <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span><span data-i18n="nav_uppfoljningar">Uppföljningar</span><span class="nav-badge" id="badge-followups">0</span></div>
-    </div>
-    <div class="nav-sec" onclick="toggleNavSec('salj')" style="cursor:pointer;user-select:none"><span>Sälj &amp; leads</span> <span class="nav-sec-arrow" id="arr-salj">▾</span></div>
-    <div class="nav-grp" id="grp-salj">
-      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
-      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span><span data-i18n="nav_konsultbehov">Konsultbehov</span></div>
-      <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
-      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Koncernkarta</span></div>
-    </div>
-    <div class="nav-sec" onclick="toggleNavSec('verktyg')" style="cursor:pointer;user-select:none"><span>Verktyg</span> <span class="nav-sec-arrow" id="arr-verktyg">▾</span></div>
-    <div class="nav-grp" id="grp-verktyg">
-      <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span><span data-i18n="nav_nyckeltal">Nyckeltal</span></div>
-      <div class="nav-item" data-v="relmap" onclick="gotoView('relmap')"><span class="nav-icon">🗺️</span><span data-i18n="nav_relmap">Relationskarta</span></div>
-    </div>
-    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span>Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
-    <div class="nav-grp" id="grp-analys">
-      <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span><span data-i18n="nav_statistik">Statistik</span></div>
-      <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span><span data-i18n="nav_minaktivitet">Min aktivitet</span></div>
-      <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span><span data-i18n="nav_logg">Aktivitetslogg</span></div>
+      <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('natverk')" style="cursor:pointer;user-select:none"><span>Nätverk</span> <span class="nav-sec-arrow" id="arr-natverk">▾</span></div>
     <div class="nav-grp" id="grp-natverk">
@@ -455,10 +437,25 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span><span data-i18n="nav_kontakter">Kontakter</span><span class="nav-badge" id="badge-linkedin">0</span></div>
       <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span><span data-i18n="nav_mellanhander">Mellanhänder</span></div>
       <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span><span data-i18n="nav_natverk_item">Nätverk</span></div>
+      <div class="nav-item" data-v="relmap" onclick="gotoView('relmap')"><span class="nav-icon">🗺️</span><span data-i18n="nav_relmap">Relationskarta</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('kommunikation')" style="cursor:pointer;user-select:none"><span>Kommunikation</span> <span class="nav-sec-arrow" id="arr-kommunikation">▾</span></div>
-    <div class="nav-grp" id="grp-kommunikation">
-      <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
+    <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span>Bolag</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
+    <div class="nav-grp" id="grp-bolag">
+      <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
+      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Koncernkarta</span></div>
+    </div>
+    <div class="nav-sec" onclick="toggleNavSec('salj')" style="cursor:pointer;user-select:none"><span>Sälj &amp; leads</span> <span class="nav-sec-arrow" id="arr-salj">▾</span></div>
+    <div class="nav-grp" id="grp-salj">
+      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
+      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span><span data-i18n="nav_konsultbehov">Konsultbehov</span></div>
+    </div>
+    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span>Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
+    <div class="nav-grp" id="grp-analys">
+      <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span><span data-i18n="nav_statistik">Statistik</span></div>
+      <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span><span data-i18n="nav_minaktivitet">Min aktivitet</span></div>
+      <div class="nav-item" data-v="log" onclick="gotoView('log')"><span class="nav-icon">◫</span><span data-i18n="nav_logg">Aktivitetslogg</span></div>
+      <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span><span data-i18n="nav_tidrapport">Tidrapport</span></div>
+      <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span><span data-i18n="nav_nyckeltal">Nyckeltal</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none"><span>Kunskapsbank</span> <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
     <div class="nav-grp" id="grp-kunskap">
@@ -1876,8 +1873,8 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={weekly:"oversikt",goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tidrapport:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",signals:"salj",konsultbehov:"salj",companies:"salj",koncern:"salj",finans:"verktyg",relmap:"verktyg",stats:"analys",myactivity:"analys",log:"analys",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",linkedin:"kommunikation",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
-const ALL_NAV_GROUPS=["oversikt","arbetsbok","salj","verktyg","analys","natverk","kommunikation","kunskap","system"];
+const VIEW_GROUP={weekly:"oversikt",goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const ALL_NAV_GROUPS=["oversikt","arbetsbok","natverk","bolag","salj","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
   ALL_NAV_GROUPS.forEach(g=>{
