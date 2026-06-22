@@ -2458,18 +2458,23 @@ function renderDashboard(){
       return co.ar_formedlare===true||co.ar_formedlare==="true"||co.ar_formedlare===1;
     };
     const open=signals.filter(s=>s.status!=="ignorerad"&&(s.pipeline_steg||"Signal")!=="Uppdrag"&&!(sigIsFast(s)&&s.dold_fast!==false)&&!s.nasta_steg&&!isPartnerLead(s));open.sort((a,b)=>{if((b.signal_styrka||0)!==(a.signal_styrka||0))return(b.signal_styrka||0)-(a.signal_styrka||0);return String(b.created_at||"").localeCompare(String(a.created_at||""));});const inner=open.length?open.slice(0,12).map(s=>`<div class="week-row" onclick="openLead('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">${"★".repeat(s.signal_styrka||1)} ${e(sigName(s))}</div><div class="week-rs">${LEAD_PIPE_LABEL[s.pipeline_steg||"Signal"]} · ${e((s.rubrik||"").slice(0,50))}</div></div></div>`).join("")+(open.length>12?`<div class="week-row" style="color:#888;font-size:12px">+${open.length-12} till</div>`:""):`<p style="color:#888;font-size:13px;padding:6px 0">${TR("dash_leads_alla_ok")}</p>`;return`<div class="dash-sec week-sec" data-sec="leadsnext" style="margin-bottom:0;${open.length?"border-left:4px solid var(--red)":""}"><div class="week-sec-hdr"><h3>${TR("dash_leadsnext")}</h3><span style="font-size:12px;color:#888;margin-left:auto">${open.length} st</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
-    tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;}
+    tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
+    checklista_w:()=>checklistaDashHtml(),
+    linkedin_w:()=>liDashHtml(),
+    kcc_w:()=>kccDashSektionHtml()
   };
-  const SEC_LABELS={fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
-  const order=["fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
-  const hidden=getDashHidden();
+  const SEC_LABELS={checklista_w:"📝 Daglig checklista",linkedin_w:"in Dagens LinkedIn",kcc_w:"⭐ KCC",fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
+  const order=["checklista_w","linkedin_w","kcc_w","fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
+  const hiddenRaw=getDashHidden();
+  // om användaren aldrig gjort ett val (null) → dölj allt som standard
+  const hidden=(hiddenRaw===null||hiddenRaw==="__none__")?order.slice():hiddenRaw;
   const visible=order.filter(k=>!hidden.includes(k));
 
   document.getElementById("dash-chain").innerHTML=`
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ Anpassa</button></div>
     <div class="dash-cols">
-      ${nextStepHtml()}${checklistaDashHtml()}${liDashHtml()}${kccDashSektionHtml()}
-      ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Alla sektioner är dolda. Klicka "Anpassa" för att visa några.</p>'}
+      ${nextStepHtml()}
+      ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Inga sektioner valda. Klicka "Anpassa" för att lägga till.</p>'}
     </div>`;
   window._dashSecLabels=SEC_LABELS;window._dashOrder=order;
 
@@ -2480,7 +2485,7 @@ function renderDashboard(){
 let _dashHidden=null;
 function getDashHidden(){
   if(_dashHidden!==null)return _dashHidden;
-  try{_dashHidden=JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{_dashHidden=[];}
+  try{const raw=localStorage.getItem("dashHidden");if(raw===null)return null;_dashHidden=JSON.parse(raw);}catch{_dashHidden=null;}
   return _dashHidden;
 }
 function nextStepHtml(){
@@ -2577,7 +2582,10 @@ async function loadDashHidden(){
   }catch(e){}
 }
 function openDashCustomize(){
-  const hidden=getDashHidden();const order=window._dashOrder||[];const labels=window._dashSecLabels||{};
+  const order=window._dashOrder||[];
+  const raw=getDashHidden();
+  const hidden=(raw===null)?order.slice():raw;
+  const labels=window._dashSecLabels||{};
   document.getElementById("dash-cust-body").innerHTML=order.map(k=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream);cursor:pointer"><input type="checkbox" data-sec="${k}" ${hidden.includes(k)?"":"checked"} style="width:auto">${e(labels[k]||k)}</label>`).join("");
   openM("m-dash-cust");
 }
