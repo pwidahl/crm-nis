@@ -243,21 +243,30 @@ textarea{resize:vertical;min-height:68px}
 .inline-create{display:flex;gap:6px;align-items:center}
 .inline-create input{flex:1}
 .inline-create .btn{flex-shrink:0;padding:6px 10px;font-size:12px}
+.mobile-menu-btn{display:none}
 
 @media(max-width:768px){
   .shell{flex-direction:column;height:auto;min-height:100vh}
-  .sidebar{width:100%;min-width:0;flex-direction:row;align-items:center;height:52px;overflow-x:auto;overflow-y:hidden;flex-shrink:0}
-  .sidebar-logo{padding:0 12px;border-bottom:none;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap;height:52px;display:flex;align-items:center;flex-shrink:0}
-  .sidebar-logo h1{font-size:14px}.sidebar-logo p{display:none}
-  .nav{flex-direction:row;padding:0;height:52px;overflow-x:auto;flex:1}
-  .nav-sec{display:flex;align-items:center;padding:0 6px;height:52px;font-size:8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);flex-shrink:0}
-  .nav-sec-arrow{display:none}
-  .nav-grp{display:contents;max-height:none!important}
-  .nav-item{padding:0 9px;height:52px;border-left:none;border-bottom:3px solid transparent;white-space:nowrap;font-size:11px;flex-direction:column;gap:1px;justify-content:center;min-width:auto}
-  .nav-item.active{border-left:none;border-bottom-color:var(--warm)}
-  .nav-icon{font-size:13px;width:auto}
-  .nav-badge{position:absolute;top:3px;right:3px;margin-left:0;font-size:8px;padding:0 4px}
-  .nav-spacer{display:none}
+  /* Sidebar som utfällbar panel från vänster */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:80%;max-width:300px;z-index:1000;flex-direction:column;align-items:stretch;height:100vh;overflow-y:auto;transform:translateX(-100%);transition:transform .25s ease;box-shadow:2px 0 18px rgba(0,0,0,.3)}
+  body.nav-open .sidebar{transform:translateX(0)}
+  .sidebar-logo{padding:16px;border-bottom:1px solid rgba(255,255,255,.12);white-space:nowrap;display:block}
+  .sidebar-logo h1{font-size:17px}.sidebar-logo p{display:block}
+  .nav{flex-direction:column;padding:8px 0;height:auto;overflow-y:auto;flex:1}
+  .nav-sec{display:flex;align-items:center;padding:10px 22px 3px;height:auto;font-size:9px;border-right:none}
+  .nav-sec-arrow{display:inline;float:right}
+  .nav-grp{display:block;overflow:hidden;transition:max-height .2s ease}
+  .nav-grp.collapsed{max-height:0!important}
+  .nav-item{padding:11px 22px;height:auto;border-left:3px solid transparent;border-bottom:none;white-space:nowrap;font-size:14px;flex-direction:row;gap:10px;justify-content:flex-start;min-width:auto}
+  .nav-item.active{border-left-color:var(--warm);border-bottom:none}
+  .nav-icon{font-size:15px;width:20px}
+  .nav-badge{position:static;margin-left:auto;font-size:10px;padding:1px 6px}
+  .nav-spacer{flex:1}
+  /* Overlay bakom menyn */
+  .nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999}
+  body.nav-open .nav-overlay{display:block}
+  /* Hamburger */
+  .mobile-menu-btn{display:flex!important;align-items:center;justify-content:center;background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--ink)}
   .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
   .topbar{padding:9px 12px;gap:7px}
   .topbar-title{font-size:16px}
@@ -471,9 +480,11 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
   </nav>
 </aside>
+<div class="nav-overlay" onclick="toggleMobileNav()"></div>
 
 <div class="main">
   <div class="topbar">
+    <button class="mobile-menu-btn" onclick="toggleMobileNav()" title="Meny">☰</button>
     <span class="topbar-title" id="topbar-title">Dashboard</span>
     <div id="focus-indicator" style="display:none;align-items:center;gap:6px;background:var(--cream);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0" onclick="openFocusModal()">
       <span>🔒</span><span id="focus-indicator-text"></span><span style="color:#aaa;font-size:10px">· byta</span>
@@ -1886,6 +1897,8 @@ function expandActiveGroup(viewName){
   });
 }
 
+function toggleMobileNav(){document.body.classList.toggle("nav-open");}
+function closeMobileNav(){document.body.classList.remove("nav-open");}
 function gotoView(name){
   if(!document.getElementById("view-"+name))name="dashboard";
   // behörighetsvakt: blockera förbjudna vyer (admin alltid OK)
@@ -1898,6 +1911,7 @@ function gotoView(name){
   document.getElementById("view-"+name).classList.add("active");
   document.querySelector(`.nav-item[data-v="${name}"]`)?.classList.add("active");
   try{expandActiveGroup(name);}catch(e){}
+  try{closeMobileNav();}catch(e){}
   const loc=LANG==="en"?"en-US":"sv-SE";
   const wd=new Date().toLocaleDateString(loc,{weekday:"long"});
   document.getElementById("topbar-title").textContent=name==="weekly"?(wd.charAt(0).toUpperCase()+wd.slice(1)):(t("vt_"+name)!=="vt_"+name?t("vt_"+name):VIEW_TITLE[name]);
