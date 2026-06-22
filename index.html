@@ -246,6 +246,8 @@ textarea{resize:vertical;min-height:68px}
 .mobile-menu-btn{display:none}
 .dash-cols{column-count:2;column-gap:14px;max-width:1100px}
 .dash-cols>*{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;display:block;margin:0 0 14px 0!important;max-height:360px;overflow-y:auto}
+.dash-hero{max-width:1100px;margin-bottom:14px}
+.dash-hero>*{margin-bottom:0!important;border-left-width:5px!important;box-shadow:0 2px 8px rgba(0,0,0,.06)}
 @media(max-width:768px){.dash-cols{column-count:1}}
 
 @media(max-width:768px){
@@ -2428,11 +2430,11 @@ function _renderDashboardInner(){
   const needsAll=consultNeeds();const topNeeds=needsAll.slice(0,5);
   const sevColor=s=>s>=10?"var(--red)":s>=5?"var(--gold)":"var(--accent)";
 
-  const fupRows=fups.map(c=>{const od=c.nasta_foljup<td;return`<div class="week-row" onclick="openCard('${c.id}')"><div style="flex:1"><div class="week-rn">${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")} · <span class="${od?"overdue":""}">${e(c.nasta_foljup)}</span></div></div><button class="btn btn-warm btn-xs" onclick="event.stopPropagation();openLogModal('${c.id}')">Logga</button></div>`;}).join("");
-  const leadRows=leads.map(s=>{const known=hasContact(s.company_id);return`<div class="week-row" onclick="openLead('${s.id}')"><div style="flex:1"><div class="week-rn">${known?'<span title="Känd kontakt">👤 </span>':""}${e(sigName(s))}</div><div class="week-rs">${e((s.rubrik||"").slice(0,60))} · ${"★".repeat(s.signal_styrka||1)}</div></div></div>`;}).join("");
-  const taskRows=dtasks.map(t=>{const p=projects.find(x=>x.id===t.project_id);return`<div class="week-row" onclick="gotoView('tasks')"><div style="flex:1"><div class="week-rn">${e(t.title)}</div><div class="week-rs">${e(p?.namn||"")} · <span class="overdue">${e(t.due_date)}</span></div></div></div>`;}).join("");
-  const todoRows=dtodos.map(t=>{const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"}[t.prioritet]||"🟡";return`<div class="week-row" onclick="openTodo()"><div style="flex:1"><div class="week-rn">${pi} ${e(t.text)}</div>${t.due_date?`<div class="week-rs">📅 ${e(t.due_date)}</div>`:""}</div></div>`;}).join("");
-  const needRows=topNeeds.length?topNeeds.map(({c,flags,score})=>`<div class="week-row" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${e(c.namn)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):"";
+  const fupRows=fups.slice(0,5).map(c=>{const od=c.nasta_foljup<td;return`<div class="week-row" onclick="openCard('${c.id}')"><div style="flex:1"><div class="week-rn">${e(c.fornamn)} ${e(c.efternamn)}</div><div class="week-rs">${e(c.foretag||"")} · <span class="${od?"overdue":""}">${e(c.nasta_foljup)}</span></div></div><button class="btn btn-warm btn-xs" onclick="event.stopPropagation();openLogModal('${c.id}')">Logga</button></div>`;}).join("");
+  const leadRows=leads.slice(0,5).map(s=>{const known=hasContact(s.company_id);return`<div class="week-row" onclick="openLead('${s.id}')"><div style="flex:1"><div class="week-rn">${known?'<span title="Känd kontakt">👤 </span>':""}${e(sigName(s))}</div><div class="week-rs">${e((s.rubrik||"").slice(0,60))} · ${"★".repeat(s.signal_styrka||1)}</div></div></div>`;}).join("");
+  const taskRows=dtasks.slice(0,5).map(t=>{const p=projects.find(x=>x.id===t.project_id);return`<div class="week-row" onclick="gotoView('tasks')"><div style="flex:1"><div class="week-rn">${e(t.title)}</div><div class="week-rs">${e(p?.namn||"")} · <span class="overdue">${e(t.due_date)}</span></div></div></div>`;}).join("");
+  const todoRows=dtodos.slice(0,5).map(t=>{const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"}[t.prioritet]||"🟡";return`<div class="week-row" onclick="openTodo()"><div style="flex:1"><div class="week-rn">${pi} ${e(t.text)}</div>${t.due_date?`<div class="week-rs">📅 ${e(t.due_date)}</div>`:""}</div></div>`;}).join("");
+  const needRows=topNeeds.length?topNeeds.slice(0,5).map(({c,flags,score})=>`<div class="week-row" onclick="openCompanyCard('${c.id}')"><div style="flex:1;min-width:0"><div class="week-rn">${e(c.namn)}</div><div class="week-rs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(flags.join(" · "))}</div></div><span style="font-family:'DM Serif Display',serif;font-size:18px;color:${sevColor(score)}">${score}</span></div>`).join(""):"";
   const goalInner=goals.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:12px 14px">${goals.slice(0,4).map(g=>{const prog=goalProgress(g);const mal=Number(g.mal_varde)||1;const pct=Math.min(100,Math.round((prog/mal)*100));const cls=pct>=100?"prog-over":pct>=60?"prog-ok":"prog-warn";return`<div style="cursor:pointer" onclick="gotoView('goals')"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${e(goalTypeName(g.typ)||g.typ)}</span><span style="color:#888">${prog}/${mal}</span></div><div class="progress-wrap"><div class="progress-bar ${cls}" style="width:${pct}%"></div></div></div>`;}).join("")}</div>`:'<p style="color:#888;font-size:13px;padding:12px 14px">${TR("dbc_inga_mal")} <span style="color:var(--accent);cursor:pointer" onclick="gotoView(\'goals\')">${TR("dbc_satt_mal")}</span></p>';
 
   // Sektioner i vald ordning
@@ -2494,8 +2496,8 @@ function _renderDashboardInner(){
   const visible=order.filter(k=>!hidden.includes(k));
 
   document.getElementById("dash-chain").innerHTML=`
+    <div class="dash-hero">${nextStepHtml()}</div>
     <div class="dash-cols">
-      ${nextStepHtml()}
       ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Inga sektioner valda. Klicka "Anpassa" för att lägga till.</p>'}
     </div>`;
   window._dashSecLabels=SEC_LABELS;window._dashOrder=order;
