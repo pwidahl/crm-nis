@@ -1079,7 +1079,7 @@ let meddelanden=[];
 async function loadMeddelanden(){try{const r=await sb.from("meddelanden").select("*").order("created_at",{ascending:true});meddelanden=r.data||[];}catch(e){meddelanden=[];}}
 function olastaMeddelanden(){return meddelanden.filter(m=>m.mottagare_id===me.id&&!m.last).length;}
 async function loadLinkedin(){
-  try{const a=await sb.from("linkedin_aktivitet").select("*").eq("user_id",me.id).order("datum",{ascending:false});liAktivitet=a.data||[];}catch(e){liAktivitet=[];}
+  try{const a=await sb.from("linkedin_aktivitet").select("*").eq("user_id",me.id).order("datum",{ascending:false});liAktivitet=a.data||[];window.__liDebug={rows:a.data,error:a.error,count:(a.data||[]).length};}catch(e){liAktivitet=[];window.__liDebug={error:String(e)};}
   try{const i=await sb.from("linkedin_inlagg").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInlagg=i.data||[];}catch(e){liInlagg=[];}
   try{const x=await sb.from("linkedin_interaktion").select("*").eq("user_id",me.id).order("datum",{ascending:false});liInteraktion=x.data||[];}catch(e){liInteraktion=[];}
   try{const p=await sb.from("profiles").select("li_mal").eq("id",me.id).maybeSingle();if(p&&p.data&&p.data.li_mal)liMal=p.data.li_mal;}catch(e){}
@@ -1087,9 +1087,11 @@ async function loadLinkedin(){
 function liToday(){return new Date().toISOString().slice(0,10);}
 function liTodayRow(){
   const t=liToday();
-  const found=liAktivitet.find(a=>String(a.datum).slice(0,10)===t);
-  if(!found&&liAktivitet.length){console.log("liTodayRow INGEN MATCH. liToday=",t,"datum i array=",liAktivitet.map(a=>a.datum));}
-  return found||{datum:t,gillningar:0,kommentarer:0,kontaktforfragan:0};
+  return liAktivitet.find(a=>String(a.datum).slice(0,10)===t)||{datum:t,gillningar:0,kommentarer:0,kontaktforfragan:0};
+}
+function liVisaDebug(){
+  const d=window.__liDebug||{};
+  alert("Idag (liToday): "+liToday()+"\nAntal rader laddade: "+(d.count!=null?d.count:"?")+"\nFel: "+(d.error?JSON.stringify(d.error):"inget")+"\n\nRader:\n"+JSON.stringify(d.rows,null,1));
 }
 async function loadRoller(){try{const r=await sb.from("roller").select("*").order("namn");allaRoller=r.data||[];}catch(e){allaRoller=[];}}
 // Standardbehörigheter per roll (mall). true=ser sektionen.
@@ -5226,6 +5228,7 @@ function liChecklistHtml(){
     <div style="display:flex;align-items:center;margin-bottom:10px">
       <span style="font-weight:600;font-size:15px;flex:1">in Dagens LinkedIn-aktivitet ${klart?'<span style="color:var(--green);font-size:13px">✓ klart för idag!</span>':''}</span>
       <button class="btn btn-outline btn-xs" onclick="openLiMal()">Mål</button>
+      <button class="btn btn-outline btn-xs" onclick="liVisaDebug()">🔍</button>
     </div>
     ${rows}
     ${liInteraktionHistorikHtml()}
