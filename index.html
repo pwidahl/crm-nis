@@ -5246,7 +5246,7 @@ async function liStep(field,delta){
   const data={user_id:me.id,datum:liToday(),gillningar:row.gillningar||0,kommentarer:row.kommentarer||0,kontaktforfragan:row.kontaktforfragan||0};
   data[field]=nyttVarde;
   const r=await sb.from("linkedin_aktivitet").upsert(data,{onConflict:"user_id,datum"}).select().single();
-  if(r.error){toast(r.error.message);return;}
+  if(r.error){console.error("LinkedIn-spar fel:",r.error);alert("Kunde inte spara: "+r.error.message+(r.error.details?" / "+r.error.details:""));return;}
   const idx=liAktivitet.findIndex(a=>a.datum===liToday());
   if(idx>=0)liAktivitet[idx]=r.data;else liAktivitet.unshift(r.data);
   if(curView==="linkedin")renderLinkedin();
