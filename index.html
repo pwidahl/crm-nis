@@ -1085,7 +1085,12 @@ async function loadLinkedin(){
   try{const p=await sb.from("profiles").select("li_mal").eq("id",me.id).maybeSingle();if(p&&p.data&&p.data.li_mal)liMal=p.data.li_mal;}catch(e){}
 }
 function liToday(){return new Date().toISOString().slice(0,10);}
-function liTodayRow(){return liAktivitet.find(a=>a.datum===liToday())||{datum:liToday(),gillningar:0,kommentarer:0,kontaktforfragan:0};}
+function liTodayRow(){
+  const t=liToday();
+  const found=liAktivitet.find(a=>String(a.datum).slice(0,10)===t);
+  if(!found&&liAktivitet.length){console.log("liTodayRow INGEN MATCH. liToday=",t,"datum i array=",liAktivitet.map(a=>a.datum));}
+  return found||{datum:t,gillningar:0,kommentarer:0,kontaktforfragan:0};
+}
 async function loadRoller(){try{const r=await sb.from("roller").select("*").order("namn");allaRoller=r.data||[];}catch(e){allaRoller=[];}}
 // Standardbehörigheter per roll (mall). true=ser sektionen.
 const ALL_SECTIONS=["dashboard","contacts","companies","signals","subconsultants","kcc","projects","goals","relmap","veckoplan"];
