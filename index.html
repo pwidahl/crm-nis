@@ -2394,6 +2394,9 @@ async function assignRoll(userId,rollId){
   renderAdmin();
 }
 function renderDashboard(){
+  try{_renderDashboardInner();}catch(err){alert("Dashboard-fel: "+err.message+"\n\n"+(err.stack||"").slice(0,300));console.error("Dashboard-fel:",err);}
+}
+function _renderDashboardInner(){
   if(focusMode==="company"&&focusCompanyId){
     renderFocusDashboard();
     return;
@@ -2476,10 +2479,10 @@ function renderDashboard(){
     },
     fakt_w:()=>{
       const month=curMonth();
-      const fakt=projects.filter(p=>p.status==="Aktiv").map(p=>({p,amt:projInvoiceAmount(p,month),h:projBillableHours(p.id,month)})).filter(x=>x.h>0).sort((a,b)=>b.amt-a.amt);
+      const fakt=projects.filter(p=>p.status==="Aktiv").map(p=>({p,amt:projInvoiceAmount(p,month)||0,h:projBillableHours(p.id,month)})).filter(x=>x.h>0).sort((a,b)=>b.amt-a.amt);
       if(!fakt.length)return "";
-      const total=fakt.reduce((s,x)=>s+x.amt,0);
-      const inner=fakt.map(({p,amt,h})=>weekRow(`${e(p.namn)}`,`${h}h · ${amt.toLocaleString("sv-SE")} kr`,1,`openProjectCard('${p.id}')`,null,false)).join("");
+      const total=fakt.reduce((s,x)=>s+(x.amt||0),0);
+      const inner=fakt.map(({p,amt,h})=>weekRow(`${e(p.namn)}`,`${h}h · ${(amt||0).toLocaleString("sv-SE")} kr`,1,`openProjectCard('${p.id}')`,null,false)).join("");
       return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💰 Fakturering denna månad</h3><span style="font-size:12px;color:#888;margin-left:auto">${total.toLocaleString("sv-SE")} kr</span></div><div style="padding:4px 14px">${inner}</div></div>`;
     }
   };
