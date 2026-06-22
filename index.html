@@ -269,6 +269,8 @@ textarea{resize:vertical;min-height:68px}
   .mobile-menu-btn{display:flex!important;align-items:center;justify-content:center;background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--ink)}
   .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
   .topbar{padding:9px 12px;gap:7px}
+  /* förhindra iOS auto-zoom på fält (kräver minst 16px) */
+  #gsearch,input,select,textarea{font-size:16px!important}
   .topbar-title{font-size:16px}
   .msg-grid{grid-template-columns:1fr!important;gap:10px!important}
   .msg-konvlista{max-height:200px;overflow-y:auto;border-bottom:1px solid var(--cream);padding-bottom:8px}
@@ -1773,6 +1775,7 @@ async function loadAll(){
   try{if(!rtChannel)setupRT();}catch(e){}
   try{await loadUserLang();}catch(e){}
   try{await loadMyRole();applyPermissions();}catch(e){}
+  try{await loadDashHidden();}catch(e){}
   try{updateMsgBadge();}catch(e){}
   try{applyStaticI18n();}catch(e){}
   renderCurrent();
@@ -2375,7 +2378,12 @@ function renderDashboard(){
   const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="none";
 }
 
-function getDashHidden(){try{return JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{return [];}}
+let _dashHidden=null;
+function getDashHidden(){
+  if(_dashHidden!==null)return _dashHidden;
+  try{_dashHidden=JSON.parse(localStorage.getItem("dashHidden")||"[]");}catch{_dashHidden=[];}
+  return _dashHidden;
+}
 function nextStepHtml(){
   const td=today();
   const cands=[];
@@ -2459,7 +2467,16 @@ function deleteQuickLink(id){
     quickLinks=quickLinks.filter(x=>x.id!==id);renderDashboard();toast("Borttagen");
   });
 }
-function setDashHidden(arr){try{localStorage.setItem("dashHidden",JSON.stringify(arr));}catch{}}
+function setDashHidden(arr){
+  _dashHidden=arr;
+  try{localStorage.setItem("dashHidden",JSON.stringify(arr));}catch{}
+  try{sb.from("profiles").update({dash_hidden:arr}).eq("id",me.id).then(()=>{});}catch(e){}
+}
+async function loadDashHidden(){
+  try{const r=await sb.from("profiles").select("dash_hidden").eq("id",me.id).maybeSingle();
+    if(r&&r.data&&Array.isArray(r.data.dash_hidden)){_dashHidden=r.data.dash_hidden;try{localStorage.setItem("dashHidden",JSON.stringify(_dashHidden));}catch{}}
+  }catch(e){}
+}
 function openDashCustomize(){
   const hidden=getDashHidden();const order=window._dashOrder||[];const labels=window._dashSecLabels||{};
   document.getElementById("dash-cust-body").innerHTML=order.map(k=>`<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream);cursor:pointer"><input type="checkbox" data-sec="${k}" ${hidden.includes(k)?"":"checked"} style="width:auto">${e(labels[k]||k)}</label>`).join("");
@@ -6351,6 +6368,7 @@ function updateTodoBadge(){
 }
 
 function openTodo(){
+  try{closeMobileNav();}catch(e){}
   fillTodoSelects();
   renderTodoList();
   openM('m-todo');
@@ -7297,6 +7315,7 @@ let focusProjectId=null;
 let focusCompanyId=null;
 
 function openFocusModal(){
+  try{closeMobileNav();}catch(e){}
   const sel=document.getElementById('focus-co-sel');
   if(sel)sel.innerHTML='<option value="">– Välj bolag –</option>'+companies.map(c=>`<option value="${c.id}"${c.id===focusCompanyId?' selected':''}>${e(c.namn)}</option>`).join('');
   openM('m-focus');
