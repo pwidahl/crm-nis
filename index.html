@@ -435,6 +435,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span>Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
     <div class="nav-grp" id="grp-arbetsbok">
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
+      <div class="nav-item" data-v="checklista" onclick="gotoView('checklista')"><span class="nav-icon">📝</span>Daglig checklista</div>
       <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Dagbok</span></div>
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
@@ -659,7 +660,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-cv">
       <div id="cv-content"></div>
     </div>
-    <div class="view" id="view-meddelanden"><div id="meddelanden-content"></div></div>
+    <div class="view" id="view-checklista"><div id="checklista-content"></div></div>
+<div class="view" id="view-meddelanden"><div id="meddelanden-content"></div></div>
 <div class="view" id="view-admin"><div id="admin-content"></div></div>
 <div class="view" id="view-settings"><div id="settings-content"></div></div>
   </div>
@@ -1078,6 +1080,12 @@ let myRole="kam",myPerms={};
 let allaRoller=[],minRollObj=null;
 let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
 let meddelanden=[];
+let checklista=[],checklistaBockar=[];
+async function loadChecklista(){
+  try{const r=await sb.from("daglig_checklista").select("*").eq("user_id",me.id).order("ordning");checklista=r.data||[];}catch(e){checklista=[];}
+  try{const b=await sb.from("daglig_checklista_bock").select("*").eq("user_id",me.id).eq("datum",liToday());checklistaBockar=b.data||[];}catch(e){checklistaBockar=[];}
+}
+function checklistaArBockad(punktId){return checklistaBockar.some(b=>b.punkt_id===punktId);}
 async function loadMeddelanden(){try{const r=await sb.from("meddelanden").select("*").order("created_at",{ascending:true});meddelanden=r.data||[];}catch(e){meddelanden=[];}}
 function olastaMeddelanden(){return meddelanden.filter(m=>m.mottagare_id===me.id&&!m.last).length;}
 async function loadLinkedin(){
@@ -1124,7 +1132,7 @@ async function loadMyRole(){
   }catch(e){myRole="kam";myPerms={};minRollObj=null;}
 }
 // Mappar varje nav-vy (data-v) till en behörighetssektion
-const VIEW_SECTION={dashboard:"dashboard",weekly:"veckoplan",dagbok:"veckoplan",goals:"goals",prio:"dashboard",schema:"veckoplan",companies:"companies",signals:"signals",koncern:"companies",finans:"companies",konsultbehov:"subconsultants",linkedin:"contacts",kcc:"kcc",mellanhander:"companies",projects:"projects",contacts:"contacts",subconsultants:"subconsultants",relmap:"relmap",followups:"contacts",tasks:"projects",todos:"dashboard",meddelanden:"dashboard",admin:"dashboard"};
+const VIEW_SECTION={dashboard:"dashboard",weekly:"veckoplan",dagbok:"veckoplan",goals:"goals",prio:"dashboard",schema:"veckoplan",companies:"companies",signals:"signals",koncern:"companies",finans:"companies",konsultbehov:"subconsultants",linkedin:"contacts",kcc:"kcc",mellanhander:"companies",projects:"projects",contacts:"contacts",subconsultants:"subconsultants",relmap:"relmap",followups:"contacts",tasks:"projects",todos:"dashboard",meddelanden:"dashboard",admin:"dashboard",checklista:"dashboard"};
 function applyPermissions(){
   const perms=effectivePerms();
   document.querySelectorAll(".nav-item[data-v]").forEach(el=>{
@@ -1764,7 +1772,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -1890,7 +1898,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={weekly:"oversikt",goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={weekly:"oversikt",goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["oversikt","arbetsbok","natverk","bolag","salj","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
@@ -1938,7 +1946,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
   else if(name==="goals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
   else if(name==="finans")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
+  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
 }
@@ -2090,6 +2098,93 @@ function msgSokResultatHtml(namnAv){
       ${m.lank_namn?`<div style="font-size:12px;color:#0a66c2;margin-top:2px">${lankIkon(m.lank_typ)} ${e(m.lank_namn)}</div>`:""}
     </div>`;
   }).join("");
+}
+function renderChecklista(){
+  const box=document.getElementById("checklista-content");if(!box)return;
+  const klara=checklista.filter(p=>checklistaArBockad(p.id)).length;
+  const rows=checklista.map((p,i)=>{
+    const bockad=checklistaArBockad(p.id);
+    return `<div class="week-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+      <input type="checkbox" ${bockad?"checked":""} onchange="toggleChecklista('${p.id}')" style="width:20px;height:20px;cursor:pointer">
+      <span style="flex:1;font-size:14px;${bockad?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span>
+      <button class="btn-icon" onclick="flyttaChecklista('${p.id}',-1)" title="Upp" ${i===0?"disabled style=opacity:.3":""}>↑</button>
+      <button class="btn-icon" onclick="flyttaChecklista('${p.id}',1)" title="Ner" ${i===checklista.length-1?"disabled style=opacity:.3":""}>↓</button>
+      <button class="btn-icon" onclick="redigeraChecklista('${p.id}')" title="Ändra">✏️</button>
+      <button class="btn-icon" style="color:var(--red)" onclick="raderaChecklista('${p.id}')" title="Ta bort">🗑</button>
+    </div>`;
+  }).join("")||'<p style="color:#aaa;padding:14px">Inga punkter än. Lägg till din första nedan.</p>';
+  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px">Daglig checklista</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:16px">Dina fasta punkter. Bockarna nollställs automatiskt varje dag. ${checklista.length?`<strong>${klara}/${checklista.length}</strong> klara idag.`:""}</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="ny-checklista-text" placeholder="Lägg till en punkt…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')laggTillChecklista()">
+      <button class="btn btn-primary btn-sm" onclick="laggTillChecklista()">+ Lägg till</button>
+    </div>
+    ${rows}`;
+}
+async function laggTillChecklista(){
+  const text=v("ny-checklista-text");if(!text){toast("Skriv något först");return;}
+  const maxOrd=checklista.reduce((m,p)=>Math.max(m,p.ordning||0),0);
+  const r=await sb.from("daglig_checklista").insert({user_id:me.id,text,ordning:maxOrd+1}).select().single();
+  if(r.error){toast(r.error.message);return;}
+  checklista.push(r.data);renderChecklista();
+  if(curView==="dashboard")renderDashboard();
+}
+async function toggleChecklista(punktId){
+  if(checklistaArBockad(punktId)){
+    await sb.from("daglig_checklista_bock").delete().eq("punkt_id",punktId).eq("datum",liToday());
+    checklistaBockar=checklistaBockar.filter(b=>b.punkt_id!==punktId);
+  }else{
+    const r=await sb.from("daglig_checklista_bock").insert({user_id:me.id,punkt_id:punktId,datum:liToday()}).select().single();
+    if(!r.error&&r.data)checklistaBockar.push(r.data);
+  }
+  if(curView==="checklista")renderChecklista();
+  if(curView==="dashboard")renderDashboard();
+}
+async function raderaChecklista(punktId){
+  confirm2("Ta bort den här punkten?",async()=>{
+    await sb.from("daglig_checklista").delete().eq("id",punktId);
+    checklista=checklista.filter(p=>p.id!==punktId);
+    renderChecklista();if(curView==="dashboard")renderDashboard();
+  });
+}
+async function redigeraChecklista(punktId){
+  const p=checklista.find(x=>x.id===punktId);if(!p)return;
+  const ny=prompt("Ändra punkten:",p.text);if(ny===null||!ny.trim())return;
+  await sb.from("daglig_checklista").update({text:ny.trim()}).eq("id",punktId);
+  p.text=ny.trim();renderChecklista();if(curView==="dashboard")renderDashboard();
+}
+async function flyttaChecklista(punktId,delta){
+  const idx=checklista.findIndex(p=>p.id===punktId);
+  const ny=idx+delta;
+  if(ny<0||ny>=checklista.length)return;
+  const a=checklista[idx],b=checklista[ny];
+  const ao=a.ordning,bo=b.ordning;
+  // byt ordning
+  await sb.from("daglig_checklista").update({ordning:bo}).eq("id",a.id);
+  await sb.from("daglig_checklista").update({ordning:ao}).eq("id",b.id);
+  a.ordning=bo;b.ordning=ao;
+  checklista.sort((x,y)=>(x.ordning||0)-(y.ordning||0));
+  renderChecklista();
+}
+function checklistaDashHtml(){
+  if(typeof checklista==="undefined"||!checklista.length)return "";
+  const klara=checklista.filter(p=>checklistaArBockad(p.id)).length;
+  const alltKlart=klara===checklista.length;
+  const rows=checklista.slice(0,6).map(p=>{
+    const bockad=checklistaArBockad(p.id);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+      <input type="checkbox" ${bockad?"checked":""} onchange="toggleChecklista('${p.id}')" style="width:17px;height:17px;cursor:pointer">
+      <span style="font-size:13px;${bockad?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span>
+    </div>`;
+  }).join("");
+  return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid ${alltKlart?"var(--green)":"var(--warm)"};border-radius:var(--r);margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <strong style="font-size:14px;flex:1">📝 Daglig checklista</strong>
+      <span style="font-size:12px;color:${alltKlart?"var(--green)":"#888"}">${alltKlart?"✓ Allt klart!":klara+"/"+checklista.length}</span>
+      <button class="btn btn-outline btn-xs" onclick="gotoView('checklista')">Öppna</button>
+    </div>
+    ${rows}${checklista.length>6?`<div style="font-size:12px;color:#aaa;margin-top:4px">+${checklista.length-6} till…</div>`:""}
+  </div>`;
 }
 async function renderMeddelanden(){
   const box=document.getElementById("meddelanden-content");if(!box)return;
@@ -2309,7 +2404,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${liDashHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${checklistaDashHtml()}${liDashHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
