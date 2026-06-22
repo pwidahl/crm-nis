@@ -1070,6 +1070,8 @@ textarea{resize:vertical;min-height:68px}
 const SB_URL="https://nchrbkeyvwqyswwyxkgn.supabase.co";
 const SB_KEY="sb_publishable_vXPXNDkdnvvDAiRf3XKZaQ_J1UeoP23";
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
+console.log("%c=== CRM VERSION 2026-06-22-B LADDAD ===","color:lime;font-size:16px");
+window.__CRM_VERSION="2026-06-22-B";
 
 let me=null,contacts=[],actLog=[],notes={},companies=[],signals=[],network=[],settings=null,subs=[],subSkills=[];
 let myRole="kam",myPerms={};
@@ -5248,6 +5250,7 @@ async function liStep(field,delta){
   console.log("liStep SKICKAR:",JSON.stringify(data));
   const r=await sb.from("linkedin_aktivitet").upsert(data,{onConflict:"user_id,datum"}).select();
   console.log("liStep SVAR:",JSON.stringify(r.data),"FEL:",r.error);
+  alert("SKICKADE: "+data[field]+" "+field+"\nSVAR: "+JSON.stringify(r.data)+"\nFEL: "+(r.error?r.error.message:"inget"));
   if(r.error){console.error("LinkedIn-spar fel:",r.error);alert("Kunde inte spara: "+r.error.message+(r.error.details?" / "+r.error.details:""));return;}
   const sparad=Array.isArray(r.data)?r.data[0]:r.data;
   if(sparad){const idx2=liAktivitet.findIndex(a=>a.datum===liToday());if(idx2>=0)liAktivitet[idx2]=sparad;else liAktivitet.unshift(sparad);}
