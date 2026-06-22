@@ -244,9 +244,9 @@ textarea{resize:vertical;min-height:68px}
 .inline-create input{flex:1}
 .inline-create .btn{flex-shrink:0;padding:6px 10px;font-size:12px}
 .mobile-menu-btn{display:none}
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
-.dash-grid>*{margin-bottom:0!important}
-@media(max-width:768px){.dash-grid{grid-template-columns:1fr}}
+.dash-cols{column-count:2;column-gap:14px;max-width:1100px}
+.dash-cols>*{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;display:block;margin:0 0 14px 0!important;max-height:360px;overflow-y:auto}
+@media(max-width:768px){.dash-cols{column-count:1}}
 
 @media(max-width:768px){
   .shell{flex-direction:column;height:auto;min-height:100vh}
@@ -2407,7 +2407,7 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`${nextStepHtml()}${checklistaDashHtml()}${liDashHtml()}${kccDashSektionHtml()}<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -2467,7 +2467,8 @@ function renderDashboard(){
 
   document.getElementById("dash-chain").innerHTML=`
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ Anpassa</button></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;align-items:start">
+    <div class="dash-cols">
+      ${nextStepHtml()}${checklistaDashHtml()}${liDashHtml()}${kccDashSektionHtml()}
       ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Alla sektioner är dolda. Klicka "Anpassa" för att visa några.</p>'}
     </div>`;
   window._dashSecLabels=SEC_LABELS;window._dashOrder=order;
