@@ -430,7 +430,6 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span>Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
     <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span>Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
     <div class="nav-grp" id="grp-oversikt">
-      <div class="nav-item" data-v="weekly" onclick="gotoView('weekly')"><span class="nav-icon">📅</span><span id="nl-weekly">Veckovy</span></div>
       <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
       <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span><span data-i18n="nav_prio">Prioritering</span></div>
       <div class="nav-item" data-v="schema" onclick="gotoView('schema')"><span class="nav-icon">🗓️</span><span data-i18n="nav_schema">Arbetsschema</span></div>
@@ -505,7 +504,6 @@ textarea{resize:vertical;min-height:68px}
 
   <div class="content">
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title" data-i18n="dash_kommande_uppf">Kommande uppföljningar</p><div id="dash-fups"></div></div>
-    <div class="view" id="view-weekly"><div id="weekly-content"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
     <div class="view" id="view-prio"><div id="prio-content"></div></div>
     <div class="view" id="view-linkedin"><div id="linkedin-content"></div></div>
@@ -1855,7 +1853,7 @@ function updateBadges(){
   const lib=document.getElementById("badge-linkedin");if(lib){lib.textContent=li;lib.style.display=li>0?"inline":"none";}
 }
 
-function updateWeekLabel(){const loc=LANG==="en"?"en-US":"sv-SE";const d=new Date().toLocaleDateString(loc,{weekday:"long"});document.getElementById("nl-weekly").textContent=d.charAt(0).toUpperCase()+d.slice(1);}
+function updateWeekLabel(){const el=document.getElementById("nl-weekly");if(!el)return;const loc=LANG==="en"?"en-US":"sv-SE";const d=new Date().toLocaleDateString(loc,{weekday:"long"});el.textContent=d.charAt(0).toUpperCase()+d.slice(1);}
 
 function fillSelects(){
   ["co-pipe-filter","co-pipe"].forEach(id=>{const el=document.getElementById(id);if(!el)return;const curr=el.value;el.innerHTML=(id==="co-pipe-filter"?'<option value="">Alla steg</option>':"")+PIPELINE.map(p=>`<option value="${p}">${pipeLabel(p)}</option>`).join("");el.value=curr;});
@@ -1901,7 +1899,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={weekly:"oversikt",goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["oversikt","arbetsbok","natverk","bolag","salj","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
@@ -1949,7 +1947,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
   else if(name==="goals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
   else if(name==="finans")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
-  const renders={dashboard:renderDashboard,weekly:renderWeekly,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
+  const renders={dashboard:renderDashboard,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
 }
@@ -2407,7 +2405,9 @@ function renderDashboard(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  const _days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
+  const _dNow=new Date();const _dagText=_days[_dNow.getDay()]+" "+_dNow.getDate()+" "+["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"][_dNow.getMonth()];
+  document.getElementById("dash-kpi").innerHTML=`<p style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);margin-bottom:12px">${_dagText}</p><div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -2461,10 +2461,30 @@ function renderDashboard(){
     tolog:()=>{const list=subs.filter(s=>s.status!=="Arkiverad").map(s=>({s,p:subStepProgress(s.id)})).filter(x=>x.p.totalDone<x.p.total);const inner=list.length?list.sort((a,b)=>a.p.totalDone-b.p.totalDone).slice(0,10).map(({s,p})=>{const nextStep=PONTY_STEPS.find(st=>!stepDoneByKey(st.key,s.id));return`<div class="week-row" onclick="openSubCard('${s.id}')" style="cursor:pointer"><div style="flex:1;min-width:0"><div class="week-rn">🧑‍💼 ${e(s.fornamn)} ${e(s.efternamn)}</div><div class="week-rs">Steg ${p.totalDone}/${p.total}${nextStep?" · nästa: "+e(nextStep.titel):""}</div></div></div>`;}).join("")+(list.length>10?`<div class="week-row" style="color:#888;font-size:12px">+${list.length-10} till</div>`:""):'<p style="color:#888;font-size:13px;padding:6px 0">Alla underkonsulter klara 🎉</p>';return`<div class="dash-sec week-sec" data-sec="tolog" style="margin-bottom:0;${list.length?"border-left:4px solid var(--gold)":""}"><div class="week-sec-hdr"><h3>📋 Underkonsult-process</h3><span style="font-size:12px;color:#888;margin-left:auto">${list.length} pågår</span></div><div style="padding:4px 14px">${inner}</div></div>`;},
     checklista_w:()=>checklistaDashHtml(),
     linkedin_w:()=>liDashHtml(),
-    kcc_w:()=>kccDashSektionHtml()
+    kcc_w:()=>kccDashSektionHtml(),
+    budget_w:()=>{
+      const bw=projects.filter(p=>p.status==="Aktiv"&&Number(p.estimerad_tid)>0).map(p=>({p,pct:Math.round((projLoggedHours(p.id)/Number(p.estimerad_tid))*100)})).filter(x=>x.pct>=75).sort((a,b)=>b.pct-a.pct);
+      if(!bw.length)return "";
+      const inner=bw.map(({p,pct})=>{const co=projCompany(p);return weekRow(`${e(p.namn)}`,`${e(co?.namn||"--")} · ${pct}% av ${p.estimerad_tid}h`,pct>=100?3:2,`openProjectCard('${p.id}')`,null,false);}).join("");
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>⚠️ Budgetvarning</h3><span style="font-size:12px;color:#888;margin-left:auto">${bw.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+    },
+    lipaminn_w:()=>{
+      const lp=contacts.filter(c=>{const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));const last=logs[0]?.datum;return !last||(Math.round((new Date()-new Date(last))/86400000)>30);}).slice(0,10);
+      if(!lp.length)return "";
+      const inner=lp.map(c=>weekRow(`${e(c.fornamn)} ${e(c.efternamn)}`,`${e(c.foretag||"--")} · 30+ dagar utan LinkedIn`,1,`openCard('${c.id}')`,null,false)).join("");
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💼 LinkedIn – dags att interagera</h3><span style="font-size:12px;color:#888;margin-left:auto">${lp.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+    },
+    fakt_w:()=>{
+      const month=curMonth();
+      const fakt=projects.filter(p=>p.status==="Aktiv").map(p=>({p,amt:projInvoiceAmount(p,month),h:projBillableHours(p.id,month)})).filter(x=>x.h>0).sort((a,b)=>b.amt-a.amt);
+      if(!fakt.length)return "";
+      const total=fakt.reduce((s,x)=>s+x.amt,0);
+      const inner=fakt.map(({p,amt,h})=>weekRow(`${e(p.namn)}`,`${h}h · ${amt.toLocaleString("sv-SE")} kr`,1,`openProjectCard('${p.id}')`,null,false)).join("");
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💰 Fakturering denna månad</h3><span style="font-size:12px;color:#888;margin-left:auto">${total.toLocaleString("sv-SE")} kr</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+    }
   };
-  const SEC_LABELS={checklista_w:"📝 Daglig checklista",linkedin_w:"in Dagens LinkedIn",kcc_w:"⭐ KCC",fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
-  const order=["checklista_w","linkedin_w","kcc_w","fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
+  const SEC_LABELS={checklista_w:"📝 Daglig checklista",linkedin_w:"in Dagens LinkedIn",kcc_w:"⭐ KCC",budget_w:"⚠️ Budgetvarning",lipaminn_w:"💼 LinkedIn-påminnelser",fakt_w:"💰 Fakturering denna månad",fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
+  const order=["checklista_w","linkedin_w","kcc_w","budget_w","lipaminn_w","fakt_w","fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
   const hiddenRaw=getDashHidden();
   // om användaren aldrig gjort ett val (null) → dölj allt som standard
   const hidden=(hiddenRaw===null||hiddenRaw==="__none__")?order.slice():hiddenRaw;
