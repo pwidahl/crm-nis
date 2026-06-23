@@ -1281,6 +1281,8 @@ const I18N={
     dsl_inga_valda:'Inga sektioner valda. Klicka "Anpassa" för att lägga till.',dsl_kpi_uppfolj:"uppfölj.",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"nya signaler",dsl_kpi_uppdrag:"aktiva uppdrag",dsl_anpassa:"Anpassa",
     msg_titel:"Meddelanden",msg_nytt_till:"Nytt meddelande till…",msg_starta:"Starta",msg_inga_konv:"Inga konversationer än.",msg_valj_konv:"Välj en konversation eller starta en ny.",msg_skriv:"Skriv ett meddelande…",msg_skicka:"Skicka",msg_sok_ph:"🔍 Sök i meddelanden (text eller person)…",msg_hoppa:"Hoppa över",msg_lanka:"Länka till meddelande",msg_lank_sok:"Sök bolag, kontakt eller lead…",msg_du:"Du",msg_anvandare:"Användare",msg_traffar:"träffar",msg_inga_traffar:"Inga meddelanden matchar",msg_du_skrev:"du skrev",msg_skrev:"skrev",msg_ingen_traff:"Ingen träff.",msg_valj_mottagare:"Välj en mottagare",msg_vem:"Vem interagerade du med?",
     li_dagens_klar:"Dagens aktivitet klar!",li_dagens_aktivitet:"Dagens LinkedIn-aktivitet",li_klart_idag:"klart för idag!",li_gillningar:"Gillningar",li_kommentarer:"Kommentarer",li_kontaktforfr:"Kontaktförfrågningar",li_senaste_interakt:"Senaste interaktioner",
+    ns_nasta_steg:"Nästa steg",ns_folj_upp:"Följ upp",ns_logga_kontakt:"Logga kontakt",ns_oppna_kort:"Öppna kort",ns_till_tasks:"Till tasks",ns_oppna_todo:"Öppna todo",ns_oppna_lead:"Öppna lead",ns_till_kcc:"Till KCC",ns_task_forsenad:"task försenad",ns_todo_forsenad:"todo försenad",ns_deadline_idag:"deadline idag",ns_dagar:"dagar",ns_idag:"idag",ns_forsenad:"försenad",ns_saker_vantar:"saker väntar",ns_oppna:"Öppna",ns_logga:"Logga",
+    goal_visa_uppnadda:"Visa uppnådda",goal_dolj_uppnadda:"Dölj uppnådda",prio_instruktion:"Rangordna dina öppna uppgifter med pilarna – överst = högst prioritet. Ordningen sparas.",
     nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
     sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk",
     dash_kommande_uppf:"Kommande uppföljningar",dash_oppna_mal:"Öppna mål",dash_hela_schemat:"Hela schemat",
@@ -1384,6 +1386,8 @@ const I18N={
     dsl_inga_valda:'No sections selected. Click "Customize" to add some.',dsl_kpi_uppfolj:"follow-ups",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"new signals",dsl_kpi_uppdrag:"active projects",dsl_anpassa:"Customize",
     msg_titel:"Messages",msg_nytt_till:"New message to…",msg_starta:"Start",msg_inga_konv:"No conversations yet.",msg_valj_konv:"Select a conversation or start a new one.",msg_skriv:"Write a message…",msg_skicka:"Send",msg_sok_ph:"🔍 Search messages (text or person)…",msg_hoppa:"Skip",msg_lanka:"Link to message",msg_lank_sok:"Search company, contact or lead…",msg_du:"You",msg_anvandare:"User",msg_traffar:"results",msg_inga_traffar:"No messages match",msg_du_skrev:"you wrote",msg_skrev:"wrote",msg_ingen_traff:"No match.",msg_valj_mottagare:"Select a recipient",msg_vem:"Who did you interact with?",
     li_dagens_klar:"Today's activity done!",li_dagens_aktivitet:"Today's LinkedIn activity",li_klart_idag:"done for today!",li_gillningar:"Likes",li_kommentarer:"Comments",li_kontaktforfr:"Connection requests",li_senaste_interakt:"Recent interactions",
+    ns_nasta_steg:"Next step",ns_folj_upp:"Follow up",ns_logga_kontakt:"Log contact",ns_oppna_kort:"Open card",ns_till_tasks:"To tasks",ns_oppna_todo:"Open to-do",ns_oppna_lead:"Open lead",ns_till_kcc:"To KCC",ns_task_forsenad:"task overdue",ns_todo_forsenad:"to-do overdue",ns_deadline_idag:"deadline today",ns_dagar:"days",ns_idag:"today",ns_forsenad:"overdue",ns_saker_vantar:"items waiting",ns_oppna:"Open",ns_logga:"Log",
+    goal_visa_uppnadda:"Show achieved",goal_dolj_uppnadda:"Hide achieved",prio_instruktion:"Rank your open tasks with the arrows – top = highest priority. The order is saved.",
     nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
     sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language",
     dash_kommande_uppf:"Upcoming follow-ups",dash_oppna_mal:"Open goals",dash_hela_schemat:"Full schedule",
@@ -2532,36 +2536,36 @@ function nextStepHtml(){
   contacts.forEach(c=>{
     if(c.nasta_foljup&&c.ar_aktiv!==false&&c.status!=="Inaktiv"&&c.status!=="Vilande"&&c.nasta_foljup<=td){
       const overdueDays=Math.round((new Date(td)-new Date(c.nasta_foljup))/86400000);
-      cands.push({urg:1000+overdueDays,icon:"📞",txt:`Följ upp ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`försenad ${overdueDays} dagar`:"idag",btn:"Logga kontakt",act:`openLogModal('${c.id}')`,card:`openCard('${c.id}')`});
+      cands.push({urg:1000+overdueDays,icon:"📞",txt:`${TR("ns_folj_upp")} ${c.fornamn} ${c.efternamn}${c.foretag?" ("+c.foretag+")":""}`,sub:c.nasta_foljup<td?`${TR("ns_forsenad")} ${overdueDays} ${TR("ns_dagar")}`:TR("ns_idag"),btn:TR("ns_logga_kontakt"),act:`openLogModal('${c.id}')`,card:`openCard('${c.id}')`});
     }
   });
   // försenade tasks
   tasks.filter(t=>t.status!=="Klar"&&t.due_date&&t.due_date<td).forEach(t=>{
     const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
-    cands.push({urg:900+overdueDays,icon:"✓",txt:t.title,sub:`task försenad ${overdueDays} dagar`,btn:"Till tasks",act:`gotoView('tasks')`});
+    cands.push({urg:900+overdueDays,icon:"✓",txt:t.title,sub:`${TR("ns_task_forsenad")} ${overdueDays} ${TR("ns_dagar")}`,btn:TR("ns_till_tasks"),act:`gotoView('tasks')`});
   });
   // försenade todos
   todos.filter(t=>!t.done&&t.due_date&&t.due_date<td).forEach(t=>{
     const overdueDays=Math.round((new Date(td)-new Date(t.due_date))/86400000);
     const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
-    cands.push({urg:800+overdueDays+pw,icon:"✅",txt:t.text,sub:`todo försenad ${overdueDays} dagar`,btn:"Öppna todo",act:`openTodo()`});
+    cands.push({urg:800+overdueDays+pw,icon:"✅",txt:t.text,sub:`${TR("ns_todo_forsenad")} ${overdueDays} ${TR("ns_dagar")}`,btn:TR("ns_oppna_todo"),act:`openTodo()`});
   });
   // todos med deadline idag (hög prio)
   todos.filter(t=>!t.done&&t.due_date===td).forEach(t=>{
     const pw={Hög:30,Medium:10,Låg:0}[t.prioritet]||10;
-    cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:"deadline idag",btn:"Öppna todo",act:`openTodo()`});
+    cands.push({urg:500+pw,icon:"✅",txt:t.text,sub:TR("ns_deadline_idag"),btn:"Öppna todo",act:`openTodo()`});
   });
   // leads med försenat nästa steg
   signals.filter(s=>s.status!=="ignorerad"&&s.nasta_steg&&s.nasta_steg_datum&&s.nasta_steg_datum<=td).forEach(s=>{
     const overdueDays=Math.round((new Date(td)-new Date(s.nasta_steg_datum))/86400000);
     const sw=(s.signal_styrka||1)*15;
-    cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:"Öppna lead",act:`openLead('${s.id}')`});
+    cands.push({urg:700+overdueDays+sw,icon:"⚡",txt:`${sigName(s)}: ${s.nasta_steg}`,sub:overdueDays>0?`lead-steg försenat ${overdueDays} dagar`:"lead-steg idag",btn:TR("ns_oppna_lead"),act:`openLead('${s.id}')`});
   });
   // Potentiella KCC nära klart (4 av 5 steg) i fokusraden
   kccKandidater.filter(k=>!k.ar_kcc).forEach(k=>{
     const done=KCK_STEG.filter(st=>(k.steg||{})[st]).length;
     if(done<4)return; // visa bara de nära klart
-    cands.push({urg:840+done,icon:"⭐",txt:`KCC: ${k.namn}`,sub:`${done}/5 ${TR("kck_steg_klara")}`,btn:"Till KCC",act:`openKckSteg('${k.id}')`});
+    cands.push({urg:840+done,icon:"⭐",txt:`KCC: ${k.namn}`,sub:`${done}/5 ${TR("kck_steg_klara")}`,btn:TR("ns_till_kcc"),act:`openKckSteg('${k.id}')`});
   });
   if(!cands.length){
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,#f0f7f0,#fff);border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:12px"><span style="font-size:20px">✨</span><div style="flex:1"><div style="font-weight:600;font-size:14px">${t("dash_allt_kontroll")}</div><div style="font-size:12px;color:#888">Inget försenat eller akut just nu – bra jobbat!</div></div></div>`;
@@ -2571,11 +2575,11 @@ function nextStepHtml(){
   return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#fdf3e7,#fff);border:1px solid var(--cream);border-left:4px solid var(--warm);border-radius:var(--r);margin-bottom:12px">
     <span style="font-size:22px">${top.icon}</span>
     <div style="flex:1;min-width:0">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--warm);font-weight:600;margin-bottom:2px">Nästa steg${cands.length>1?` · ${cands.length} ${TR("fr_saker_vantar")}`:""}</div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--warm);font-weight:600;margin-bottom:2px">${TR("ns_nasta_steg")}${cands.length>1?` · ${cands.length} ${TR("ns_saker_vantar")}`:""}</div>
       <div style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(top.txt)}</div>
       <div style="font-size:12px;color:#888">${e(top.sub)}</div>
     </div>
-    ${top.card?`<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="${top.card}">Öppna kort →</button>`:""}
+    ${top.card?`<button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="${top.card}">${TR("ns_oppna_kort")} →</button>`:""}
     <button class="btn btn-warm btn-sm" style="white-space:nowrap" onclick="${top.act}">${e(top.btn)} →</button>
   </div>`;
 }
@@ -2699,7 +2703,7 @@ function renderWeekly(){
     ${fakt.length?weekSec("Faktura denna månad",fakt.map(({p,amt,h})=>{const co=projCompany(p);return weekRow(e(p.namn),`${e(co?.namn||"--")} · ${h.toFixed(1)}h · ${money(amt)}`,3,`openProjectCard('${p.id}')`,null,false);})):""}`
 }
 function weekSec(title,rows){return`<div class="week-sec"><div class="week-sec-hdr"><h3>${title}</h3><span style="font-size:12px;color:#888">${rows.length}</span></div>${rows.length?rows.join(""):'<div class="week-row" style="color:#aaa;font-size:13px;cursor:default">Inget att visa</div>'}</div>`;}
-function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0;return`<div class="week-row" onclick="${onclick}"><div class="sring ${scoreClass(sc)}" style="width:36px;height:36px;font-size:12px;border-width:2px">${sc}</div><div style="flex:1"><div class="week-rn">${title}</div><div class="week-rs">${sub}</div></div>${showLog&&onclick2?`<button class="btn btn-warm btn-xs" onclick="event.stopPropagation();${onclick2}">Logga</button>`:""}<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();${onclick}">Öppna</button></div>`;}
+function weekRow(title,sub,val,onclick,onclick2,showLog){const sc=Number(val)||0;return`<div class="week-row" onclick="${onclick}"><div class="sring ${scoreClass(sc)}" style="width:36px;height:36px;font-size:12px;border-width:2px">${sc}</div><div style="flex:1"><div class="week-rn">${title}</div><div class="week-rs">${sub}</div></div>${showLog&&onclick2?`<button class="btn btn-warm btn-xs" onclick="event.stopPropagation();${onclick2}">${TR("ns_logga")}</button>`:""}<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();${onclick}">${TR("ns_oppna")}</button></div>`;}
 
 // UPPDRAG – kundkort
 function renderProjects(){
@@ -4335,7 +4339,7 @@ function renderGoals(){
     </div></div>`;
   };
 
-  const toggleBtn=achieved>0?`<div style="margin-bottom:14px"><button class="btn btn-outline btn-sm" onclick="showAchievedGoals=!showAchievedGoals;renderGoals()">${showAchievedGoals?"Dölj uppnådda":`Visa uppnådda (${achieved})`}</button></div>`:"";
+  const toggleBtn=achieved>0?`<div style="margin-bottom:14px"><button class="btn btn-outline btn-sm" onclick="showAchievedGoals=!showAchievedGoals;renderGoals()">${showAchievedGoals?TR("goal_dolj_uppnadda"):`${TR("goal_visa_uppnadda")} (${achieved})`}</button></div>`:"";
 
   const grid=visible.length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">${visible.map(cardHtml).join("")}</div>`:'<div class="empty" style="padding:30px"><p style="color:#888">Alla mål är uppnådda! 🎉 Klicka "Visa uppnådda" ovan för att se dem.</p></div>';
 
@@ -4419,7 +4423,7 @@ function renderPrio(){
   if(!list.length){document.getElementById("prio-content").innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Inga öppna todos att prioritera. Skapa todos så kan du rangordna dem här.</p></div>';return;}
   const pi={Hög:"🔴",Medium:"🟡",Låg:"🟢"};
   document.getElementById("prio-content").innerHTML=`
-    <div class="privacy-note" style="margin-bottom:14px">Rangordna dina öppna uppgifter med pilarna – överst = högst prioritet. Ordningen sparas. <button class="btn btn-outline btn-xs" onclick="autoSortPrio()" style="margin-left:6px">${t("prio_sortera")}</button></div>
+    <div class="privacy-note" style="margin-bottom:14px">${TR("prio_instruktion")} <button class="btn btn-outline btn-xs" onclick="autoSortPrio()" style="margin-left:6px">${t("prio_sortera")}</button></div>
     ${list.map((t,i)=>{
       const c=t.contact_id?contacts.find(x=>x.id===t.contact_id):null;
       const co=t.company_id?companies.find(x=>x.id===t.company_id):null;
