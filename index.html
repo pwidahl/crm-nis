@@ -429,24 +429,24 @@ textarea{resize:vertical;min-height:68px}
   <div class="sidebar-logo"><h1>CRM</h1><p>NIS</p></div>
   <nav class="nav">
     <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
-    <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span>Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
-    <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span>Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
+    <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span data-i18n="nav_meddelanden">Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
+    <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span data-i18n="navg_oversikt">Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
     <div class="nav-grp" id="grp-oversikt">
       <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
       <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span><span data-i18n="nav_prio">Prioritering</span></div>
       <div class="nav-item" data-v="schema" onclick="gotoView('schema')"><span class="nav-icon">🗓️</span><span data-i18n="nav_schema">Arbetsschema</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span>Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
     <div class="nav-grp" id="grp-arbetsbok">
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
-      <div class="nav-item" data-v="checklista" onclick="gotoView('checklista')"><span class="nav-icon">📝</span>Daglig checklista</div>
+      <div class="nav-item" data-v="checklista" onclick="gotoView('checklista')"><span class="nav-icon">📝</span><span data-i18n="nav_checklista">Daglig checklista</span></div>
       <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Dagbok</span></div>
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
       <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span><span data-i18n="nav_uppfoljningar">Uppföljningar</span><span class="nav-badge" id="badge-followups">0</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('natverk')" style="cursor:pointer;user-select:none"><span>Nätverk</span> <span class="nav-sec-arrow" id="arr-natverk">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('natverk')" style="cursor:pointer;user-select:none"><span data-i18n="navg_natverk">Nätverk</span> <span class="nav-sec-arrow" id="arr-natverk">▾</span></div>
     <div class="nav-grp" id="grp-natverk">
       <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span><span data-i18n="nav_kcc">KCC</span></div>
       <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span><span data-i18n="nav_underkonsulter">Underkonsulter</span></div>
@@ -455,17 +455,17 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="network" onclick="gotoView('network')"><span class="nav-icon">●</span><span data-i18n="nav_natverk_item">Nätverk</span></div>
       <div class="nav-item" data-v="relmap" onclick="gotoView('relmap')"><span class="nav-icon">🗺️</span><span data-i18n="nav_relmap">Relationskarta</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span>Bolag</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span data-i18n="navg_bolag">Bolag</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
       <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Koncernkarta</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('salj')" style="cursor:pointer;user-select:none"><span>Sälj &amp; leads</span> <span class="nav-sec-arrow" id="arr-salj">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('salj')" style="cursor:pointer;user-select:none"><span data-i18n="navg_salj">Sälj &amp; leads</span> <span class="nav-sec-arrow" id="arr-salj">▾</span></div>
     <div class="nav-grp" id="grp-salj">
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span><span data-i18n="nav_konsultbehov">Konsultbehov</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span>Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span data-i18n="navg_analys">Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
     <div class="nav-grp" id="grp-analys">
       <div class="nav-item" data-v="stats" onclick="gotoView('stats')"><span class="nav-icon">📈</span><span data-i18n="nav_statistik">Statistik</span></div>
       <div class="nav-item" data-v="myactivity" onclick="gotoView('myactivity')"><span class="nav-icon">📋</span><span data-i18n="nav_minaktivitet">Min aktivitet</span></div>
@@ -473,18 +473,18 @@ textarea{resize:vertical;min-height:68px}
       <div class="nav-item" data-v="tidrapport" onclick="gotoView('tidrapport')"><span class="nav-icon">📊</span><span data-i18n="nav_tidrapport">Tidrapport</span></div>
       <div class="nav-item" data-v="finans" onclick="gotoView('finans')"><span class="nav-icon">📐</span><span data-i18n="nav_nyckeltal">Nyckeltal</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none"><span>Kunskapsbank</span> <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none"><span data-i18n="navg_kunskap">Kunskapsbank</span> <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
     <div class="nav-grp" id="grp-kunskap">
       <div class="nav-item" data-v="kb" onclick="gotoView('kb')"><span class="nav-icon">📚</span><span data-i18n="nav_faktabank">Faktabank</span></div>
       <div class="nav-item" data-v="cv" onclick="gotoView('cv')"><span class="nav-icon">📄</span><span data-i18n="nav_cv">CV / Erfarenhet</span></div>
     </div>
-    <div class="nav-sec" onclick="toggleNavSec('system')" style="cursor:pointer;user-select:none"><span>System</span> <span class="nav-sec-arrow" id="arr-system">▾</span></div>
+    <div class="nav-sec" onclick="toggleNavSec('system')" style="cursor:pointer;user-select:none"><span data-i18n="navg_system">System</span> <span class="nav-sec-arrow" id="arr-system">▾</span></div>
     <div class="nav-grp" id="grp-system">
-      <div class="nav-item" id="nav-admin" data-v="admin" style="display:none" onclick="gotoView('admin')"><span class="nav-icon">👥</span><span>Användare</span></div>
+      <div class="nav-item" id="nav-admin" data-v="admin" style="display:none" onclick="gotoView('admin')"><span class="nav-icon">👥</span><span data-i18n="nav_anvandare">Användare</span></div>
       <div class="nav-item" data-v="settings" onclick="gotoView('settings')"><span class="nav-icon">⚙</span><span data-i18n="nav_installningar">Inställningar</span></div>
     </div>
     <div class="nav-spacer"></div>
-    <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label">Fokusläge</span></div>
+    <div class="nav-item" id="nav-focus" onclick="openFocusModal()"><span class="nav-icon" id="focus-nav-icon">○</span><span id="focus-nav-label" data-i18n="nav_fokuslage">Fokusläge</span></div>
   </nav>
 </aside>
 <div class="nav-overlay" onclick="toggleMobileNav()"></div>
@@ -1275,6 +1275,8 @@ const I18N={
     nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
+    nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
+    navg_oversikt:"Översikt",navg_arbetsbok:"Arbetsbok",navg_natverk:"Nätverk",navg_bolag:"Bolag",navg_salj:"Sälj & leads",navg_analys:"Analys",navg_kunskap:"Kunskapsbank",navg_system:"System",
     nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
     sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk",
     dash_kommande_uppf:"Kommande uppföljningar",dash_oppna_mal:"Öppna mål",dash_hela_schemat:"Hela schemat",
@@ -1372,6 +1374,8 @@ const I18N={
     nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
+    nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
+    navg_oversikt:"Overview",navg_arbetsbok:"Workbook",navg_natverk:"Network",navg_bolag:"Companies",navg_salj:"Sales & leads",navg_analys:"Analytics",navg_kunskap:"Knowledge base",navg_system:"System",
     nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
     sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language",
     dash_kommande_uppf:"Upcoming follow-ups",dash_oppna_mal:"Open goals",dash_hela_schemat:"Full schedule",
