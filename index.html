@@ -1277,6 +1277,8 @@ const I18N={
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
     navg_oversikt:"Översikt",navg_arbetsbok:"Arbetsbok",navg_natverk:"Nätverk",navg_bolag:"Bolag",navg_salj:"Sälj & leads",navg_analys:"Analys",navg_kunskap:"Kunskapsbank",navg_system:"System",
+    dsl_checklista:"Daglig checklista",dsl_linkedin:"Dagens LinkedIn",dsl_kcc:"KCC",dsl_budget:"Budgetvarning",dsl_lipaminn:"LinkedIn-påminnelser",dsl_fakt:"Fakturering denna månad",dsl_fups:"Att följa upp idag",dsl_leads:"Heta leads",dsl_konsult:"Potentiellt konsultbehov",dsl_tasks:"Försenade tasks",dsl_todo:"Todo",dsl_tolog:"Underkonsult-process",dsl_goals:"Mål",dsl_schema:"Arbetsschema",dsl_links:"Snabblänkar",dsl_birthdays:"Kommande födelsedagar",dsl_gdpr:"GDPR att se över",dsl_leadsnext:"Leads utan nästa steg",dsl_dagar_utan_li:"30+ dagar utan LinkedIn",dsl_inga_budget:"Inga budgetvarningar",dsl_inga_li:"Inga påminnelser",dsl_inga_fakt:"Ingen fakturering än",
+    dsl_inga_valda:'Inga sektioner valda. Klicka "Anpassa" för att lägga till.',dsl_kpi_uppfolj:"uppfölj.",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"nya signaler",dsl_kpi_uppdrag:"aktiva uppdrag",dsl_anpassa:"Anpassa",
     nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
     sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk",
     dash_kommande_uppf:"Kommande uppföljningar",dash_oppna_mal:"Öppna mål",dash_hela_schemat:"Hela schemat",
@@ -1376,6 +1378,8 @@ const I18N={
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
     navg_oversikt:"Overview",navg_arbetsbok:"Workbook",navg_natverk:"Network",navg_bolag:"Companies",navg_salj:"Sales & leads",navg_analys:"Analytics",navg_kunskap:"Knowledge base",navg_system:"System",
+    dsl_checklista:"Daily checklist",dsl_linkedin:"Today's LinkedIn",dsl_kcc:"KCC",dsl_budget:"Budget warning",dsl_lipaminn:"LinkedIn reminders",dsl_fakt:"Invoicing this month",dsl_fups:"To follow up today",dsl_leads:"Hot leads",dsl_konsult:"Potential consultant need",dsl_tasks:"Overdue tasks",dsl_todo:"To-do",dsl_tolog:"Subconsultant process",dsl_goals:"Goals",dsl_schema:"Work schedule",dsl_links:"Quick links",dsl_birthdays:"Upcoming birthdays",dsl_gdpr:"GDPR to review",dsl_leadsnext:"Leads without next step",dsl_dagar_utan_li:"30+ days without LinkedIn",dsl_inga_budget:"No budget warnings",dsl_inga_li:"No reminders",dsl_inga_fakt:"No invoicing yet",
+    dsl_inga_valda:'No sections selected. Click "Customize" to add some.',dsl_kpi_uppfolj:"follow-ups",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"new signals",dsl_kpi_uppdrag:"active projects",dsl_anpassa:"Customize",
     nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
     sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language",
     dash_kommande_uppf:"Upcoming follow-ups",dash_oppna_mal:"Open goals",dash_hela_schemat:"Full schedule",
@@ -2414,9 +2418,10 @@ function _renderDashboardInner(){
   const of2=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2&&c.ar_aktiv!==false).length;
 
   // Kompakt KPI-rad
-  const _days=["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"];
-  const _dNow=new Date();const _dagText=_days[_dNow.getDay()]+" "+_dNow.getDate()+" "+["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"][_dNow.getMonth()];
-  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><p style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);margin:0;flex:1">${_dagText}</p><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ Anpassa</button></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[["uppfölj.",of2,"var(--red)","gotoView('followups')"],["tasks",ot,"var(--warm)","gotoView('tasks')"],["nya signaler",ns,"var(--gold)","gotoView('signals')"],["aktiva uppdrag",ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  const _dNow=new Date();const _loc=LANG==="en"?"en-US":"sv-SE";
+  let _dagText=_dNow.toLocaleDateString(_loc,{weekday:"long",day:"numeric",month:"long"});
+  _dagText=_dagText.charAt(0).toUpperCase()+_dagText.slice(1);
+  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><p style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);margin:0;flex:1">${_dagText}</p><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ ${TR("dsl_anpassa")}</button></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[[TR("dsl_kpi_uppfolj"),of2,"var(--red)","gotoView('followups')"],[TR("dsl_kpi_tasks"),ot,"var(--warm)","gotoView('tasks')"],[TR("dsl_kpi_signaler"),ns,"var(--gold)","gotoView('signals')"],[TR("dsl_kpi_uppdrag"),ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -2475,13 +2480,13 @@ function _renderDashboardInner(){
       const bw=projects.filter(p=>p.status==="Aktiv"&&Number(p.estimerad_tid)>0).map(p=>({p,pct:Math.round((projLoggedHours(p.id)/Number(p.estimerad_tid))*100)})).filter(x=>x.pct>=75).sort((a,b)=>b.pct-a.pct);
       if(!bw.length)return "";
       const inner=bw.map(({p,pct})=>{const co=projCompany(p);return weekRow(`${e(p.namn)}`,`${e(co?.namn||"--")} · ${pct}% av ${p.estimerad_tid}h`,pct>=100?3:2,`openProjectCard('${p.id}')`,null,false);}).join("");
-      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>⚠️ Budgetvarning</h3><span style="font-size:12px;color:#888;margin-left:auto">${bw.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>⚠️ ${TR("dsl_budget")}</h3><span style="font-size:12px;color:#888;margin-left:auto">${bw.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
     },
     lipaminn_w:()=>{
       const lp=contacts.filter(c=>{const logs=actLog.filter(l=>l.contact_id===c.id&&(l.typ==="LinkedIn"||(l.interaktionstyp||"").toLowerCase()==="linkedin"));const last=logs[0]?.datum;return !last||(Math.round((new Date()-new Date(last))/86400000)>30);}).slice(0,10);
       if(!lp.length)return "";
-      const inner=lp.map(c=>weekRow(`${e(c.fornamn)} ${e(c.efternamn)}`,`${e(c.foretag||"--")} · 30+ dagar utan LinkedIn`,1,`openCard('${c.id}')`,null,false)).join("");
-      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💼 LinkedIn – dags att interagera</h3><span style="font-size:12px;color:#888;margin-left:auto">${lp.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+      const inner=lp.map(c=>weekRow(`${e(c.fornamn)} ${e(c.efternamn)}`,`${e(c.foretag||"--")} · ${TR("dsl_dagar_utan_li")}`,1,`openCard('${c.id}')`,null,false)).join("");
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💼 ${TR("dsl_lipaminn")}</h3><span style="font-size:12px;color:#888;margin-left:auto">${lp.length}</span></div><div style="padding:4px 14px">${inner}</div></div>`;
     },
     fakt_w:()=>{
       const month=curMonth();
@@ -2489,10 +2494,10 @@ function _renderDashboardInner(){
       if(!fakt.length)return "";
       const total=fakt.reduce((s,x)=>s+(x.amt||0),0);
       const inner=fakt.map(({p,amt,h})=>weekRow(`${e(p.namn)}`,`${h}h · ${(amt||0).toLocaleString("sv-SE")} kr`,1,`openProjectCard('${p.id}')`,null,false)).join("");
-      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💰 Fakturering denna månad</h3><span style="font-size:12px;color:#888;margin-left:auto">${total.toLocaleString("sv-SE")} kr</span></div><div style="padding:4px 14px">${inner}</div></div>`;
+      return `<div class="week-sec"><div class="week-sec-hdr" style="padding:10px 14px"><h3>💰 ${TR("dsl_fakt")}</h3><span style="font-size:12px;color:#888;margin-left:auto">${total.toLocaleString("sv-SE")} kr</span></div><div style="padding:4px 14px">${inner}</div></div>`;
     }
   };
-  const SEC_LABELS={checklista_w:"📝 Daglig checklista",linkedin_w:"in Dagens LinkedIn",kcc_w:"⭐ KCC",budget_w:"⚠️ Budgetvarning",lipaminn_w:"💼 LinkedIn-påminnelser",fakt_w:"💰 Fakturering denna månad",fups:"📞 Att följa upp idag",leads:"⚡ Heta leads",konsult:"🎯 Potentiellt konsultbehov",tasks:"✓ Försenade tasks",todo:"✅ Todo",tolog:"📋 Underkonsult-process",goals:"🎯 Mål",schema:"🗓️ Arbetsschema",links:"🔗 Snabblänkar",birthdays:"🎂 Kommande födelsedagar",gdpr:"⚖️ GDPR att se över",leadsnext:"⚠ Leads utan nästa steg"};
+  const SEC_LABELS={checklista_w:`📝 ${TR("dsl_checklista")}`,linkedin_w:`in ${TR("dsl_linkedin")}`,kcc_w:`⭐ ${TR("dsl_kcc")}`,budget_w:`⚠️ ${TR("dsl_budget")}`,lipaminn_w:`💼 ${TR("dsl_lipaminn")}`,fakt_w:`💰 ${TR("dsl_fakt")}`,fups:`📞 ${TR("dsl_fups")}`,leads:`⚡ ${TR("dsl_leads")}`,konsult:`🎯 ${TR("dsl_konsult")}`,tasks:`✓ ${TR("dsl_tasks")}`,todo:`✅ ${TR("dsl_todo")}`,tolog:`📋 ${TR("dsl_tolog")}`,goals:`🎯 ${TR("dsl_goals")}`,schema:`🗓️ ${TR("dsl_schema")}`,links:`🔗 ${TR("dsl_links")}`,birthdays:`🎂 ${TR("dsl_birthdays")}`,gdpr:`⚖️ ${TR("dsl_gdpr")}`,leadsnext:`⚠ ${TR("dsl_leadsnext")}`};
   const order=["checklista_w","linkedin_w","kcc_w","budget_w","lipaminn_w","fakt_w","fups","leadsnext","leads","konsult","tasks","todo","tolog","schema","goals","links","birthdays","gdpr"];
   const hiddenRaw=getDashHidden();
   // om användaren aldrig gjort ett val (null) → dölj allt som standard
@@ -2502,7 +2507,7 @@ function _renderDashboardInner(){
   document.getElementById("dash-chain").innerHTML=`
     <div class="dash-hero">${nextStepHtml()}</div>
     <div class="dash-cols">
-      ${visible.map(k=>SECTIONS[k]()).join("")||'<p style="color:#888;font-size:13px">Inga sektioner valda. Klicka "Anpassa" för att lägga till.</p>'}
+      ${visible.map(k=>SECTIONS[k]()).join("")||`<p style="color:#888;font-size:13px">${TR("dsl_inga_valda")}</p>`}
     </div>`;
   window._dashSecLabels=SEC_LABELS;window._dashOrder=order;
 
