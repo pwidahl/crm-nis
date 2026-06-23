@@ -937,8 +937,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-kck-steg"><div class="modal" style="width:460px"><div class="mhdr"><h2 id="kck-steg-title">KCC</h2><button class="mclose" onclick="closeM('m-kck-steg')">×</button></div><div class="mbody"><div id="kck-steg-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-kck-steg')" data-i18n="btn_stang">Stäng</button></div></div></div>
 
-<div class="overlay" id="m-msg-lank"><div class="modal" style="width:420px"><div class="mhdr"><h2>Länka till meddelande</h2><button class="mclose" onclick="closeM('m-msg-lank')">×</button></div><div class="mbody">
-  <input id="msg-lank-search" placeholder="Sök bolag, kontakt eller lead…" oninput="msgLankSearch(this.value)" style="width:100%;padding:8px;margin-bottom:8px">
+<div class="overlay" id="m-msg-lank"><div class="modal" style="width:420px"><div class="mhdr"><h2>${TR("msg_lanka")}</h2><button class="mclose" onclick="closeM('m-msg-lank')">×</button></div><div class="mbody">
+  <input id="msg-lank-search" placeholder="${TR('msg_lank_sok')}" oninput="msgLankSearch(this.value)" style="width:100%;padding:8px;margin-bottom:8px">
   <div id="msg-lank-results" style="max-height:280px;overflow-y:auto"></div>
 </div></div></div>
 <div class="overlay" id="m-li-person"><div class="modal" style="width:420px"><div class="mhdr"><h2 id="li-person-title">Vem interagerade du med?</h2><button class="mclose" onclick="closeM('m-li-person')">×</button></div><div class="mbody">
@@ -1279,6 +1279,8 @@ const I18N={
     navg_oversikt:"Översikt",navg_arbetsbok:"Arbetsbok",navg_natverk:"Nätverk",navg_bolag:"Bolag",navg_salj:"Sälj & leads",navg_analys:"Analys",navg_kunskap:"Kunskapsbank",navg_system:"System",
     dsl_checklista:"Daglig checklista",dsl_linkedin:"Dagens LinkedIn",dsl_kcc:"KCC",dsl_budget:"Budgetvarning",dsl_lipaminn:"LinkedIn-påminnelser",dsl_fakt:"Fakturering denna månad",dsl_fups:"Att följa upp idag",dsl_leads:"Heta leads",dsl_konsult:"Potentiellt konsultbehov",dsl_tasks:"Försenade tasks",dsl_todo:"Todo",dsl_tolog:"Underkonsult-process",dsl_goals:"Mål",dsl_schema:"Arbetsschema",dsl_links:"Snabblänkar",dsl_birthdays:"Kommande födelsedagar",dsl_gdpr:"GDPR att se över",dsl_leadsnext:"Leads utan nästa steg",dsl_dagar_utan_li:"30+ dagar utan LinkedIn",dsl_inga_budget:"Inga budgetvarningar",dsl_inga_li:"Inga påminnelser",dsl_inga_fakt:"Ingen fakturering än",
     dsl_inga_valda:'Inga sektioner valda. Klicka "Anpassa" för att lägga till.',dsl_kpi_uppfolj:"uppfölj.",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"nya signaler",dsl_kpi_uppdrag:"aktiva uppdrag",dsl_anpassa:"Anpassa",
+    msg_titel:"Meddelanden",msg_nytt_till:"Nytt meddelande till…",msg_starta:"Starta",msg_inga_konv:"Inga konversationer än.",msg_valj_konv:"Välj en konversation eller starta en ny.",msg_skriv:"Skriv ett meddelande…",msg_skicka:"Skicka",msg_sok_ph:"🔍 Sök i meddelanden (text eller person)…",msg_hoppa:"Hoppa över",msg_lanka:"Länka till meddelande",msg_lank_sok:"Sök bolag, kontakt eller lead…",msg_du:"Du",msg_anvandare:"Användare",msg_traffar:"träffar",msg_inga_traffar:"Inga meddelanden matchar",msg_du_skrev:"du skrev",msg_skrev:"skrev",msg_ingen_traff:"Ingen träff.",msg_valj_mottagare:"Välj en mottagare",msg_vem:"Vem interagerade du med?",
+    li_dagens_klar:"Dagens aktivitet klar!",li_dagens_aktivitet:"Dagens LinkedIn-aktivitet",li_klart_idag:"klart för idag!",li_gillningar:"Gillningar",li_kommentarer:"Kommentarer",li_kontaktforfr:"Kontaktförfrågningar",li_senaste_interakt:"Senaste interaktioner",
     nav_oversikt:"Översikt",nav_bolag_leads:"Bolag & leads",nav_uppdrag_tid:"Uppdrag & tid",nav_relationer:"Relationer",nav_kunskap:"Kunskap & CV",nav_analys:"Analys & aktivitet",nav_konto:"KONTO",
     sek_sprak:"Språk",sprak_sv:"Svenska",sprak_en:"Engelska",sprak_valj:"Välj språk",
     dash_kommande_uppf:"Kommande uppföljningar",dash_oppna_mal:"Öppna mål",dash_hela_schemat:"Hela schemat",
@@ -1380,6 +1382,8 @@ const I18N={
     navg_oversikt:"Overview",navg_arbetsbok:"Workbook",navg_natverk:"Network",navg_bolag:"Companies",navg_salj:"Sales & leads",navg_analys:"Analytics",navg_kunskap:"Knowledge base",navg_system:"System",
     dsl_checklista:"Daily checklist",dsl_linkedin:"Today's LinkedIn",dsl_kcc:"KCC",dsl_budget:"Budget warning",dsl_lipaminn:"LinkedIn reminders",dsl_fakt:"Invoicing this month",dsl_fups:"To follow up today",dsl_leads:"Hot leads",dsl_konsult:"Potential consultant need",dsl_tasks:"Overdue tasks",dsl_todo:"To-do",dsl_tolog:"Subconsultant process",dsl_goals:"Goals",dsl_schema:"Work schedule",dsl_links:"Quick links",dsl_birthdays:"Upcoming birthdays",dsl_gdpr:"GDPR to review",dsl_leadsnext:"Leads without next step",dsl_dagar_utan_li:"30+ days without LinkedIn",dsl_inga_budget:"No budget warnings",dsl_inga_li:"No reminders",dsl_inga_fakt:"No invoicing yet",
     dsl_inga_valda:'No sections selected. Click "Customize" to add some.',dsl_kpi_uppfolj:"follow-ups",dsl_kpi_tasks:"tasks",dsl_kpi_signaler:"new signals",dsl_kpi_uppdrag:"active projects",dsl_anpassa:"Customize",
+    msg_titel:"Messages",msg_nytt_till:"New message to…",msg_starta:"Start",msg_inga_konv:"No conversations yet.",msg_valj_konv:"Select a conversation or start a new one.",msg_skriv:"Write a message…",msg_skicka:"Send",msg_sok_ph:"🔍 Search messages (text or person)…",msg_hoppa:"Skip",msg_lanka:"Link to message",msg_lank_sok:"Search company, contact or lead…",msg_du:"You",msg_anvandare:"User",msg_traffar:"results",msg_inga_traffar:"No messages match",msg_du_skrev:"you wrote",msg_skrev:"wrote",msg_ingen_traff:"No match.",msg_valj_mottagare:"Select a recipient",msg_vem:"Who did you interact with?",
+    li_dagens_klar:"Today's activity done!",li_dagens_aktivitet:"Today's LinkedIn activity",li_klart_idag:"done for today!",li_gillningar:"Likes",li_kommentarer:"Comments",li_kontaktforfr:"Connection requests",li_senaste_interakt:"Recent interactions",
     nav_oversikt:"Overview",nav_bolag_leads:"Companies & leads",nav_uppdrag_tid:"Assignments & time",nav_relationer:"Relationships",nav_kunskap:"Knowledge & CV",nav_analys:"Analytics & activity",nav_konto:"ACCOUNT",
     sek_sprak:"Language",sprak_sv:"Swedish",sprak_en:"English",sprak_valj:"Select language",
     dash_kommande_uppf:"Upcoming follow-ups",dash_oppna_mal:"Open goals",dash_hela_schemat:"Full schedule",
@@ -2096,14 +2100,14 @@ function msgSokResultatHtml(namnAv){
     const personNamn=(namnAv(other)||"").toLowerCase();
     return (m.text||"").toLowerCase().includes(q)||personNamn.includes(q)||(m.lank_namn||"").toLowerCase().includes(q);
   }).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-  if(!trf.length)return `<p style="color:#aaa;padding:14px">Inga meddelanden matchar "${e(msgSokQ)}".</p>`;
-  return `<div style="margin-bottom:8px;color:#888;font-size:13px">${trf.length} träffar</div>`+trf.map(m=>{
+  if(!trf.length)return `<p style="color:#aaa;padding:14px">${TR("msg_inga_traffar")} "${e(msgSokQ)}".</p>`;
+  return `<div style="margin-bottom:8px;color:#888;font-size:13px">${trf.length} ${TR("msg_traffar")}</div>`+trf.map(m=>{
     const other=m.avsandare_id===me.id?m.mottagare_id:m.avsandare_id;
     const fromMe=m.avsandare_id===me.id;
     return `<div class="week-row" style="cursor:pointer;padding:10px 12px" onclick="msgSokQ='';aktivKonversation='${other}';renderMeddelanden()">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
         <strong style="font-size:13px">${e(namnAv(other))}</strong>
-        <span style="font-size:11px;color:#aaa">${fromMe?"du skrev":"skrev"} · ${(m.created_at||"").slice(5,16).replace("T"," ")}</span>
+        <span style="font-size:11px;color:#aaa">${fromMe?TR("msg_du_skrev"):TR("msg_skrev")} · ${(m.created_at||"").slice(5,16).replace("T"," ")}</span>
       </div>
       <div style="font-size:13px;color:#555">${e(m.text)}</div>
       ${m.lank_namn?`<div style="font-size:12px;color:#0a66c2;margin-top:2px">${lankIkon(m.lank_typ)} ${e(m.lank_namn)}</div>`:""}
@@ -2124,7 +2128,7 @@ function renderChecklista(){
       <button class="btn-icon" style="color:var(--red)" onclick="raderaChecklista('${p.id}')" title="Ta bort">🗑</button>
     </div>`;
   }).join("")||'<p style="color:#aaa;padding:14px">Inga punkter än. Lägg till din första nedan.</p>';
-  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px">Daglig checklista</h2>
+  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px">${TR("dsl_checklista")}</h2>
     <p style="color:#888;font-size:13px;margin-bottom:16px">Dina fasta punkter. Bockarna nollställs automatiskt varje dag. ${checklista.length?`<strong>${klara}/${checklista.length}</strong> klara idag.`:""}</p>
     <div style="display:flex;gap:8px;margin-bottom:16px">
       <input id="ny-checklista-text" placeholder="Lägg till en punkt…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')laggTillChecklista()">
@@ -2190,7 +2194,7 @@ function checklistaDashHtml(){
   }).join("");
   return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid ${alltKlart?"var(--green)":"var(--warm)"};border-radius:var(--r);margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <strong style="font-size:14px;flex:1">📝 Daglig checklista</strong>
+      <strong style="font-size:14px;flex:1">📝 ${TR("dsl_checklista")}</strong>
       <span style="font-size:12px;color:${alltKlart?"var(--green)":"#888"}">${alltKlart?"✓ Allt klart!":klara+"/"+checklista.length}</span>
       <button class="btn btn-outline btn-xs" onclick="gotoView('checklista')">Öppna</button>
     </div>
@@ -2210,7 +2214,7 @@ async function renderMeddelanden(){
     if(!konvMap[other])konvMap[other]=[];
     konvMap[other].push(m);
   });
-  const namnAv=id=>users.find(u=>u.id===id)?.namn||(id===me.id?"Du":"Användare");
+  const namnAv=id=>users.find(u=>u.id===id)?.namn||(id===me.id?TR("msg_du"):TR("msg_anvandare"));
   // lista över konversationer (vänster), aktiv konversation (höger)
   const konvIds=Object.keys(konvMap).sort((a,b)=>{
     const la=konvMap[a][konvMap[a].length-1].created_at,lb=konvMap[b][konvMap[b].length-1].created_at;
@@ -2224,7 +2228,7 @@ async function renderMeddelanden(){
       <div style="display:flex;align-items:center;gap:6px"><strong style="flex:1;font-size:14px">${e(namnAv(id))}</strong>${olast?`<span style="background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px">${olast}</span>`:""}</div>
       <div style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e((sista.avsandare_id===me.id?"Du: ":"")+sista.text)}</div>
     </div>`;
-  }).join("")||'<p style="color:#aaa;font-size:13px;padding:10px">Inga konversationer än.</p>';
+  }).join("")||'<p style="color:#aaa;font-size:13px;padding:10px">${TR("msg_inga_konv")}</p>';
   // ny-konversation-väljare
   const userOpts=users.map(u=>`<option value="${u.id}">${e(u.namn||"Användare")}</option>`).join("");
   let hoger="";
@@ -2248,22 +2252,22 @@ async function renderMeddelanden(){
       <div style="border-top:1px solid var(--cream);padding-top:10px;margin-top:10px">
         <div id="msg-lank-display" style="font-size:12px;color:#0a66c2;margin-bottom:6px"></div>
         <div style="display:flex;gap:8px">
-          <input id="msg-input" placeholder="Skriv ett meddelande…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')skickaMeddelande('${aktivKonversation}')">
+          <input id="msg-input" placeholder="${TR('msg_skriv')}" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')skickaMeddelande('${aktivKonversation}')">
           <button class="btn btn-outline btn-sm" onclick="oppnaLankValjare()" title="Länka bolag/kontakt/lead">🔗</button>
-          <button class="btn btn-primary btn-sm" onclick="skickaMeddelande('${aktivKonversation}')">Skicka</button>
+          <button class="btn btn-primary btn-sm" onclick="skickaMeddelande('${aktivKonversation}')">${TR("msg_skicka")}</button>
         </div>
       </div>
     </div>`;
   }else{
-    hoger='<p style="color:#aaa;padding:20px">Välj en konversation eller starta en ny.</p>';
+    hoger='<p style="color:#aaa;padding:20px">${TR("msg_valj_konv")}</p>';
   }
-  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:14px">Meddelanden</h2>
+  box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:14px">${TR("msg_titel")}</h2>
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-      <input id="msg-sok" placeholder="🔍 Sök i meddelanden (text eller person)…" value="${e(msgSokQ||"")}" oninput="msgSok(this.value)" style="flex:1;padding:8px">
+      <input id="msg-sok" placeholder="${TR('msg_sok_ph')}" value="${e(msgSokQ||"")}" oninput="msgSok(this.value)" style="flex:1;padding:8px">
     </div>
     ${msgSokQ?msgSokResultatHtml(namnAv):`<div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
-      <select id="ny-konv-mottagare" style="padding:8px"><option value="">Nytt meddelande till…</option>${userOpts}</select>
-      <button class="btn btn-primary btn-sm" onclick="startaNyKonversation()">Starta</button>
+      <select id="ny-konv-mottagare" style="padding:8px"><option value="">${TR("msg_nytt_till")}</option>${userOpts}</select>
+      <button class="btn btn-primary btn-sm" onclick="startaNyKonversation()">${TR("msg_starta")}</button>
     </div>
     <div class="msg-grid" style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start">
       <div class="msg-konvlista">${konvLista}</div>
@@ -2272,7 +2276,7 @@ async function renderMeddelanden(){
 }
 function lankIkon(typ){return {company:"🏢",contact:"👤",signal:"⚡"}[typ]||"🔗";}
 function oppnaKonversation(id){aktivKonversation=id;renderMeddelanden();}
-function startaNyKonversation(){const id=v("ny-konv-mottagare");if(!id){toast("Välj en mottagare");return;}aktivKonversation=id;renderMeddelanden();}
+function startaNyKonversation(){const id=v("ny-konv-mottagare");if(!id){toast(TR("msg_valj_mottagare"));return;}aktivKonversation=id;renderMeddelanden();}
 let _msgLank=null;
 async function skickaMeddelande(mottagareId){
   const txt=(document.getElementById("msg-input")?.value||"").trim();
@@ -2310,7 +2314,7 @@ function msgLankSearch(q){
   companies.forEach(c=>{if((c.namn||"").toLowerCase().includes(q))results.push({typ:"company",id:c.id,namn:c.namn,label:"Bolag"});});
   contacts.forEach(c=>{const nm=((c.fornamn||"")+" "+(c.efternamn||"")).trim();if(nm.toLowerCase().includes(q))results.push({typ:"contact",id:c.id,namn:nm,label:"Kontakt"});});
   signals.forEach(s=>{const nm=s.rubrik||s.companies?.namn||"";if(nm.toLowerCase().includes(q))results.push({typ:"signal",id:s.id,namn:nm.slice(0,50),label:"Lead"});});
-  if(!results.length){box.innerHTML='<p style="color:#aaa;font-size:13px;padding:8px">Ingen träff.</p>';return;}
+  if(!results.length){box.innerHTML='<p style="color:#aaa;font-size:13px;padding:8px">${TR("msg_ingen_traff")}</p>';return;}
   box.innerHTML=results.slice(0,30).map(r=>`<div class="week-row" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px" onclick="valjLank('${r.typ}','${r.id}','${e(r.namn).replace(/'/g,"\\'")}')">
     <span>${lankIkon(r.typ)}</span><span style="flex:1">${e(r.namn)} <span style="font-size:11px;color:#888">${r.label}</span></span>
   </div>`).join("");
@@ -5361,11 +5365,11 @@ function liDashHtml(){
   const row=liTodayRow();
   const items=[["gillningar","👍"],["kommentarer","💬"],["kontaktforfragan","🤝"]];
   const klart=items.every(([k])=>(row[k]||0)>=(liMal[k]||0));
-  if(klart)return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:14px;font-size:13px;cursor:pointer" onclick="gotoView('linkedin')"><strong>in LinkedIn</strong> <span style="color:var(--green)">✓ Dagens aktivitet klar!</span></div>`;
+  if(klart)return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid var(--green);border-radius:var(--r);margin-bottom:14px;font-size:13px;cursor:pointer" onclick="gotoView('linkedin')"><strong>in LinkedIn</strong> <span style="color:var(--green)">✓ ${TR("li_dagens_klar")}</span></div>`;
   const parts=items.map(([k,icon])=>{const done=row[k]||0,mal=liMal[k]||0;const ok=done>=mal;return `<span style="white-space:nowrap;color:${ok?"var(--green)":"#666"}">${icon} ${done}/${mal}</span>`;}).join('<span style="color:#ddd">·</span> ');
   return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid #0a66c2;border-radius:var(--r);margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-      <strong style="font-size:14px">in Dagens LinkedIn</strong>
+      <strong style="font-size:14px">in ${TR("dsl_linkedin")}</strong>
       <div style="display:flex;gap:8px;align-items:center;font-size:13px">${parts}</div>
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -5380,7 +5384,7 @@ function liDashHtml(){
 }
 function liChecklistHtml(){
   const row=liTodayRow();
-  const items=[["gillningar","👍 Gillningar"],["kommentarer","💬 Kommentarer"],["kontaktforfragan","🤝 Kontaktförfrågningar"]];
+  const items=[["gillningar",`👍 ${TR("li_gillningar")}`],["kommentarer",`💬 ${TR("li_kommentarer")}`],["kontaktforfragan",`🤝 ${TR("li_kontaktforfr")}`]];
   const klart=items.every(([k])=>(row[k]||0)>=(liMal[k]||0));
   const rows=items.map(([k,label])=>{
     const done=row[k]||0,mal=liMal[k]||0;
@@ -5394,7 +5398,7 @@ function liChecklistHtml(){
   }).join("");
   return `<div class="week-sec" style="margin-bottom:18px;border-left:4px solid #0a66c2"><div style="padding:16px">
     <div style="display:flex;align-items:center;margin-bottom:10px">
-      <span style="font-weight:600;font-size:15px;flex:1">in Dagens LinkedIn-aktivitet ${klart?'<span style="color:var(--green);font-size:13px">✓ klart för idag!</span>':''}</span>
+      <span style="font-weight:600;font-size:15px;flex:1">in ${TR("li_dagens_aktivitet")} ${klart?'<span style="color:var(--green);font-size:13px">✓ ${TR("li_klart_idag")}</span>':''}</span>
       <button class="btn btn-outline btn-xs" onclick="oppnaLinkedin()" title="Öppna LinkedIn">🔗 LinkedIn</button>
       <button class="btn btn-outline btn-xs" onclick="openLiMal()">Mål</button>
     </div>
@@ -5412,7 +5416,7 @@ function liInteraktionHistorikHtml(){
     <span style="color:#aaa">${x.datum}</span>
   </div>`).join("");
   return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--cream)">
-    <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">Senaste interaktioner</div>
+    <div style="font-size:11px;color:#999;text-transform:uppercase;margin-bottom:6px">${TR("li_senaste_interakt")}</div>
     ${rows}
   </div>`;
 }
@@ -5438,7 +5442,7 @@ let _liPendingTyp=null;
 function openLiPerson(typ){
   _liPendingTyp=typ;
   const label={gillningar:"gillning",kommentarer:"kommentar",kontaktforfragan:"kontaktförfrågan"}[typ]||typ;
-  document.getElementById("li-person-title").textContent="Vem fick din "+label+"?";
+  document.getElementById("li-person-title").textContent=TR("msg_vem")+" "+label+"?";
   document.getElementById("li-person-search").value="";
   document.getElementById("li-person-results").innerHTML="";
   openM("m-li-person");
