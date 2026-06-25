@@ -525,18 +525,32 @@ textarea{resize:vertical;min-height:68px}
       <div id="companies-content"></div>
     </div>
     <div class="view" id="view-signals">
-      <p class="sec-title">Lead Discovery</p>
-      <div class="sig-grid" id="sig-sources"></div>
-      <div class="toolbar">
-        <input id="sig-search-f" data-i18n-ph="sig_sok" placeholder="Sök signaler..." oninput="renderSignals()" style="flex:1;max-width:240px">
-        <select id="sig-company-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_bolag">Alla bolag</option></select>
-        <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">Alla statusar</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
-        <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
-        <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
-        <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt" data-i18n="sig_sort_kand">👤 Känd kontakt först</option><option value="inkommen" data-i18n="sig_sort_senast">🆕 Senast inkomna</option><option value="datum" data-i18n="sig_sort_pub">📅 Publiceringsdatum</option><option value="styrka" data-i18n="sig_sort_stark">★ Starkast först</option><option value="score" data-i18n="sig_sort_ai">📊 AI-score först</option><option value="bolag" data-i18n="sig_sort_az">🔤 Bolag A–Ö</option></select>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_mellan">🤝 Dölj mellanhänder</span></label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fasta">🔒 Dölj fastanställningar</span></label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <p class="sec-title" style="margin:0;flex:1">Lead Discovery</p>
+        <button class="btn-icon" id="sig-filter-btn" title="Filter" onclick="toggleSigFilter()" style="font-size:18px">🔍</button>
+        <button class="btn-icon" title="Datakällor / manuell hämtning" onclick="toggleSigTools()" style="font-size:18px">⚙️</button>
+      </div>
+      <div id="sig-filter-panel" style="display:none;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:14px">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <input id="sig-search-f" data-i18n-ph="sig_sok" placeholder="Sök ord i signaler..." oninput="renderSignals()" style="flex:1;min-width:200px">
+          <select id="sig-company-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_bolag">Alla bolag</option></select>
+          <select id="sig-sort-f" onchange="renderSignals()" title="Sortering"><option value="kontakt" data-i18n="sig_sort_kand">👤 Känd kontakt först</option><option value="inkommen" data-i18n="sig_sort_senast">🆕 Senast inkomna</option><option value="datum" data-i18n="sig_sort_pub">📅 Publiceringsdatum</option><option value="styrka" data-i18n="sig_sort_stark">★ Starkast först</option><option value="score" data-i18n="sig_sort_ai">📊 AI-score först</option><option value="bolag" data-i18n="sig_sort_az">🔤 Bolag A–Ö</option></select>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px">
+          <label style="font-size:12px;color:#888">Från: <input type="date" id="sig-from-f" onchange="renderSignals()" style="font-size:13px"></label>
+          <label style="font-size:12px;color:#888">Till: <input type="date" id="sig-to-f" onchange="renderSignals()" style="font-size:13px"></label>
+          <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">Alla statusar</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
+          <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
+          <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_form">🔇 Dölj förmedlare</span></label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fast">🔒 Dölj fastanställning</span></label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
+        </div>
+      </div>
+      <div id="sig-tools-panel" style="display:none">
+        <div class="sig-grid" id="sig-sources"></div>
       </div>
       <div id="signals-content"></div>
     </div>
@@ -3104,6 +3118,8 @@ function diagDubbletter(){
   alert(out);
   console.log(out);
 }
+function toggleSigFilter(){const p=document.getElementById("sig-filter-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
+function toggleSigTools(){const p=document.getElementById("sig-tools-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
 function renderSignals(){
   if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
@@ -3142,6 +3158,10 @@ function renderSignals(){
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
   let list=signals.filter(s=>{
     const hay=[s.rubrik,s.beskrivning,s.kalla,s.companies?.namn].join(" ").toLowerCase();
+    const fromD=document.getElementById("sig-from-f")?.value;
+    const toD=document.getElementById("sig-to-f")?.value;
+    if(fromD&&(s.signal_datum||"")<fromD)return false;
+    if(toD&&(s.signal_datum||"")>toD)return false;
     if(focusMode==="company"&&focusCompanyId&&s.company_id!==focusCompanyId)return false;
     if(hideFormedlare&&isFormedlare(s.company_id))return false;
     if(hideFast&&s.ar_fastanstallning)return false;
@@ -3194,7 +3214,7 @@ function renderSignals(){
   const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
   const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
   // Gruppera signaler per bolag (accordion)
-  const DAGAR_GRANS=14;
+  const DAGAR_GRANS=10;
   const idag14=new Date();idag14.setDate(idag14.getDate()-DAGAR_GRANS);
   const grans=idag14.toISOString().slice(0,10);
   const grupper={};
@@ -3235,8 +3255,8 @@ function renderSignals(){
     const showOld=window._showOldSigs&&window._showOldSigs[g.cid||"__nobolag__"];
     const visibleSigs=showOld?g.sigs:g.farska;
     const bodyHtml=open?`<div>
-      ${visibleSigs.length?visibleSigs.map(sigRad).join(""):`<div style="padding:10px 12px;color:#aaa;font-size:12px">${g.gamla.length&&!showOld?"Alla signaler är äldre än 14 dagar.":"Inga signaler."}</div>`}
-      ${g.gamla.length&&!showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="visaGamlaSig('${g.cid||"__nobolag__"}')">Visa ${g.gamla.length} äldre (>14 dagar)</button></div>`:""}
+      ${visibleSigs.length?visibleSigs.map(sigRad).join(""):`<div style="padding:10px 12px;color:#aaa;font-size:12px">${g.gamla.length&&!showOld?"Alla signaler är äldre än 10 dagar.":"Inga signaler."}</div>`}
+      ${g.gamla.length&&!showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="visaGamlaSig('${g.cid||"__nobolag__"}')">Visa ${g.gamla.length} äldre (>10 dagar)</button></div>`:""}
       ${showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="doljGamlaSig('${g.cid||"__nobolag__"}')">Dölj äldre</button></div>`:""}
     </div>`:"";
     return `<div class="sig-bolag" style="border:1px solid var(--cream);border-radius:var(--r);margin-bottom:8px;background:#fff;overflow:hidden">
