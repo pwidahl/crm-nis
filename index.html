@@ -442,7 +442,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
     <div class="nav-grp" id="grp-arbetsbok">
       <div class="nav-item" data-v="checklista" onclick="gotoView('checklista')"><span class="nav-icon">📝</span><span data-i18n="nav_checklista">Daglig checklista</span></div>
-      <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Dagbok</span></div>
+      <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Journal</span></div>
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
       <div class="nav-item" data-v="tasks" onclick="gotoView('tasks')"><span class="nav-icon">✓</span>Tasks<span class="nav-badge" id="badge-tasks">0</span></div>
     </div>
@@ -458,7 +458,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span data-i18n="navg_bolag">Bolag</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
       <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
-      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Koncernkarta</span></div>
+      <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Group map</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span data-i18n="navg_analys">Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
     <div class="nav-grp" id="grp-analys">
@@ -532,7 +532,7 @@ textarea{resize:vertical;min-height:68px}
           <label style="font-size:12px;color:#888">Från: <input type="date" id="sig-from-f" onchange="renderSignals()" style="font-size:13px"></label>
           <label style="font-size:12px;color:#888">Till: <input type="date" id="sig-to-f" onchange="renderSignals()" style="font-size:13px"></label>
           <select id="sig-atgard-f" onchange="renderSignals()"><option value="">Alla åtgärder</option><option value="agera">⚡ Att agera på</option><option value="spara">🔖 Sparade</option><option value="bevaka">👁 Bevakade</option><option value="dolj">🙈 Dolda</option><option value="__none__">Utan åtgärd</option></select>
-          <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">Alla statusar</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
+          <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">All statuses</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
           <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
           <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         </div>
@@ -552,17 +552,17 @@ textarea{resize:vertical;min-height:68px}
       <div class="toolbar">
         <input id="net-filter" placeholder="Sök namn, bolag, roll..." oninput="renderNetwork()" style="flex:1;max-width:300px">
         <select id="net-signal-f" onchange="renderNetwork()"><option value="">Alla bolag</option><option value="signals">Med nya signaler</option></select>
-        <select id="net-score-f" onchange="renderNetwork()"><option value="">Alla poäng</option><option value="high">Höga (60+)</option><option value="med">Medel (30–59)</option><option value="low">Låga (&lt;30)</option></select>
+        <select id="net-score-f" onchange="renderNetwork()"><option value="">All scores</option><option value="high">Höga (60+)</option><option value="med">Medel (30–59)</option><option value="low">Låga (&lt;30)</option></select>
       </div>
       <div id="network-content"></div>
     </div>
     <div class="view" id="view-contacts">
       <div class="toolbar">
         <input id="ct-filter" data-i18n-ph="ct_filter" placeholder="Filtrera kontakter..." oninput="renderContacts()" style="flex:1;max-width:280px">
-        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="" data-i18n="ct_alla_aktiva">Alla (aktiva + inaktiva)</option><option value="aktiv" data-i18n="ct_aktiva">Aktiva</option><option value="inaktiv" data-i18n="ct_inaktiva">Inaktiva / vilande</option></select>
+        <select id="ct-aktiv-f" onchange="renderContacts()"><option value="" data-i18n="ct_alla_aktiva">Alla (aktiva + inaktiva)</option><option value="aktiv" data-i18n="ct_aktiva">Active</option><option value="inaktiv" data-i18n="ct_inaktiva">Inaktiva / vilande</option></select>
         <button class="btn btn-outline btn-sm" id="ct-kcc-btn" data-i18n="ct_endast_kcc" onclick="window._kccOnly=!window._kccOnly;document.getElementById('ct-kcc-btn').classList.toggle('btn-primary',window._kccOnly);renderContacts()">⭐ Endast KCC</button>
         <select id="ct-status-f" onchange="renderContacts()">
-          <option value="">Alla statusar</option>
+          <option value="">All statuses</option>
           <option value="Ny kontakt" data-i18n="ct_ny_kontakt">Ny kontakt</option><option value="Aktiv relation" data-i18n="ct_aktiv_relation">Aktiv relation</option>
           <option value="Varm – möte bokat" data-i18n="ct_varm_mote">Varm – möte bokat</option><option value="Kund" data-i18n="ct_kund">Kund</option>
           <option value="Introduktör" data-i18n="ct_introduktor">Introduktör</option><option value="Kollega / nätverk" data-i18n="ct_kollega">Kollega / nätverk</option>
@@ -589,8 +589,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-dagbok">
       <div class="toolbar">
         <input id="db-date-filter" type="date" onchange="renderDagbok()">
-        <select id="db-type-filter" onchange="renderDagbok()"><option value="">Alla typer</option><option value="uppdrag">💼 Uppdrag</option><option value="lunch">🤝 Lunch</option><option value="mote">📞 Möte</option><option value="aw">🎉 AW</option><option value="middag">🍽️ Middag</option><option value="ovrigt">📋 Övrigt</option></select>
-        <select id="db-proj-filter" onchange="renderDagbok()"><option value="">Alla projekt</option></select>
+        <select id="db-type-filter" onchange="renderDagbok()"><option value="">All types</option><option value="uppdrag">💼 Assignment</option><option value="lunch">🤝 Lunch</option><option value="mote">📞 Möte</option><option value="aw">🎉 AW</option><option value="middag">🍽️ Middag</option><option value="ovrigt">📋 Övrigt</option></select>
+        <select id="db-proj-filter" onchange="renderDagbok()"><option value="">All assignments</option></select>
       </div>
       <div id="dagbok-content"></div>
     </div>
@@ -600,7 +600,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="toolbar">
         <input id="tr-month" type="month" onchange="renderTidrapport()">
         <select id="tr-kund-filter" onchange="renderTidrapport()"><option value="">Alla kunder</option></select>
-        <select id="tr-proj-filter" onchange="renderTidrapport()"><option value="">Alla projekt</option></select>
+        <select id="tr-proj-filter" onchange="renderTidrapport()"><option value="">All assignments</option></select>
         <button class="btn btn-green btn-sm" onclick="exportTidrapportCSV()">Exportera CSV</button>
       </div>
       <div id="tidrapport-content"></div>
@@ -612,9 +612,9 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-tasks">
       <div class="toolbar">
         <input id="tk-filter" placeholder="Filtrera tasks..." oninput="renderTasks()" style="flex:1;max-width:280px">
-        <select id="tk-status-f" onchange="renderTasks()"><option value="">Alla statusar</option><option>Ej startad</option><option>Pågår</option><option>Väntar</option><option>Klar</option></select>
-        <select id="tk-prio-f" onchange="renderTasks()"><option value="">Alla prioriteter</option><option>Hög</option><option>Medium</option><option>Låg</option></select>
-        <select id="tk-proj-f" onchange="renderTasks()"><option value="">Alla uppdrag</option></select>
+        <select id="tk-status-f" onchange="renderTasks()"><option value="">All statuses</option><option>Ej startad</option><option>Pågår</option><option>Väntar</option><option>Klar</option></select>
+        <select id="tk-prio-f" onchange="renderTasks()"><option value="">All priorities</option><option>Hög</option><option>Medium</option><option>Låg</option></select>
+        <select id="tk-proj-f" onchange="renderTasks()"><option value="">All assignments</option></select>
       </div>
       <div id="tasks-content"></div>
     </div>
@@ -702,7 +702,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="f_samtycke">Samtyckesdatum</label><input id="f-samtycke" type="date"></div>
         <div class="fl full"><div id="gdpr-hint" style="font-size:12px;color:#777;background:var(--paper);border:1px solid var(--cream);border-radius:6px;padding:8px 10px;line-height:1.5">💡 <strong>Berättigat intresse</strong> räcker oftast för yrkesuppgifter (namn, titel, arbetsgivare, jobbmejl). Privata uppgifter som födelsedag eller privat mobil bör vila på <strong>samtycke</strong>. Personen har alltid rätt att få veta och att bli raderad.</div></div>
         <div class="fl"><label data-i18n="f_bransch">Bransch</label><input id="f-bransch"></div>
-        <div class="fl"><label data-i18n="f_stad">Stad</label><select id="f-stad"><option value=""></option></select></div><div class="fl"><label data-i18n="f_land">Land</label><select id="f-land" onchange="updateStadDropdown('f-land','f-stad')"></select></div>
+        <div class="fl"><label data-i18n="f_stad">City</label><select id="f-stad"><option value=""></option></select></div><div class="fl"><label data-i18n="f_land">Land</label><select id="f-land" onchange="updateStadDropdown('f-land','f-stad')"></select></div>
         <div class="fl"><label data-i18n="f_epost">E-post</label><input id="f-epost" type="email"></div>
         <div class="fl"><label data-i18n="f_telefon">Telefon</label><input id="f-telefon"></div>
         <div class="fl"><label data-i18n="f_linkedin">LinkedIn</label><input id="f-linkedin"></div>
@@ -742,7 +742,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="l_namn">Namn *</label><input id="co-namn"></div>
         <div class="fl"><label data-i18n="l_orgnr">Org.nr</label><input id="co-orgnr"></div>
         <div class="fl"><label data-i18n="l_bransch">Bransch</label><input id="co-bransch"></div>
-        <div class="fl"><label data-i18n="l_stad">Stad</label><select id="co-stad"><option value=""></option></select></div>
+        <div class="fl"><label data-i18n="l_stad">City</label><select id="co-stad"><option value=""></option></select></div>
         <div class="fl"><label data-i18n="l_land">Land</label><select id="co-land" onchange="updateStadDropdown('co-land','co-stad')"><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option><option data-i18n="o_annat">Annat</option></select></div>
         <div class="fl"><label data-i18n="l_hemsida">Hemsida</label><input id="co-hemsida"></div>
         <div class="fl"><label data-i18n="l_pipeline">Pipeline</label><select id="co-pipe"></select></div>
@@ -772,7 +772,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl"><label data-i18n="l_startdatum">Startdatum *</label><input id="p-start" type="date"></div>
         <div class="fl"><label data-i18n="l_slutdatum">Slutdatum *</label><input id="p-end" type="date"></div>
         <div class="fl"><label data-i18n="l_estimerad">Estimerad tid (timmar)</label><input id="p-esttid" type="number" step="0.5" placeholder="t.ex. 40"></div>
-        <div class="fl"><label data-i18n="l_prisformat">Prisformat</label><select id="p-ratetype"><option value="hourly" data-i18n="o_timpris">Timpris</option><option value="daily" data-i18n="o_dagspris">Dagspris</option><option value="fixed" data-i18n="o_fast">Fast</option></select></div>
+        <div class="fl"><label data-i18n="l_prisformat">Prisformat</label><select id="p-ratetype"><option value="hourly" data-i18n="o_timpris">Timpris</option><option value="daily" data-i18n="o_dagspris">Day rate</option><option value="fixed" data-i18n="o_fast">Fast</option></select></div>
         <div class="fl"><label data-i18n="l_timpris">Timpris (kr)</label><input id="p-hrrate" type="number"></div>
         <div class="fl"><label data-i18n="l_dagspris">Dagspris (kr)</label><input id="p-dayrate" type="number"></div>
         <div class="fl"><label data-i18n="l_fakturaref">Fakturareferens</label><input id="p-invref"></div>
@@ -968,7 +968,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-sub-ct"><div class="modal" style="width:460px"><div class="mhdr"><h2>Koppla kontakt</h2><button class="mclose" onclick="closeM('m-sub-ct')">×</button></div><div class="mbody"><input id="sct-subid" type="hidden"><div class="privacy-note">Spåra vilka av dina kontakter underkonsulten känner.</div><div class="fg"><div class="fl full"><label>Kontakt *</label><select id="sct-ctid"></select></div><div class="fl full"><label>Relationstyp</label><select id="sct-typ"></select></div><div class="fl full"><label>Anteckning</label><input id="sct-note"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub-ct')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveSubContact()" data-i18n="btn_spara">Spara</button></div></div></div>
 
-<div class="overlay" id="m-sub"><div class="modal"><div class="mhdr"><h2 id="sub-modal-title">Ny underkonsult</h2><button class="mclose" onclick="closeM('m-sub')">×</button></div><div class="mbody"><div class="fg"><div class="fl"><label data-i18n="f_fornamn">Förnamn *</label><input id="sb-fn"></div><div class="fl"><label data-i18n="f_efternamn">Efternamn *</label><input id="sb-en"></div><div class="fl"><label data-i18n="l_epost">E-post</label><input id="sb-epost" type="email"></div><div class="fl"><label data-i18n="l_telefon">Telefon</label><input id="sb-tel"></div><div class="fl"><label data-i18n="f_linkedin">LinkedIn</label><input id="sb-linkedin"></div><div class="fl"><label data-i18n="l_stad">Stad</label><select id="sb-stad"><option value=""></option></select></div><div class="fl"><label data-i18n="f_land">Land</label><select id="sb-land" onchange="updateStadDropdown('sb-land','sb-stad')"></select></div><div class="fl"><label data-i18n="l_tillganglighet">Tillgänglighet</label><select id="sb-av"><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select></div><div class="fl"><label data-i18n="l_tillganglig_fran">Tillgänglig från</label><input id="sb-avfrom" type="date"></div><div class="fl"><label data-i18n="l_dagspris_fran">Dagspris från (kr)</label><input id="sb-pricefrom" type="number"></div><div class="fl"><label data-i18n="l_dagspris_till">Dagspris till (kr)</label><input id="sb-priceto" type="number"></div><div class="fl"><label data-i18n="l_niva">Nivå</label><select id="sb-level"><option value="">-</option><option value="junior" data-i18n="o_junior">Junior</option><option value="senior" data-i18n="o_senior">Senior</option><option value="expert" data-i18n="o_expert">Expert</option></select></div><div class="fl full"><label data-i18n="l_kompetenser">Kompetenser (kommaseparerade)</label><input id="sb-skills" placeholder="IFRS, SAP, Interim CFO"></div><div class="fl"><label>⚖️ Laglig grund (GDPR)</label><select id="sb-laglig"><option value="" data-i18n="o_ej_angiven">– Ej angiven –</option><option value="Samtycke" data-i18n="o_samtycke">Samtycke</option><option value="Avtal" data-i18n="o_avtal">Avtal</option><option value="Berättigat intresse" data-i18n="o_berattigat">Berättigat intresse</option></select></div><div class="fl"><label data-i18n="f_samtycke">Samtyckesdatum</label><input id="sb-samtycke" type="date"></div><div class="fl" style="display:none"><label>KCC-nivå</label><select id="sb-kcc"><option value="">–</option><option value="Guld">Guld</option></select></div><div class="fl full"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none"><input type="checkbox" id="sb-kcc-kandidat" style="width:auto"><span data-i18n="sub_kcc_kandidat">Potentiell KCC (för bearbetning)</span></label></div><div class="fl full"><label data-i18n="l_anteckningar">Anteckningar</label><textarea id="sb-notes"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveSub()" data-i18n="btn_spara">Spara</button></div></div></div>
+<div class="overlay" id="m-sub"><div class="modal"><div class="mhdr"><h2 id="sub-modal-title">Ny underkonsult</h2><button class="mclose" onclick="closeM('m-sub')">×</button></div><div class="mbody"><div class="fg"><div class="fl"><label data-i18n="f_fornamn">Förnamn *</label><input id="sb-fn"></div><div class="fl"><label data-i18n="f_efternamn">Efternamn *</label><input id="sb-en"></div><div class="fl"><label data-i18n="l_epost">E-post</label><input id="sb-epost" type="email"></div><div class="fl"><label data-i18n="l_telefon">Telefon</label><input id="sb-tel"></div><div class="fl"><label data-i18n="f_linkedin">LinkedIn</label><input id="sb-linkedin"></div><div class="fl"><label data-i18n="l_stad">City</label><select id="sb-stad"><option value=""></option></select></div><div class="fl"><label data-i18n="f_land">Land</label><select id="sb-land" onchange="updateStadDropdown('sb-land','sb-stad')"></select></div><div class="fl"><label data-i18n="l_tillganglighet">Availability</label><select id="sb-av"><option value="tillganglig">Tillgänglig</option><option value="i_uppdrag">I uppdrag</option><option value="ej_tillganglig">Ej tillgänglig</option></select></div><div class="fl"><label data-i18n="l_tillganglig_fran">Tillgänglig från</label><input id="sb-avfrom" type="date"></div><div class="fl"><label data-i18n="l_dagspris_fran">Dagspris från (kr)</label><input id="sb-pricefrom" type="number"></div><div class="fl"><label data-i18n="l_dagspris_till">Dagspris till (kr)</label><input id="sb-priceto" type="number"></div><div class="fl"><label data-i18n="l_niva">Nivå</label><select id="sb-level"><option value="">-</option><option value="junior" data-i18n="o_junior">Junior</option><option value="senior" data-i18n="o_senior">Senior</option><option value="expert" data-i18n="o_expert">Expert</option></select></div><div class="fl full"><label data-i18n="l_kompetenser">Kompetenser (kommaseparerade)</label><input id="sb-skills" placeholder="IFRS, SAP, Interim CFO"></div><div class="fl"><label>⚖️ Laglig grund (GDPR)</label><select id="sb-laglig"><option value="" data-i18n="o_ej_angiven">– Ej angiven –</option><option value="Samtycke" data-i18n="o_samtycke">Samtycke</option><option value="Avtal" data-i18n="o_avtal">Avtal</option><option value="Berättigat intresse" data-i18n="o_berattigat">Berättigat intresse</option></select></div><div class="fl"><label data-i18n="f_samtycke">Samtyckesdatum</label><input id="sb-samtycke" type="date"></div><div class="fl" style="display:none"><label>KCC-nivå</label><select id="sb-kcc"><option value="">–</option><option value="Guld">Guld</option></select></div><div class="fl full"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none"><input type="checkbox" id="sb-kcc-kandidat" style="width:auto"><span data-i18n="sub_kcc_kandidat">Potentiell KCC (för bearbetning)</span></label></div><div class="fl full"><label data-i18n="l_anteckningar">Anteckningar</label><textarea id="sb-notes"></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-sub')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveSub()" data-i18n="btn_spara">Spara</button></div></div></div>
 
 <div class="overlay" id="m-snooze">
   <div class="modal" style="width:380px">
@@ -1063,7 +1063,7 @@ textarea{resize:vertical;min-height:68px}
         <div class="fl-row"><input type="checkbox" id="exp-epost" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-epost">E-post</label></div>
         <div class="fl-row"><input type="checkbox" id="exp-telefon" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-telefon">Telefon</label></div>
         <div class="fl-row"><input type="checkbox" id="exp-linkedin" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-linkedin">LinkedIn</label></div>
-        <div class="fl-row"><input type="checkbox" id="exp-stad" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-stad">Stad</label></div>
+        <div class="fl-row"><input type="checkbox" id="exp-stad" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-stad">City</label></div>
         <div class="fl-row"><input type="checkbox" id="exp-bransch" style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-bransch">Bransch</label></div>
         <div class="fl-row"><input type="checkbox" id="exp-senast" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-senast">Senaste kontakt</label></div>
         <div class="fl-row"><input type="checkbox" id="exp-nasta" checked style="width:auto"><label style="text-transform:none;font-size:13px;font-weight:400;margin-left:6px" for="exp-nasta">Nästa uppföljning</label></div>
@@ -1272,7 +1272,7 @@ async function loadUserLang(){
 const I18N={
   sv:{
     nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
-    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_koncern:"Koncernkarta",nav_nyckeltal:"Nyckeltal",
+    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_koncern:"Group map",nav_nyckeltal:"Nyckeltal",
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
@@ -1888,18 +1888,18 @@ function fillSelects(){
   const pc=document.getElementById("p-coid");if(pc)pc.innerHTML='<option value="">– Välj kund –</option>'+companies.map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
   const pct=document.getElementById("p-ctid");if(pct)pct.innerHTML='<option value="">– Välj kontakt –</option>'+contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" · "+e(c.foretag):""}</option>`).join("");
   const psb=document.getElementById("p-subid");if(psb)psb.innerHTML='<option value="">– Ingen –</option>'+subs.map(s=>`<option value="${s.id}">${e(s.fornamn)} ${e(s.efternamn)}</option>`).join("");
-  const prsf=document.getElementById("pr-status-f");if(prsf&&!prsf.children.length)prsf.innerHTML='<option value="">Alla statusar</option>'+PROJ_STATUSES.map(s=>`<option>${s}</option>`).join("");
-  const tpf=document.getElementById("tk-proj-f");if(tpf)tpf.innerHTML='<option value="">Alla uppdrag</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  const prsf=document.getElementById("pr-status-f");if(prsf&&!prsf.children.length)prsf.innerHTML='<option value="">All statuses</option>'+PROJ_STATUSES.map(s=>`<option>${s}</option>`).join("");
+  const tpf=document.getElementById("tk-proj-f");if(tpf)tpf.innerHTML='<option value="">All assignments</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
   const tks=document.getElementById("tk-status");if(tks)tks.innerHTML=TASK_STATUSES.map(s=>`<option>${s}</option>`).join("");
   const tkps=document.getElementById("tk-projsel");if(tkps)tkps.innerHTML=projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
   const dc=document.getElementById("de-cat");if(dc)dc.innerHTML=WORK_CATS.map(c=>`<option>${c}</option>`).join("");
   // Kontakt introduktion
   const fia=document.getElementById("f-intro-av");if(fia)fia.innerHTML='<option value="">– Ingen –</option>'+contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}</option>`).join("");
   // Dagbok projekt filter
-  const dbpf=document.getElementById("db-proj-filter");if(dbpf)dbpf.innerHTML='<option value="">Alla projekt</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  const dbpf=document.getElementById("db-proj-filter");if(dbpf)dbpf.innerHTML='<option value="">All assignments</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
   // Tidrapport filter
   const trkf=document.getElementById("tr-kund-filter");if(trkf)trkf.innerHTML='<option value="">Alla kunder</option>'+companies.filter(c=>projects.some(p=>p.company_id===c.id)).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
-  const trpf=document.getElementById("tr-proj-filter");if(trpf)trpf.innerHTML='<option value="">Alla projekt</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
+  const trpf=document.getElementById("tr-proj-filter");if(trpf)trpf.innerHTML='<option value="">All assignments</option>'+projects.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");
   // Tidrapport månad
   const trm=document.getElementById("tr-month");if(trm&&!trm.value)trm.value=curMonth();
   // Dagbok datum
@@ -1912,7 +1912,7 @@ function fillSelects(){
 function getWeekNumber(d){const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dayNum=date.getUTCDay()||7;date.setUTCDate(date.getUTCDate()+4-dayNum);const yearStart=new Date(Date.UTC(date.getUTCFullYear(),0,1));return Math.ceil((((date-yearStart)/86400000)+1)/7);}
 
 // NAV
-const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Koncernkarta",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",schema:"Arbetsschema",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Mellanhänder & förmedlare",linkedin:"LinkedIn-inlägg",kcc:"KCC – mina viktigaste"};
+const VIEW_TITLE={dashboard:"Dashboard",weekly:"",companies:"Bolag",signals:"Signal-inkorg",network:"Nätverk",contacts:"Kontakter",projects:"Uppdrag",dagbok:"Dagbok",tidrapport:"Tidrapport",tasks:"Tasks",followups:"Uppföljningar",subconsultants:"Underkonsulter",log:"Aktivitetslogg",settings:"Inställningar",myactivity:"Min aktivitet",stats:"Statistik",koncern:"Group map",relnet:"Relationsnät",kb:"Faktabank",cv:"CV / Erfarenhet",goals:"Mål",prio:"Prioritering",schema:"Arbetsschema",finans:"Nyckeltal & analys",konsultbehov:"Konsultbehov",mellanhander:"Intermediaries & agents",linkedin:"LinkedIn-inlägg",kcc:"KCC – mina viktigaste"};
 
 function toggleNavSec(key){
   const grp=document.getElementById("grp-"+key);
@@ -2137,10 +2137,10 @@ function renderChecklista(){
     </div>`;
   }).join("")||'<p style="color:#aaa;padding:14px">Inga punkter än. Lägg till din första nedan.</p>';
   box.innerHTML=`<h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px">${TR("dsl_checklista")}</h2>
-    <p style="color:#888;font-size:13px;margin-bottom:16px">Dina fasta punkter. Bockarna nollställs automatiskt varje dag. ${checklista.length?`<strong>${klara}/${checklista.length}</strong> klara idag.`:""}</p>
+    <p style="color:#888;font-size:13px;margin-bottom:16px">Your fixed items. Checkmarks reset automatically every day. ${checklista.length?`<strong>${klara}/${checklista.length}</strong> done today.`:""}</p>
     <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input id="ny-checklista-text" placeholder="Lägg till en punkt…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')laggTillChecklista()">
-      <button class="btn btn-primary btn-sm" onclick="laggTillChecklista()">+ Lägg till</button>
+      <input id="ny-checklista-text" placeholder="Add an item…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')laggTillChecklista()">
+      <button class="btn btn-primary btn-sm" onclick="laggTillChecklista()">+ Add</button>
     </div>
     ${rows}`;
 }
@@ -2726,13 +2726,13 @@ function renderProjects(){
   document.getElementById("projects-content").innerHTML=`
     <div class="toolbar" style="flex-wrap:wrap;margin-bottom:14px">
       <input id="proj-search" placeholder="Sök projekt eller kund..." value="${e(window._projQ||"")}" oninput="window._projQ=this.value;renderProjects();" style="flex:1;min-width:160px;max-width:260px">
-      <select id="proj-status-f" onchange="window._projStatus=this.value;renderProjects();" style="width:150px;flex:0 0 auto"><option value="">Alla statusar</option><option value="Aktiv"${pstatus==="Aktiv"?" selected":""}>Aktiva</option><option value="Pausad"${pstatus==="Pausad"?" selected":""}>Pausade</option><option value="Avslutad"${pstatus==="Avslutad"?" selected":""}>Avslutade</option></select>
+      <select id="proj-status-f" onchange="window._projStatus=this.value;renderProjects();" style="width:150px;flex:0 0 auto"><option value="">All statuses</option><option value="Aktiv"${pstatus==="Aktiv"?" selected":""}>Active</option><option value="Pausad"${pstatus==="Pausad"?" selected":""}>Pausade</option><option value="Avslutad"${pstatus==="Avslutad"?" selected":""}>Avslutade</option></select>
       <button class="btn btn-outline btn-sm" onclick="toggleAllKundCards(true)">${TR("prl_fall_ihop")}</button>
       <button class="btn btn-outline btn-sm" onclick="toggleAllKundCards(false)">${TR("prl_expandera")}</button>
     </div>
     <div class="kpi-grid" style="margin-bottom:16px">
-      <div class="kpi c-blue"><div class="kpi-n">${projects.length}</div><div class="kpi-l">Totalt projekt</div></div>
-      <div class="kpi c-green"><div class="kpi-n">${projects.filter(p=>p.status==="Aktiv").length}</div><div class="kpi-l">Aktiva</div></div>
+      <div class="kpi c-blue"><div class="kpi-n">${projects.length}</div><div class="kpi-l">Total assignments</div></div>
+      <div class="kpi c-green"><div class="kpi-n">${projects.filter(p=>p.status==="Aktiv").length}</div><div class="kpi-l">Active</div></div>
       <div class="kpi c-warm"><div class="kpi-n">${projects.reduce((s,p)=>s+projBillableHours(p.id,month),0).toFixed(1)}</div><div class="kpi-l">${TR("prl_fakt_tim")}</div></div>
       <div class="kpi c-gold"><div class="kpi-n" style="font-size:18px">${money(projects.reduce((s,p)=>s+(projInvoiceAmount(p,month)||0),0))}</div><div class="kpi-l">${TR("prl_fakt_underlag")}</div></div>
     </div>
@@ -2741,8 +2741,8 @@ function renderProjects(){
         <div class="kund-card-hdr" onclick="toggleKundCard('${kid}')">
           <div class="sring sh" style="width:36px;height:36px;font-size:12px;border-width:2px">${projs.filter(p=>p.status==="Aktiv").length}</div>
           <h3>${co?`${FLAG[co.land]||"🌍"} ${e(co.namn)}`:(fritt?e(fritt):"Utan kund")}</h3>
-          <span style="font-size:12px;color:#888">${projs.length} projekt</span>
-          <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openNewProjectForCo('${co?.id||""}')" style="margin-left:8px">+ Projekt</button>
+          <span style="font-size:12px;color:#888">${projs.length} assignments</span>
+          <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();openNewProjectForCo('${co?.id||""}')" style="margin-left:8px">+ Assignment</button>
           <span style="color:#aaa;margin-left:8px">▾</span>
         </div>
         <div class="kund-card-body" id="kund-body-${kid}">
@@ -2805,7 +2805,7 @@ function renderDagbok(){
   document.getElementById("dagbok-content").innerHTML=Object.entries(byDate).map(([datum,ents])=>{
     const totH=ents.filter(d=>(d.aktivitet_typ||"uppdrag")==="uppdrag").reduce((s,d)=>s+(parseFloat(d.hours)||0),0);
     return`<div class="week-sec" style="margin-bottom:12px">
-      <div class="week-sec-hdr"><h3>${datum}</h3><span style="font-size:12px;color:#888">${totH.toFixed(1)}h arbete · ${ents.length} aktiviteter</span></div>
+      <div class="week-sec-hdr"><h3>${datum}</h3><span style="font-size:12px;color:#888">${totH.toFixed(1)}h work · ${ents.length} activities</span></div>
       <div style="padding:10px 12px">
         ${ents.map(d=>{
           const typ=d.aktivitet_typ||"uppdrag";const p=projects.find(x=>x.id===d.project_id);const t=tasks.find(x=>x.id===d.task_id);const co=p?projCompany(p):null;
@@ -3032,7 +3032,7 @@ async function openCompanyCard(id){
         <div class="ii"><label>${TR("cc_agare")}</label><span>${e(userName(c.user_id))}${c.senast_andrad_av&&c.senast_andrad_av!==c.user_id?` · ändrad av ${e(userName(c.senast_andrad_av))}`:""}</span></div>
         <div class="ii"><label>Pipeline</label><span>${pipeLabel(c.pipeline_status||"")}</span></div>
         <div class="ii"><label>Bransch</label><span>${e(c.bransch||"--")}</span></div>
-        <div class="ii"><label>Stad</label><span>${e(c.stad||"--")}</span></div>
+        <div class="ii"><label>City</label><span>${e(c.stad||"--")}</span></div>
         <div class="ii"><label>Land</label><span>${e(c.land||"--")}</span></div>
         <div class="ii"><label>Hemsida</label><span>${c.hemsida?`<a href="${e(c.hemsida)}" target="_blank">Öppna ↗</a>`:"--"}</span></div>
       </div>
@@ -3047,7 +3047,7 @@ async function openCompanyCard(id){
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏢 Koncernstruktur</div>
         ${parentCo?`<div style="font-size:13px;margin-bottom:8px"><span style="color:#888">Moderbolag:</span> <span style="cursor:pointer;color:var(--accent);font-weight:600" onclick="openCompanyCard('${parentCo.id}')">${FLAG[parentCo.land]||"🌍"} ${e(parentCo.namn)} ↗</span></div>`:""}
-        ${subsidiaries.length?`<div style="font-size:13px"><span style="color:#888">Dotterbolag (${subsidiaries.length}):</span><div style="margin-top:5px;display:flex;flex-direction:column;gap:4px">${subsidiaries.map(sub=>`<div style="cursor:pointer;color:var(--accent);padding:4px 8px;background:var(--paper);border-radius:4px" onclick="openCompanyCard('${sub.id}')">${FLAG[sub.land]||"🌍"} ${e(sub.namn)} <span style="color:#aaa;font-size:11px">· ${pipeLabel(sub.pipeline_status||"")} ↗</span></div>`).join("")}</div></div>`:""}
+        ${subsidiaries.length?`<div style="font-size:13px"><span style="color:#888">Subsidiaries (${subsidiaries.length}):</span><div style="margin-top:5px;display:flex;flex-direction:column;gap:4px">${subsidiaries.map(sub=>`<div style="cursor:pointer;color:var(--accent);padding:4px 8px;background:var(--paper);border-radius:4px" onclick="openCompanyCard('${sub.id}')">${FLAG[sub.land]||"🌍"} ${e(sub.namn)} <span style="color:#aaa;font-size:11px">· ${pipeLabel(sub.pipeline_status||"")} ↗</span></div>`).join("")}</div></div>`:""}
       </div>`:""}
       ${cardTodoHtml("company",id)}
     </div>
@@ -3435,7 +3435,7 @@ function renderNetwork(){
   };
   const rows=entries.map(([id,arr])=>{
     const filtered=arr.filter(filterPerson);if(!filtered.length)return"";
-    return`<div class="week-sec"><div class="week-sec-hdr"><h3>${e(arr[0].company_namn)}</h3>${arr[0].nya_signaler>0?`<span class="badge b-ny">${arr[0].nya_signaler} nya</span>`:""}<span style="font-size:12px;color:#888">${filtered.length} kontakter</span><button class="btn btn-outline btn-xs" onclick="openCompanyCard('${id}')">Bolagskort</button></div>${filtered.map(n=>`<div class="week-row"><div class="sring ${scoreClass(n.relationspoang)}" style="width:34px;height:34px;font-size:12px;border-width:2px">${n.relationspoang}</div><div style="flex:1"><div class="week-rn">${e(n.fornamn)} ${e(n.efternamn)}</div><div class="week-rs">${e(n.roll||"")}${n.dagar_sedan_kontakt?` · ${n.dagar_sedan_kontakt} dagar sedan`:""}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Öppna</button></div>`).join("")}</div>`;
+    return`<div class="week-sec"><div class="week-sec-hdr"><h3>${e(arr[0].company_namn)}</h3>${arr[0].nya_signaler>0?`<span class="badge b-ny">${arr[0].nya_signaler} new</span>`:""}<span style="font-size:12px;color:#888">${filtered.length} contacts</span><button class="btn btn-outline btn-xs" onclick="openCompanyCard('${id}')">Company card</button></div>${filtered.map(n=>`<div class="week-row"><div class="sring ${scoreClass(n.relationspoang)}" style="width:34px;height:34px;font-size:12px;border-width:2px">${n.relationspoang}</div><div style="flex:1"><div class="week-rn">${e(n.fornamn)} ${e(n.efternamn)}</div><div class="week-rs">${e(n.roll||"")}${n.dagar_sedan_kontakt?` · ${n.dagar_sedan_kontakt} dagar sedan`:""}</div></div><button class="btn btn-outline btn-xs" onclick="openCard('${n.contact_id}')">Open</button></div>`).join("")}</div>`;
   }).filter(Boolean);
   document.getElementById("network-content").innerHTML=rows.length?rows.join(""):`<div class="empty"><div class="empty-icon">🔍</div><p>${TR("nw_inga_traffar")}</p></div>`;
 }
@@ -3939,7 +3939,7 @@ function openProjectCard(id){
   const month=curMonth();const logged=projLoggedHours(id);const est=Number(p.estimerad_tid)||0;
   document.getElementById("pr-card-content").innerHTML=`
     <div class="card-hdr"><h2>${e(p.namn)}</h2><p>${e([projDisplayName(p),p.uppdragstyp].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.status)}</span><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(p.start_date||"?")} – ${e(p.end_date||"")}</span></div></div>
-    <div class="card-tabs"><div class="ctab active" onclick="cct('pr','overview',this)">Översikt</div><div class="ctab" onclick="cct('pr','diary',this)">Dagbok</div><div class="ctab" onclick="cct('pr','tasks',this)">Uppgifter (${pt.length})</div><div class="ctab" onclick="cct('pr','people',this)">Personer (${pp.length})</div><div class="ctab" onclick="cct('pr','closing',this)">Avslut</div></div>
+    <div class="card-tabs"><div class="ctab active" onclick="cct('pr','overview',this)">Översikt</div><div class="ctab" onclick="cct('pr','diary',this)">Journal</div><div class="ctab" onclick="cct('pr','tasks',this)">Uppgifter (${pt.length})</div><div class="ctab" onclick="cct('pr','people',this)">Personer (${pp.length})</div><div class="ctab" onclick="cct('pr','closing',this)">Avslut</div></div>
     <div class="ctpane active" id="cpro-overview">
       ${est?`<div style="margin-bottom:16px"><p style="font-size:12px;color:#666;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Budgetstatus</p>${progressBar(logged,est,280)}</div>`:""}
       <div class="ig">
@@ -4049,7 +4049,7 @@ function renderKoncern(){
       const subs=companies.filter(c=>c.parent_company_id===parent.id).sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
       const isTarget=moving&&moving.id!==parent.id&&moving.parent_company_id!==parent.id;
       return`<div class="week-sec" style="margin-bottom:18px">
-        <div class="week-sec-hdr"><h3>🏢 ${e(parent.namn)}-koncernen</h3><span style="font-size:12px;color:#888">${subs.length} ${TR("co_dotterbolag")}</span><button class="btn btn-outline btn-xs" onclick="openAddSubsidiary('${parent.id}')">+ Dotterbolag</button></div>
+        <div class="week-sec-hdr"><h3>🏢 ${e(parent.namn)}-koncernen</h3><span style="font-size:12px;color:#888">${subs.length} ${TR("co_dotterbolag")}</span><button class="btn btn-outline btn-xs" onclick="openAddSubsidiary('${parent.id}')">+ Subsidiaries</button></div>
         <div style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:0">
           <div class="${isTarget?"move-target":""}" style="border-radius:8px" ${isTarget?`onclick="dropKoncern('${parent.id}')"`:""}>${koncernCard(parent,true)}</div>
           ${subs.length?`
@@ -4071,7 +4071,7 @@ function renderKoncern(){
     return;
   }
   if(!visibleKoncerner.length){
-    html+=`<div class="privacy-note" style="margin-bottom:16px">Inga koncerner ännu. Tryck "↔ Flytta" på ett fristående bolag och välj ett moderbolag, eller använd "+ Dotterbolag".</div>`;
+    html+=`<div class="privacy-note" style="margin-bottom:16px">Inga koncerner ännu. Tryck "↔ Flytta" på ett fristående bolag och välj ett moderbolag, eller använd "+ Subsidiaries".</div>`;
   }
 
   if(visibleStandalone.length){
@@ -4118,7 +4118,7 @@ function openAddSubsidiary(parentId){
     closeM("m-confirm");
     if(!sel)return;
     await sb.from("companies").update({parent_company_id:parentId}).eq("id",sel);
-    toast("Dotterbolag tillagt");
+    toast("Subsidiaries tillagt");
     await loadAll();
   };
   openM("m-confirm");
@@ -5528,7 +5528,7 @@ function liDashHtml(){
   const parts=items.map(([k,icon])=>{const done=row[k]||0,mal=liMal[k]||0;const ok=done>=mal;return `<span style="white-space:nowrap;color:${ok?"var(--green)":"#666"}">${icon} ${done}/${mal}</span>`;}).join('<span style="color:#ddd">·</span> ');
   return `<div style="padding:10px 16px;background:#fff;border:1px solid var(--cream);border-left:4px solid #0a66c2;border-radius:var(--r);margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-      <strong style="font-size:14px">in ${TR("dsl_linkedin")}</strong>
+      <strong style="font-size:14px">${TR("dsl_linkedin")}</strong>
       <div style="display:flex;gap:8px;align-items:center;font-size:13px">${parts}</div>
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -5557,9 +5557,9 @@ function liChecklistHtml(){
   }).join("");
   return `<div class="week-sec" style="margin-bottom:18px;border-left:4px solid #0a66c2"><div style="padding:16px">
     <div style="display:flex;align-items:center;margin-bottom:10px">
-      <span style="font-weight:600;font-size:15px;flex:1">in ${TR("li_dagens_aktivitet")} ${klart?'<span style="color:var(--green);font-size:13px">✓ ${TR("li_klart_idag")}</span>':''}</span>
+      <span style="font-weight:600;font-size:15px;flex:1">${TR("li_dagens_aktivitet")} ${klart?'<span style="color:var(--green);font-size:13px">✓ ${TR("li_klart_idag")}</span>':''}</span>
       <button class="btn btn-outline btn-xs" onclick="oppnaLinkedin()" title="Öppna LinkedIn">🔗 LinkedIn</button>
-      <button class="btn btn-outline btn-xs" onclick="openLiMal()">Mål</button>
+      <button class="btn btn-outline btn-xs" onclick="openLiMal()">Goals</button>
     </div>
     ${rows}
     ${liInteraktionHistorikHtml()}
@@ -5709,7 +5709,7 @@ function linkedinTopicStats(){
   const rows=Object.entries(byKat).sort((a,b)=>b[1]-a[1]);
   if(!rows.length)return "";
   const max=rows[0][1];
-  return `<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ämnesfördelning (${total} inlägg med ämne)</div>${rows.map(([k,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><div style="width:140px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(k)}</div><div style="flex:1;background:var(--paper);border-radius:4px;height:16px;position:relative"><div style="width:${Math.round(n/max*100)}%;background:var(--accent);height:100%;border-radius:4px"></div></div><div style="font-size:12px;color:#666;width:24px;text-align:right">${n}</div></div>`).join("")}</div>`;
+  return `<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px 18px;margin-bottom:16px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Topic distribution (${total} posts with topic)</div>${rows.map(([k,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><div style="width:140px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(k)}</div><div style="flex:1;background:var(--paper);border-radius:4px;height:16px;position:relative"><div style="width:${Math.round(n/max*100)}%;background:var(--accent);height:100%;border-radius:4px"></div></div><div style="font-size:12px;color:#666;width:24px;text-align:right">${n}</div></div>`).join("")}</div>`;
 }
 function linkedinMonthHtml(){
   const ref=linkedinRefDate;const year=ref.getFullYear();const month=ref.getMonth();
@@ -5737,8 +5737,8 @@ function linkedinMonthHtml(){
         </div>`;}).join(""):'';
       return `<div style="border-left:3px solid var(--cream);padding-left:10px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-          <span style="font-size:12px;color:#888;font-weight:600">Vecka ${veckonr}</span>
-          <button class="btn btn-outline btn-xs" onclick="openLinkedinPost(null,'${w.key}','${fmtISO(w.tuesday)}')">+ Inlägg</button>
+          <span style="font-size:12px;color:#888;font-weight:600">Week ${veckonr}</span>
+          <button class="btn btn-outline btn-xs" onclick="openLinkedinPost(null,'${w.key}','${fmtISO(w.tuesday)}')">+ Post</button>
         </div>
         ${postRows||'<div style="color:#bbb;font-size:13px;padding:4px 0">Inga inlägg ännu</div>'}
       </div>`;}).join("")}
@@ -6114,10 +6114,10 @@ function renderSubconsultants(){
     const proj=projects.find(x=>x.company_id===focusCompanyId&&x.subconsultant_id);
     const focusSubs=proj?subs.filter(s=>s.id===proj.subconsultant_id):[];
     if(!focusSubs.length){document.getElementById("subconsultants-content").innerHTML='<div class="empty"><div class="empty-icon">★</div><p>Inga underkonsulter kopplade till detta bolag</p></div>';return;}
-    document.getElementById("subconsultants-content").innerHTML=`<div class="tw"><table><thead><tr><th>${TR("sbl_namn")}</th><th>${TR("sbl_tillg")}</th><th>${TR("sbl_stad")}</th><th>${TR("sbl_dagspris")}</th><th>${TR("sbl_komp")}</th><th></th></tr></thead><tbody>${focusSubs.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button></td></tr>`;}).join("")}</tbody></table></div>`;
+    document.getElementById("subconsultants-content").innerHTML=`<div class="tw"><table><thead><tr><th>${TR("sbl_namn")}</th><th>${TR("sbl_tillg")}</th><th>${TR("sbl_stad")}</th><th>${TR("sbl_dagspris")}</th><th>${TR("sbl_komp")}</th><th></th></tr></thead><tbody>${focusSubs.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Available","i_uppdrag":"🟡 On assignment","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";return`<tr><td><strong>${e(s.fornamn)} ${e(s.efternamn)}</strong></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`).join("")}</td><td><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button></td></tr>`;}).join("")}</tbody></table></div>`;
     return;
   }
-  const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");if(window._kccOnlySub&&!s.kcc_niva)return false;return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);}).sort((a,b)=>((a.efternamn||"")+" "+(a.fornamn||"")).localeCompare(((b.efternamn||"")+" "+(b.fornamn||"")),"sv"));document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Namn</th><th>${TR("sbl_process")}</th><th>Tillgänglighet</th><th>Stad</th><th>Dagspris</th><th>${TR("sbl_leads")}</th><th>Kompetenser</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";const matchN=signals.filter(sig=>matchScore(s.id,sig).count>0).length;const pr=subStepProgress(s.id);const prColor=pr.totalDone===pr.total?"var(--green)":"var(--gold)";const skBadges=sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`);const skShown=skBadges.slice(0,8).join("");const skRest=skBadges.length>8?`<span id="skmore-${s.id}" style="display:none">${skBadges.slice(8).join("")}</span> <span class="badge" id="skbtn-${s.id}" style="margin:1px;font-size:10px;cursor:pointer;background:var(--accent);color:#fff" onclick="event.stopPropagation();const m=document.getElementById('skmore-${s.id}');const b=document.getElementById('skbtn-${s.id}');if(m.style.display==='none'){m.style.display='inline';b.textContent='− visa färre';}else{m.style.display='none';b.textContent='+${skBadges.length-8} fler';}">+${skBadges.length-8} fler</span>`:"";return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openSubCard('${s.id}')">${personKccBadge((s.fornamn||"")+" "+(s.efternamn||""),s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)} ↗</strong></td><td><span class="badge" style="background:${prColor};color:#fff;font-size:10px" title="Process">${pr.totalDone}/${pr.total}</span></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${matchN>0?`<span class="badge b-granskad" style="cursor:pointer" onclick="openSubCard('${s.id}')" title="Visa passande leads">${matchN} st</span>`:'<span style="color:#aaa">0</span>'}</td><td style="max-width:420px">${skShown}${skRest}</td><td><button class="btn-icon" title="Öppna kort" onclick="openSubCard('${s.id}')">↗</button><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">★</div><p>${TR("sbl_inga")}</p></div>`;}
+  const q=(v("sub-filter")||"").toLowerCase(),av=v("sub-av-f");const list=subs.filter(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens).join(" ");if(window._kccOnlySub&&!s.kcc_niva)return false;return(!q||[s.fornamn,s.efternamn,s.stad,sk].some(x=>String(x||"").toLowerCase().includes(q)))&&(!av||s.tillganglighet===av);}).sort((a,b)=>((a.efternamn||"")+" "+(a.fornamn||"")).localeCompare(((b.efternamn||"")+" "+(b.fornamn||"")),"sv"));document.getElementById("subconsultants-content").innerHTML=list.length?`<div class="tw"><table><thead><tr><th>Name</th><th>${TR("sbl_process")}</th><th>Availability</th><th>City</th><th>Day rate</th><th>${TR("sbl_leads")}</th><th>Skills</th><th></th></tr></thead><tbody>${list.map(s=>{const sk=subSkills.filter(k=>k.subconsultant_id===s.id).map(k=>k.kompetens);const avlbl={"tillganglig":"🟢 Available","i_uppdrag":"🟡 On assignment","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";const matchN=signals.filter(sig=>matchScore(s.id,sig).count>0).length;const pr=subStepProgress(s.id);const prColor=pr.totalDone===pr.total?"var(--green)":"var(--gold)";const skBadges=sk.map(x=>`<span class="badge b-prospekt" style="margin:1px;font-size:10px">${e(x)}</span>`);const skShown=skBadges.slice(0,8).join("");const skRest=skBadges.length>8?`<span id="skmore-${s.id}" style="display:none">${skBadges.slice(8).join("")}</span> <span class="badge" id="skbtn-${s.id}" style="margin:1px;font-size:10px;cursor:pointer;background:var(--accent);color:#fff" onclick="event.stopPropagation();const m=document.getElementById('skmore-${s.id}');const b=document.getElementById('skbtn-${s.id}');if(m.style.display==='none'){m.style.display='inline';b.textContent='− visa färre';}else{m.style.display='none';b.textContent='+${skBadges.length-8} fler';}">+${skBadges.length-8} fler</span>`:"";return`<tr><td><strong style="cursor:pointer;color:var(--accent)" onclick="openSubCard('${s.id}')">${personKccBadge((s.fornamn||"")+" "+(s.efternamn||""),s.kcc_niva)} ${e(s.fornamn)} ${e(s.efternamn)} ↗</strong></td><td><span class="badge" style="background:${prColor};color:#fff;font-size:10px" title="Process">${pr.totalDone}/${pr.total}</span></td><td>${avlbl}</td><td>${e(s.stad||"--")}</td><td>${s.dagspris_fran?"fr. "+s.dagspris_fran.toLocaleString("sv-SE")+" kr":"--"}</td><td>${matchN>0?`<span class="badge b-granskad" style="cursor:pointer" onclick="openSubCard('${s.id}')" title="Visa passande leads">${matchN} st</span>`:'<span style="color:#aaa">0</span>'}</td><td style="max-width:420px">${skShown}${skRest}</td><td><button class="btn-icon" title="Öppna kort" onclick="openSubCard('${s.id}')">↗</button><button class="btn-icon" onclick="openEditSub('${s.id}')">✎</button><button class="btn-icon" onclick="archiveSub('${s.id}')">🗑</button></td></tr>`;}).join("")}</tbody></table></div>`:`<div class="empty"><div class="empty-icon">★</div><p>${TR("sbl_inga")}</p></div>`;}
 function openNewSub(){editSubId=null;document.getElementById("sub-modal-title").textContent="Ny underkonsult";const sld=document.getElementById("sb-land");if(sld)sld.innerHTML=landOptions("");const skk=document.getElementById("sb-kcc-kandidat");if(skk)skk.checked=false;["sb-fn","sb-en","sb-epost","sb-tel","sb-linkedin","sb-stad","sb-avfrom","sb-pricefrom","sb-priceto","sb-skills","sb-notes","sb-samtycke"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});document.getElementById("sb-av").value="tillganglig";document.getElementById("sb-level").value="";const skc=document.getElementById("sb-kcc");if(skc)skc.value="";const sl=document.getElementById("sb-laglig");if(sl)sl.value="";updateStadDropdown("sb-land","sb-stad","");openM("m-sub");}
 function openEditSub(id){const s=subs.find(x=>x.id===id);if(!s)return;editSubId=id;document.getElementById("sub-modal-title").textContent="Redigera";[["sb-fn","fornamn"],["sb-en","efternamn"],["sb-epost","epost"],["sb-tel","telefon"],["sb-linkedin","linkedin"],["sb-stad","stad"],["sb-av","tillganglighet"],["sb-avfrom","tillganglig_fran"],["sb-pricefrom","dagspris_fran"],["sb-priceto","dagspris_till"],["sb-level","arvodesniva"],["sb-kcc","kcc_niva"],["sb-laglig","laglig_grund"],["sb-samtycke","samtycke_datum"],["sb-notes","anteckningar"]].forEach(([id,field])=>{const el=document.getElementById(id);const sld=document.getElementById("sb-land");if(sld)sld.innerHTML=landOptions(s.land||"");const skk=document.getElementById("sb-kcc-kandidat");if(skk)skk.checked=!!s.kcc_kandidat;if(el)el.value=s[field]||"";});updateStadDropdown("sb-land","sb-stad",s.stad||"");document.getElementById("sb-skills").value=subSkills.filter(k=>k.subconsultant_id===id).map(k=>k.kompetens).join(", ");openM("m-sub");}
 async function saveSub(){const fn=v("sb-fn"),en=v("sb-en");if(!fn||!en){toast("Namn krävs");return;}const data={user_id:me.id,fornamn:fn,efternamn:en,epost:v("sb-epost"),telefon:v("sb-tel"),linkedin:v("sb-linkedin"),stad:v("sb-stad"),land:document.getElementById("sb-land")?.value||null,tillganglighet:document.getElementById("sb-av").value,tillganglig_fran:document.getElementById("sb-avfrom").value||null,dagspris_fran:numv("sb-pricefrom"),dagspris_till:numv("sb-priceto"),arvodesniva:document.getElementById("sb-level").value||null,kcc_niva:v("sb-kcc")||null,kcc_kandidat:document.getElementById("sb-kcc-kandidat")?.checked||false,laglig_grund:v("sb-laglig")||null,samtycke_datum:v("sb-samtycke")||null,anteckningar:v("sb-notes")};let sid=editSubId,r;if(editSubId)r=await sb.from("subconsultants").update(data).eq("id",editSubId).select("id").single();else r=await sb.from("subconsultants").insert(data).select("id").single();if(r.error){alert(r.error.message);return;}sid=r.data.id;await sb.from("subconsultant_skills").delete().eq("subconsultant_id",sid);const sk=v("sb-skills").split(",").map(x=>x.trim()).filter(Boolean);if(sk.length)await sb.from("subconsultant_skills").insert(sk.map(k=>({user_id:me.id,subconsultant_id:sid,kompetens:k,niva:"avancerad"})));closeM("m-sub");toast("Sparad");await loadAll();}
@@ -6155,7 +6155,7 @@ function openSubCard(id){
   const cts=subContacts.filter(x=>x.subconsultant_id===id);
   // projekt där denna underkonsult deltagit (befintlig koppling)
   const projs=projects.filter(p=>p.subconsultant_id===id);
-  const avlbl={"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";
+  const avlbl={"tillganglig":"🟢 Available","i_uppdrag":"🟡 On assignment","ej_tillganglig":"🔴 Ej tillgänglig"}[s.tillganglighet]||"";
   document.getElementById("sub-card-content").innerHTML=`
     <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${personKccBadge((s.fornamn||"")+" "+(s.efternamn||""),s.kcc_niva)} ★ ${e(s.fornamn)} ${e(s.efternamn)}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([s.stad,avlbl].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges">${sk.map(x=>`<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${e(x)}</span>`).join("")}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('sub','overview',this)">Översikt</div><div class="ctab" onclick="cct('sub','acts',this)">Aktiviteter (${acts.length})</div><div class="ctab" onclick="cct('sub','cos',this)">Bolag (${cos.length+projs.length})</div><div class="ctab" onclick="cct('sub','cts',this)">Känner (${cts.length})</div><div class="ctab" onclick="cct('sub','leads',this)">${TR("sc_passande")}</div></div>
@@ -6164,8 +6164,8 @@ function openSubCard(id){
         <div class="ii"><label>E-post</label><span>${s.epost?`<a href="mailto:${e(s.epost)}">${e(s.epost)}</a>`:"--"}</span></div>
         <div class="ii"><label>Telefon</label><span>${s.telefon?`<a href="tel:${e(s.telefon)}">${e(s.telefon)}</a>`:"--"}</span></div>
         <div class="ii"><label>LinkedIn</label><span>${s.linkedin?`<a href="${/^https?:\/\//i.test(s.linkedin)?e(s.linkedin):"https://"+e(s.linkedin)}" target="_blank" rel="noopener">Öppna ↗</a>`:"--"}</span></div>
-        <div class="ii"><label>Tillgänglighet</label><span>${avlbl||"--"}</span></div>
-        <div class="ii"><label>Dagspris</label><span>${s.dagspris_fran?s.dagspris_fran.toLocaleString("sv-SE")+(s.dagspris_till?"–"+s.dagspris_till.toLocaleString("sv-SE"):"")+" kr":"--"}</span></div>
+        <div class="ii"><label>Availability</label><span>${avlbl||"--"}</span></div>
+        <div class="ii"><label>Day rate</label><span>${s.dagspris_fran?s.dagspris_fran.toLocaleString("sv-SE")+(s.dagspris_till?"–"+s.dagspris_till.toLocaleString("sv-SE"):"")+" kr":"--"}</span></div>
         <div class="ii"><label>${TR("sc_niva")}</label><span>${e(s.arvodesniva||"--")}</span></div>
       </div>
       ${s.anteckningar?`<p style="font-size:13px;line-height:1.6">${e(s.anteckningar)}</p>`:""}
@@ -6981,7 +6981,7 @@ function renderTodoList(){
     <button class="btn-icon" title="Redigera" onclick="openEditTodo('${t.id}')">✎</button>
     <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
   </div>`;};
-  const status=todos.length?`<div style="font-size:12px;color:#888;margin-bottom:10px">${open.length} öppna · ${done.length} klara</div>`:"";
+  const status=todos.length?`<div style="font-size:12px;color:#888;margin-bottom:10px">${open.length} open · ${done.length} done</div>`:"";
   const openHtml=open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos 🎉</p>';
   const toggleBtn=done.length?`<div style="margin:12px 0 6px"><button class="btn btn-outline btn-sm" onclick="showDoneTodos=!showDoneTodos;renderTodoList()">${showDoneTodos?"Hide done":`Show done (${done.length})`}</button></div>`:"";
   const doneHtml=showDoneTodos&&done.length?done.map(row).join(''):"";
@@ -7594,7 +7594,7 @@ function leadMatchHtml(s){
   return ranked.map(({sub,count,matched})=>`<div class="fup-row" style="border-left:3px solid var(--green)">
     <div class="fup-info">
       <div class="fup-name" style="cursor:pointer;color:var(--accent)" onclick="closeM('m-lead');openSubCard('${sub.id}')">★ ${e(sub.fornamn)} ${e(sub.efternamn)} ↗</div>
-      <div class="fup-meta"><span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>${sub.tillganglighet?` · ${({"tillganglig":"🟢 Tillgänglig","i_uppdrag":"🟡 I uppdrag","ej_tillganglig":"🔴 Ej tillgänglig"}[sub.tillganglighet]||"")}`:""}</div>
+      <div class="fup-meta"><span style="color:var(--green);font-weight:600">${count} matchande: ${matched.map(e).join(", ")}</span>${sub.tillganglighet?` · ${({"tillganglig":"🟢 Available","i_uppdrag":"🟡 On assignment","ej_tillganglig":"🔴 Ej tillgänglig"}[sub.tillganglighet]||"")}`:""}</div>
     </div>
   </div>`).join("");
 }
