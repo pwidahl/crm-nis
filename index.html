@@ -3082,6 +3082,28 @@ function sortSignalsCol(col){
   }else{sigColSort.col=col;sigColSort.dir="desc";}
   renderSignals();
 }
+function diagDubbletter(){
+  // gruppera på rubrik (trimmad, lowercase) och visa grupper med >1
+  const groups={};
+  signals.forEach(s=>{
+    const key=(s.rubrik||"(tom)").trim().toLowerCase();
+    (groups[key]=groups[key]||[]).push(s);
+  });
+  const dupes=Object.entries(groups).filter(([k,arr])=>arr.length>1).sort((a,b)=>b[1].length-a[1].length);
+  if(!dupes.length){alert("Inga rubrik-dubbletter hittades.");return;}
+  let out="DUBBLETTER (samma rubrik):\n\n";
+  dupes.slice(0,8).forEach(([k,arr])=>{
+    out+=`▼ "${arr[0].rubrik}" — ${arr.length} st\n`;
+    arr.forEach(s=>{
+      const co=companies.find(c=>c.id===s.company_id);
+      out+=`   • id:${String(s.id).slice(0,6)} | bolag:${co?co.namn:(s.company_id?"["+String(s.company_id).slice(0,6)+"]":"SAKNAS")} | källa:${s.kalla||"?"} | datum:${(s.signal_datum||"").slice(0,10)} | url:${(s.kalla_url||"").slice(0,40)}\n`;
+    });
+    out+="\n";
+  });
+  out+=`\nTotalt ${dupes.length} rubriker har dubbletter.`;
+  alert(out);
+  console.log(out);
+}
 function renderSignals(){
   if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
@@ -3100,7 +3122,8 @@ function renderSignals(){
       <h4>📈 Nasdaq Nordic</h4>
       <p>Importera börsnoterade bolag från Nasdaq Stockholm, Oslo, Köpenhamn och Helsingfors</p>
       <button class="btn btn-warm btn-sm" id="btn-nasdaq" onclick="discoverNasdaq()">Importera bolag</button>
-    </div>`;
+    </div>
+    <div class="sig-src" style="border:1px dashed #c00"><h4>🔍 Diagnostik</h4><p>Visa vilka signaler som är dubbletter och vad som skiljer dem.</p><button class="btn btn-outline btn-sm" onclick="diagDubbletter()">Analysera dubbletter</button></div>`;
   // Populate company filter
   const scf=document.getElementById("sig-company-f");
   if(scf){
