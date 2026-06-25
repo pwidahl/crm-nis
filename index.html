@@ -539,7 +539,7 @@ textarea{resize:vertical;min-height:68px}
         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px">
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-behov" onchange="renderSignals()" style="width:auto"><span>⚡ Only hot needs</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_form">🔇 Dölj förmedlare</span></label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fast">🔒 Dölj fastanställning</span></label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fast">🔒 Hide permanent</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
         </div>
       </div>
@@ -994,22 +994,22 @@ textarea{resize:vertical;min-height:68px}
       <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <input id="todo-input" placeholder="Ny uppgift..." style="flex:1;min-width:140px" onkeydown="if(event.key==='Enter')addTodo()">
         <input id="todo-date" type="date" style="width:150px" title="Deadline (valfritt)">
-        <select id="todo-prio" style="width:110px"><option value="Hög">🔴 Hög</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Låg</option></select>
+        <select id="todo-prio" style="width:110px"><option value="Hög">🔴 High</option><option value="Medium" selected>🟡 Medium</option><option value="Låg">🟢 Low</option></select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-        <select id="todo-contact" style="flex:1;min-width:140px"><option value="">Koppla kontakt (valfritt)</option></select>
-        <select id="todo-company" style="flex:1;min-width:140px"><option value="">Koppla bolag (valfritt)</option></select>
+        <select id="todo-contact" style="flex:1;min-width:140px"><option value="">Link contact (optional)</option></select>
+        <select id="todo-company" style="flex:1;min-width:140px"><option value="">Link company (optional)</option></select>
         <select id="todo-sub" style="flex:1;min-width:140px"><option value="">Koppla underkonsult (valfritt)</option></select>
-        <select id="todo-link" style="flex:1;min-width:140px"><option value="">Snabblänk (valfritt)</option></select>
-        <button class="btn btn-primary" onclick="addTodo()">+ Lägg till</button>
+        <select id="todo-link" style="flex:1;min-width:140px"><option value="">Quick link (optional)</option></select>
+        <button class="btn btn-primary" onclick="addTodo()">+ Add</button>
       </div>
       <div id="todo-list"></div>
     </div>
-    <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Exportera till kalender</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')" data-i18n="u_stang">Stäng</button></div>
+    <div class="mfoot"><button class="btn btn-green btn-sm" onclick="exportTodosICS()">📅 Export to calendar</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-todo')" data-i18n="u_stang">Stäng</button></div>
   </div>
 </div>
 
-<div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Redigera todo</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 Hög</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Låg</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><select id="te-company"><option value="">Inget</option></select></div><div class="fl full"><label>Kopplad underkonsult</label><select id="te-sub"><option value="">Ingen</option></select></div><div class="fl full"><label>Snabblänk</label><select id="te-link"><option value="">Ingen</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()" data-i18n="btn_spara">Spara</button></div></div></div>
+<div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Edit to-do</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 High</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Low</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><select id="te-company"><option value="">Inget</option></select></div><div class="fl full"><label>Kopplad underkonsult</label><select id="te-sub"><option value="">Ingen</option></select></div><div class="fl full"><label>Snabblänk</label><select id="te-link"><option value="">Ingen</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()" data-i18n="btn_spara">Spara</button></div></div></div>
 
 <div class="overlay" id="m-dash-cust"><div class="modal" style="width:380px"><div class="mhdr"><h2>Anpassa dashboard</h2><button class="mclose" onclick="closeM('m-dash-cust')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:8px">Bocka i de sektioner du vill se på dashboarden.</p><div id="dash-cust-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-dash-cust')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveDashCustomize()" data-i18n="btn_spara">Spara</button></div></div></div>
 
@@ -3204,7 +3204,7 @@ function renderSignals(){
   leadNavList=list.map(s=>s.id);
   const arrow=c=>sigColSort.col===c?(sigColSort.dir==="asc"?" ▲":" ▼"):"";
   const th=(c,l)=>`<th style="cursor:pointer;user-select:none" onclick="sortSignalsCol('${c}')">${l}${arrow(c)}</th>`;
-  const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
+  const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} likely permanent positions are hidden (interim/consultant shown).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Hide permanent again":"Show permanent positions"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Hide permanent again</button></div>`:"");
   const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
   // Gruppera signaler per bolag (accordion)
   const DAGAR_GRANS=5;
@@ -3291,7 +3291,7 @@ function renderSignals(){
     </div>`;
   }).join("");
 
-  document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga aktuella signaler (senaste 5 dagarna)</p></div>')+(bolagMedGamlaBara.length?`<div style="max-width:900px;margin-top:14px"><button class="btn btn-outline btn-sm" onclick="window._visaGamlaBolag=${!visaAllaBolag};renderSignals()">${visaAllaBolag?"Dölj":"Visa"} ${bolagMedGamlaBara.length} bolag med endast äldre signaler (>5 dgr)</button></div>`:"");
+  document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>No current signals (last 5 days)</p></div>')+(bolagMedGamlaBara.length?`<div style="max-width:900px;margin-top:14px"><button class="btn btn-outline btn-sm" onclick="window._visaGamlaBolag=${!visaAllaBolag};renderSignals()">${visaAllaBolag?"Hide":"Show"} ${bolagMedGamlaBara.length} companies with only older signals (>5 days)</button></div>`:"");
 }
 const ATGARD_LABEL={agera:"⚡ Agera",spara:"🔖 Sparad",dolj:"🙈 Dold",bevaka:"👁 Bevakas"};
 function toggleSigMeny(id){
@@ -6678,10 +6678,10 @@ function openTodo(){
 }
 
 function fillTodoSelects(){
-  const cOpts='<option value="">Koppla kontakt (valfritt)</option>'+contacts.slice().sort((a,b)=>String(a.fornamn).localeCompare(String(b.fornamn),"sv")).map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" – "+e(c.foretag):""}</option>`).join("");
-  const coOpts='<option value="">Koppla bolag (valfritt)</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+  const cOpts='<option value="">Link contact (optional)</option>'+contacts.slice().sort((a,b)=>String(a.fornamn).localeCompare(String(b.fornamn),"sv")).map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}${c.foretag?" – "+e(c.foretag):""}</option>`).join("");
+  const coOpts='<option value="">Link company (optional)</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
   const subOpts='<option value="">Koppla underkonsult (valfritt)</option>'+subs.slice().sort((a,b)=>String(a.fornamn).localeCompare(String(b.fornamn),"sv")).map(s=>`<option value="${s.id}">${e(s.fornamn)} ${e(s.efternamn)}</option>`).join("");
-  const linkOpts='<option value="">Snabblänk (valfritt)</option>'+quickLinks.map(l=>`<option value="${l.id}">${e(l.titel)}</option>`).join("");
+  const linkOpts='<option value="">Quick link (optional)</option>'+quickLinks.map(l=>`<option value="${l.id}">${e(l.titel)}</option>`).join("");
   const tc=document.getElementById("todo-contact");if(tc)tc.innerHTML=cOpts;
   const tco=document.getElementById("todo-company");if(tco)tco.innerHTML=coOpts;
   const ts=document.getElementById("todo-sub");if(ts)ts.innerHTML=subOpts;
@@ -6983,7 +6983,7 @@ function renderTodoList(){
   </div>`;};
   const status=todos.length?`<div style="font-size:12px;color:#888;margin-bottom:10px">${open.length} öppna · ${done.length} klara</div>`:"";
   const openHtml=open.length?open.map(row).join(''):'<p style="color:#aaa;padding:8px 0">Inga öppna todos 🎉</p>';
-  const toggleBtn=done.length?`<div style="margin:12px 0 6px"><button class="btn btn-outline btn-sm" onclick="showDoneTodos=!showDoneTodos;renderTodoList()">${showDoneTodos?"Dölj klara":`Visa klara (${done.length})`}</button></div>`:"";
+  const toggleBtn=done.length?`<div style="margin:12px 0 6px"><button class="btn btn-outline btn-sm" onclick="showDoneTodos=!showDoneTodos;renderTodoList()">${showDoneTodos?"Hide done":`Show done (${done.length})`}</button></div>`:"";
   const doneHtml=showDoneTodos&&done.length?done.map(row).join(''):"";
   el.innerHTML=status+openHtml+toggleBtn+doneHtml;
 }
