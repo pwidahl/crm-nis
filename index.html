@@ -3266,7 +3266,7 @@ function doljGamlaSig(cid){
   if(window._showOldSigs)window._showOldSigs[cid]=false;
   renderSignals();
 }
-function _oldSignalsTableUnused(){
+function _oldSignalsTableUnused(){}
 let editSignalId=null;
 function openNewSignal(){editSignalId=null;fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";const sf=document.getElementById("sig-fast");if(sf)sf.checked=false;document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url","sig-fritt","sig-efter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});const h=document.querySelector("#m-signal .mhdr h2");if(h)h.textContent="Ny signal / lead";openM("m-signal");}
 async function createCompanyFromLead(sigId){
