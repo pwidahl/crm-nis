@@ -432,17 +432,12 @@ textarea{resize:vertical;min-height:68px}
   <nav class="nav">
     <div class="nav-item active" data-v="dashboard" onclick="gotoView('dashboard')"><span class="nav-icon">◈</span><span id="nl-dashboard">Dashboard</span></div>
     <div class="nav-item" data-v="meddelanden" onclick="gotoView('meddelanden')"><span class="nav-icon">✉️</span><span data-i18n="nav_meddelanden">Meddelanden</span><span id="msg-badge" style="display:none;background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto"></span></div>
+    <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
     <div class="nav-sec" onclick="toggleNavSec('focus')" style="cursor:pointer;user-select:none"><span data-i18n="navg_focus">Focus</span> <span class="nav-sec-arrow" id="arr-focus">▾</span></div>
     <div class="nav-grp" id="grp-focus">
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
-      <div class="nav-item" data-v="followups" onclick="gotoView('followups')"><span class="nav-icon">◷</span><span data-i18n="nav_uppfoljningar">Uppföljningar</span><span class="nav-badge" id="badge-followups">0</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
-    </div>
-    <div class="nav-sec" onclick="toggleNavSec('oversikt')" style="cursor:pointer;user-select:none"><span data-i18n="navg_oversikt">Översikt</span> <span class="nav-sec-arrow" id="arr-oversikt">▾</span></div>
-    <div class="nav-grp" id="grp-oversikt">
-      <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
-      <div class="nav-item" data-v="prio" onclick="gotoView('prio')"><span class="nav-icon">📋</span><span data-i18n="nav_prio">Prioritering</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
     <div class="nav-grp" id="grp-arbetsbok">
@@ -507,8 +502,7 @@ textarea{resize:vertical;min-height:68px}
   <div class="content">
     <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title" data-i18n="dash_kommande_uppf">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
-    <div class="view" id="view-prio"><div id="prio-content"></div></div>
-    <div class="view" id="view-linkedin"><div id="linkedin-content"></div></div>
+        <div class="view" id="view-linkedin"><div id="linkedin-content"></div></div>
     <div class="view" id="view-kcc"><div id="kcc-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
@@ -624,11 +618,7 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="tasks-content"></div>
     </div>
-    <div class="view" id="view-followups">
-      <div class="toolbar"><select id="fup-filter" onchange="renderFollowups()"><option value="all">Alla</option><option value="overdue">Försenade</option><option value="today">Idag</option><option value="week">Denna vecka</option></select></div>
-      <div id="followups-list"></div>
-    </div>
-    <div class="view" id="view-subconsultants">
+        <div class="view" id="view-subconsultants">
       <div class="toolbar">
         <input id="sub-filter" data-i18n-ph="sub_filter" placeholder="Filtrera eller sök kompetens..." oninput="renderSubconsultants()" style="flex:1;max-width:280px">
         <select id="sub-av-f" onchange="renderSubconsultants()"><option value="" data-i18n="sub_alla">Alla</option><option value="tillganglig" data-i18n="sub_tillganglig">Tillgänglig</option><option value="i_uppdrag" data-i18n="sub_i_uppdrag">I uppdrag</option><option value="ej_tillganglig" data-i18n="sub_ej_tillganglig">Ej tillgänglig</option></select>
@@ -1931,8 +1921,8 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={goals:"oversikt",prio:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"focus",linkedin:"focus",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
-const ALL_NAV_GROUPS=["focus","oversikt","arbetsbok","natverk","bolag","analys","kunskap","system"];
+const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const ALL_NAV_GROUPS=["focus","arbetsbok","natverk","bolag","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
   ALL_NAV_GROUPS.forEach(g=>{
@@ -2443,7 +2433,7 @@ function _renderDashboardInner(){
   const _dNow=new Date();const _loc=LANG==="en"?"en-US":"sv-SE";
   let _dagText=_dNow.toLocaleDateString(_loc,{weekday:"long",day:"numeric",month:"long"});
   _dagText=_dagText.charAt(0).toUpperCase()+_dagText.slice(1);
-  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><p style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);margin:0;flex:1">${_dagText}</p><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ ${TR("dsl_anpassa")}</button></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[[TR("dsl_kpi_uppfolj"),of2,"var(--red)","gotoView('followups')"],[TR("dsl_kpi_tasks"),ot,"var(--warm)","gotoView('tasks')"],[TR("dsl_kpi_signaler"),ns,"var(--gold)","gotoView('signals')"],[TR("dsl_kpi_uppdrag"),ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
+  document.getElementById("dash-kpi").innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><p style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent);margin:0;flex:1">${_dagText}</p><button class="btn btn-outline btn-xs" onclick="openDashCustomize()">⚙ ${TR("dsl_anpassa")}</button></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r);margin-bottom:14px;font-size:14px">${[[TR("dsl_kpi_uppfolj"),of2,"var(--red)","gotoView('contacts')"],[TR("dsl_kpi_tasks"),ot,"var(--warm)","gotoView('tasks')"],[TR("dsl_kpi_signaler"),ns,"var(--gold)","gotoView('signals')"],[TR("dsl_kpi_uppdrag"),ap,"var(--purple)","gotoView('projects')"]].map(([l,n,col,onc],i)=>`${i>0?'<span style="color:#ddd">·</span>':''}<span style="cursor:pointer;white-space:nowrap" onclick="${onc}"><strong style="color:${col};font-size:16px">${n}</strong> <span style="color:#666">${l}</span></span>`).join("")}</div>`;
 
   const hasContact=cid=>contacts.some(c=>c.company_id===cid);
   const isFormedlare=cid=>{const c=companies.find(x=>x.id===cid);return !!c?.ar_formedlare;};
@@ -2476,7 +2466,7 @@ function _renderDashboardInner(){
     </div>`;
 
   const SECTIONS={
-    fups:()=>card("fups",`📞 ${TR("dbc_att_folja")} idag`,`${fups.length}`,"gotoView('followups')",null,fupRows,TR("dbc_inga_uppf")),
+    fups:()=>card("fups",`📞 ${TR("dbc_att_folja")} idag`,`${fups.length}`,"gotoView('contacts')",null,fupRows,TR("dbc_inga_uppf")),
     leads:()=>card("leads",`⚡ ${TR("dbc_heta_leads")}`,`${leads.length}`,"gotoView('signals')",null,leadRows,TR("dbc_inga_signaler")),
     konsult:()=>card("konsult",`🎯 ${TR("dbc_pot_behov")}`,`${needsAll.length}`,"gotoView('signals')",TR("dbc_visa_alla"),needRows,TR("dbc_inga_behov")),
     tasks:()=>card("tasks",`✓ ${TR("dbc_fors_tasks")}`,`${dtasks.length}`,"gotoView('tasks')",null,taskRows,TR("dbc_inga_tasks")),
