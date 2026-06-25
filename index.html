@@ -3126,6 +3126,16 @@ function renderSignals(){
     if(onlyManual&&(s.kalla||"").toLowerCase()!=="manuell"&&(s.signal_typ||"").toLowerCase()!=="manuell")return false;
     return(!status||s.status===status)&&(!type||s.signal_typ===type)&&(!land||s.companies?.land===land)&&(!coFilter||s.company_id===coFilter)&&(!q||hay.includes(q));
   });
+  // Ta bort dubbletter: samma bolag + samma rubrik = samma annons. Behåll nyaste.
+  (function dedupSignals(){
+    const seen=new Map();
+    list.slice().sort((a,b)=>String(b.signal_datum||"").localeCompare(String(a.signal_datum||""))).forEach(s=>{
+      const key=((s.company_id||"")+"|"+(s.rubrik||"").trim().toLowerCase()+"|"+(s.kalla_url||"").trim().toLowerCase());
+      if(!seen.has(key))seen.set(key,s);
+    });
+    const keepIds=new Set([...seen.values()].map(s=>s.id));
+    list=list.filter(s=>keepIds.has(s.id));
+  })();
   // Auto-dölj troliga fastanställningar (om inte användaren valt att visa dem)
   const showFast=window._showFastLeads||false;
   const fastHidden=list.filter(s=>sigIsFast(s)&&s.dold_fast!==false);
