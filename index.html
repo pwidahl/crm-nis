@@ -3122,8 +3122,7 @@ function renderSignals(){
       <h4>📈 Nasdaq Nordic</h4>
       <p>Importera börsnoterade bolag från Nasdaq Stockholm, Oslo, Köpenhamn och Helsingfors</p>
       <button class="btn btn-warm btn-sm" id="btn-nasdaq" onclick="discoverNasdaq()">Importera bolag</button>
-    </div>
-    <div class="sig-src" style="border:1px dashed #c00"><h4>🔍 Diagnostik</h4><p>Visa vilka signaler som är dubbletter och vad som skiljer dem.</p><button class="btn btn-outline btn-sm" onclick="diagDubbletter()">Analysera dubbletter</button></div>`;
+    </div>`;
   // Populate company filter
   const scf=document.getElementById("sig-company-f");
   if(scf){
@@ -3194,16 +3193,80 @@ function renderSignals(){
   const th=(c,l)=>`<th style="cursor:pointer;user-select:none" onclick="sortSignalsCol('${c}')">${l}${arrow(c)}</th>`;
   const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
   const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
-  document.getElementById("signals-content").innerHTML=fastBanner+(list.length?`<div class="tw"><table><thead><tr>${th("rubrik","Signal")}${th("bolag","Bolag")}<th>${TR("sgl_pipeline")}</th><th>${TR("sgl_vem")}</th>${th("styrka","Styrka")}<th>${TR("sgl_alder")}</th><th>${TR("sgl_nasta_steg")}</th>${th("status","Status")}<th></th></tr></thead><tbody>${list.map(s=>{const known=hasContact(s.company_id);const steg=s.pipeline_steg||"Signal";const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();const vem=s.senast_agerad_av?userName(s.senast_agerad_av):userName(s.user_id);return`<tr><td style="cursor:pointer" onclick="openLead('${s.id}')">
-      <strong>${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad" style="margin-right:4px">✍️</span>':""}${sigIsFast(s)?'<span title="Trolig fastanställning" style="margin-right:4px">🔒</span>':""}${e(s.rubrik)}</strong>
-      ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:3px;max-width:300px;white-space:normal;line-height:1.4">${e((s.beskrivning||"").slice(0,100))}${(s.beskrivning||"").length>100?"…":""}</div>`:""}
-      <span style="font-size:10px;color:#aaa">${e(s.kalla||"")}</span>
-    </td><td>${known?'<span title="Du har en kontakt på detta bolag" style="margin-right:4px">👤</span>':""}${e(sigName(s))}</td><td><span class="badge" style="font-size:11px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span></td><td style="font-size:12px;color:#666">${e(vem)}</td><td>${"★".repeat(s.signal_styrka||1)}</td><td style="font-size:12px;color:#888">${dagAlder(s)}</td><td style="max-width:180px;font-size:12px">${ns?`<span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}${s.nasta_steg_datum?` (${e(s.nasta_steg_datum)})`:""}</span>`:'<span style="color:var(--gold)">⚠ saknas</span>'}</td><td><span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}">${sigStatusName(s.status)}</span></td><td style="white-space:nowrap">
-      ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
-      <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
-      <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
-    </td></tr>`;}).join("")}</tbody></table></div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>');
+  // Gruppera signaler per bolag (accordion)
+  const DAGAR_GRANS=14;
+  const idag14=new Date();idag14.setDate(idag14.getDate()-DAGAR_GRANS);
+  const grans=idag14.toISOString().slice(0,10);
+  const grupper={};
+  list.forEach(s=>{
+    const cid=s.company_id||"__nobolag__";
+    (grupper[cid]=grupper[cid]||{namn:sigName(s),cid:s.company_id,sigs:[]}).sigs.push(s);
+  });
+  const grpArr=Object.values(grupper).map(g=>{
+    g.sigs.sort((a,b)=>String(b.signal_datum||"").localeCompare(String(a.signal_datum||"")));
+    g.senaste=g.sigs[0]?.signal_datum||"";
+    g.farska=g.sigs.filter(s=>(s.signal_datum||"")>=grans);
+    g.gamla=g.sigs.filter(s=>(s.signal_datum||"")<grans);
+    g.known=g.cid?hasContact(g.cid):false;
+    return g;
+  }).sort((a,b)=>String(b.senaste).localeCompare(String(a.senaste)));
+
+  const sigRad=(s)=>{
+    const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();
+    const vem=s.senast_agerad_av?userName(s.senast_agerad_av):userName(s.user_id);
+    const steg=s.pipeline_steg||"Signal";
+    return `<div class="sig-rad" style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-top:1px solid var(--cream)">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="openLead('${s.id}')">
+        <div style="font-weight:600;font-size:13px">${(s.kalla||"").toLowerCase()==="manuell"||(s.signal_typ||"").toLowerCase()==="manuell"?'<span title="Manuellt skapad">✍️</span> ':""}${sigIsFast(s)?'<span title="Trolig fastanställning">🔒</span> ':""}${e(s.rubrik)}</div>
+        ${s.beskrivning?`<div style="font-size:11px;color:#666;margin-top:2px;line-height:1.4">${e((s.beskrivning||"").slice(0,110))}${(s.beskrivning||"").length>110?"…":""}</div>`:""}
+        <div style="font-size:11px;color:#999;margin-top:3px">${e(s.kalla||"")} · ${dagAlder(s)} · ${"★".repeat(s.signal_styrka||1)} · <span class="badge" style="font-size:10px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span> · ${e(vem)}${ns?` · <span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}</span>`:' · <span style="color:var(--gold)">⚠ nästa steg saknas</span>'}</div>
+      </div>
+      <span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}" style="flex-shrink:0">${sigStatusName(s.status)}</span>
+      <div style="white-space:nowrap;flex-shrink:0">
+        ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
+        <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
+        <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
+      </div>
+    </div>`;
+  };
+
+  const accordionHtml=grpArr.map(g=>{
+    const open=window._openSigCompany===(g.cid||"__nobolag__");
+    const showOld=window._showOldSigs&&window._showOldSigs[g.cid||"__nobolag__"];
+    const visibleSigs=showOld?g.sigs:g.farska;
+    const bodyHtml=open?`<div>
+      ${visibleSigs.length?visibleSigs.map(sigRad).join(""):`<div style="padding:10px 12px;color:#aaa;font-size:12px">${g.gamla.length&&!showOld?"Alla signaler är äldre än 14 dagar.":"Inga signaler."}</div>`}
+      ${g.gamla.length&&!showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="visaGamlaSig('${g.cid||"__nobolag__"}')">Visa ${g.gamla.length} äldre (>14 dagar)</button></div>`:""}
+      ${showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="doljGamlaSig('${g.cid||"__nobolag__"}')">Dölj äldre</button></div>`:""}
+    </div>`:"";
+    return `<div class="sig-bolag" style="border:1px solid var(--cream);border-radius:var(--r);margin-bottom:8px;background:#fff;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:${open?'var(--paper)':'#fff'}" onclick="toggleSigCompany('${g.cid||"__nobolag__"}')">
+        <span style="font-size:13px;color:#888;transition:transform .15s;transform:rotate(${open?90:0}deg)">▶</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:15px">${g.known?'<span title="Du har en kontakt på detta bolag">👤</span> ':""}${e(g.namn)}</div>
+          <div style="font-size:11px;color:#999">${g.farska.length} ${g.farska.length===1?"signal":"signaler"} senaste 14 dgr${g.gamla.length?` · ${g.gamla.length} äldre`:""} · senast ${e((g.senaste||"").slice(0,10))}</div>
+        </div>
+        <span class="badge" style="background:var(--gold);color:#fff;flex-shrink:0">${g.farska.length||g.sigs.length}</span>
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }).join("");
+
+  document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>');
 }
+function toggleSigCompany(cid){
+  window._openSigCompany=(window._openSigCompany===cid)?null:cid;
+  renderSignals();
+}
+function visaGamlaSig(cid){
+  window._showOldSigs=window._showOldSigs||{};window._showOldSigs[cid]=true;
+  renderSignals();
+}
+function doljGamlaSig(cid){
+  if(window._showOldSigs)window._showOldSigs[cid]=false;
+  renderSignals();
+}
+function _oldSignalsTableUnused(){
 let editSignalId=null;
 function openNewSignal(){editSignalId=null;fillSelects();document.getElementById("sig-coid").value="";document.getElementById("sig-typ").value="manuell";document.getElementById("sig-styrka").value="1";const sf=document.getElementById("sig-fast");if(sf)sf.checked=false;document.getElementById("sig-datum").value=today();["sig-rubrik","sig-beskr","sig-kalla","sig-url","sig-fritt","sig-efter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});const h=document.querySelector("#m-signal .mhdr h2");if(h)h.textContent="Ny signal / lead";openM("m-signal");}
 async function createCompanyFromLead(sigId){
