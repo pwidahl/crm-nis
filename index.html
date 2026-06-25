@@ -465,7 +465,6 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('salj')" style="cursor:pointer;user-select:none"><span data-i18n="navg_salj">Sälj &amp; leads</span> <span class="nav-sec-arrow" id="arr-salj">▾</span></div>
     <div class="nav-grp" id="grp-salj">
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
-      <div class="nav-item" data-v="konsultbehov" onclick="gotoView('konsultbehov')"><span class="nav-icon">🎯</span><span data-i18n="nav_konsultbehov">Konsultbehov</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span data-i18n="navg_analys">Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
     <div class="nav-grp" id="grp-analys">
@@ -514,7 +513,6 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-kcc"><div id="kcc-content"></div></div>
     <div class="view" id="view-schema"><div id="schema-content"></div></div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
-    <div class="view" id="view-konsultbehov"><div id="konsultbehov-content"></div></div>
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
@@ -547,6 +545,7 @@ textarea{resize:vertical;min-height:68px}
           <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-behov" onchange="renderSignals()" style="width:auto"><span>⚡ Only hot needs</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_form">🔇 Dölj förmedlare</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fast">🔒 Dölj fastanställning</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
@@ -1934,7 +1933,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",konsultbehov:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={goals:"oversikt",prio:"oversikt",schema:"oversikt",dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",followups:"arbetsbok",linkedin:"arbetsbok",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"salj",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["oversikt","arbetsbok","natverk","bolag","salj","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
@@ -1982,7 +1981,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
   else if(name==="goals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
   else if(name==="finans")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
-  const renders={dashboard:renderDashboard,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,konsultbehov:renderKonsultbehov,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
+  const renders={dashboard:renderDashboard,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,schema:renderSchema,finans:renderFinans,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
 }
@@ -2481,7 +2480,7 @@ function _renderDashboardInner(){
   const SECTIONS={
     fups:()=>card("fups",`📞 ${TR("dbc_att_folja")} idag`,`${fups.length}`,"gotoView('followups')",null,fupRows,TR("dbc_inga_uppf")),
     leads:()=>card("leads",`⚡ ${TR("dbc_heta_leads")}`,`${leads.length}`,"gotoView('signals')",null,leadRows,TR("dbc_inga_signaler")),
-    konsult:()=>card("konsult",`🎯 ${TR("dbc_pot_behov")}`,`${needsAll.length}`,"gotoView('konsultbehov')",TR("dbc_visa_alla"),needRows,TR("dbc_inga_behov")),
+    konsult:()=>card("konsult",`🎯 ${TR("dbc_pot_behov")}`,`${needsAll.length}`,"gotoView('signals')",TR("dbc_visa_alla"),needRows,TR("dbc_inga_behov")),
     tasks:()=>card("tasks",`✓ ${TR("dbc_fors_tasks")}`,`${dtasks.length}`,"gotoView('tasks')",null,taskRows,TR("dbc_inga_tasks")),
     todo:()=>card("todo",`✅ ${TR("dbc_todo")}`,`${dtodos.length}`,"openTodo()",null,todoRows,TR("dbc_inga_todos")),
     goals:()=>`<div class="dash-sec week-sec" data-sec="goals" style="margin-bottom:0"><div class="week-sec-hdr"><h3>${t("dash_mal")}</h3><button class="btn btn-outline btn-xs" style="margin-left:auto" onclick="gotoView('goals')">${t("dash_oppna_mal")}</button></div>${goalInner}</div>`,
@@ -3229,18 +3228,30 @@ function renderSignals(){
     const cid=s.company_id||"__nobolag__";
     (grupper[cid]=grupper[cid]||{namn:sigName(s),cid:s.company_id,sigs:[]}).sigs.push(s);
   });
+  // Konsultbehov-analys per bolag (sammanslaget från gamla Konsultbehov-vyn)
+  const behovMap={};
+  try{consultNeeds().forEach(n=>{if(n.c)behovMap[n.c.id]={score:n.score,flags:n.flags,tjanster:[...(n.tjanster||[])]};});}catch(e){}
   const grpArrAlla=Object.values(grupper).map(g=>{
     g.sigs.sort((a,b)=>String(b.signal_datum||"").localeCompare(String(a.signal_datum||"")));
     g.senaste=g.sigs[0]?.signal_datum||"";
     g.farska=g.sigs.filter(s=>(s.signal_datum||"")>=grans);
     g.gamla=g.sigs.filter(s=>(s.signal_datum||"")<grans);
     g.known=g.cid?hasContact(g.cid):false;
+    g.behov=g.cid?behovMap[g.cid]:null;
+    g.behovScore=g.behov?g.behov.score:0;
     return g;
-  }).sort((a,b)=>String(b.senaste).localeCompare(String(a.senaste)));
+  }).sort((a,b)=>{
+    // Hett behov först, sedan senaste signal
+    if((b.behovScore>0)!==(a.behovScore>0))return (b.behovScore>0?1:0)-(a.behovScore>0?1:0);
+    if(b.behovScore!==a.behovScore)return b.behovScore-a.behovScore;
+    return String(b.senaste).localeCompare(String(a.senaste));
+  });
   // Bolag utan färska signaler göms som standard (men kan visas)
   const bolagMedGamlaBara=grpArrAlla.filter(g=>g.farska.length===0);
   const visaAllaBolag=window._visaGamlaBolag||false;
-  const grpArr=visaAllaBolag?grpArrAlla:grpArrAlla.filter(g=>g.farska.length>0);
+  const onlyBehov=document.getElementById("sig-only-behov")?.checked;
+  let grpArr=visaAllaBolag?grpArrAlla:grpArrAlla.filter(g=>g.farska.length>0);
+  if(onlyBehov)grpArr=grpArr.filter(g=>g.behovScore>0);
 
   const sigRad=(s)=>{
     const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();
@@ -3284,8 +3295,8 @@ function renderSignals(){
       <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:${open?'var(--paper)':'#fff'}" onclick="toggleSigCompany('${g.cid||"__nobolag__"}')">
         <span style="font-size:13px;color:#888;transition:transform .15s;transform:rotate(${open?90:0}deg)">▶</span>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:15px">${g.known?'<span title="Du har en kontakt på detta bolag">👤</span> ':""}${e(g.namn)}</div>
-          <div style="font-size:11px;color:#999">${g.farska.length} ${g.farska.length===1?"signal":"signaler"} senaste 14 dgr${g.gamla.length?` · ${g.gamla.length} äldre`:""} · senast ${e((g.senaste||"").slice(0,10))}</div>
+          <div style="font-weight:600;font-size:15px">${g.known?'<span title="You have a contact at this company">👤</span> ':""}${g.behovScore>0?'<span title="Indicated consultant need" style="margin-right:4px">⚡</span>':""}${e(g.namn)}</div>
+          <div style="font-size:11px;color:#999">${g.behovScore>0?'<span style="color:var(--red);font-weight:600">Hot need</span> · ':""}${g.farska.length} ${g.farska.length===1?"signal":"signals"} last 5 days${g.gamla.length?` · ${g.gamla.length} older`:""} · latest ${e((g.senaste||"").slice(0,10))}</div>
         </div>
         <span class="badge" style="background:var(--gold);color:#fff;flex-shrink:0">${g.farska.length||g.sigs.length}</span>
       </div>
