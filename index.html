@@ -244,6 +244,8 @@ textarea{resize:vertical;min-height:68px}
 .inline-create input{flex:1}
 .inline-create .btn{flex-shrink:0;padding:6px 10px;font-size:12px}
 .mobile-menu-btn{display:none}
+.sig-meny-item{padding:8px 12px;font-size:13px;cursor:pointer;border-radius:6px;white-space:nowrap}
+.sig-meny-item:hover{background:var(--paper)}
 .dash-cols{column-count:2;column-gap:14px;max-width:1100px}
 .dash-cols>*{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;display:block;margin:0 0 14px 0!important;max-height:360px;overflow-y:auto}
 .dash-hero{max-width:1100px;margin-bottom:14px}
@@ -539,6 +541,7 @@ textarea{resize:vertical;min-height:68px}
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px">
           <label style="font-size:12px;color:#888">Från: <input type="date" id="sig-from-f" onchange="renderSignals()" style="font-size:13px"></label>
           <label style="font-size:12px;color:#888">Till: <input type="date" id="sig-to-f" onchange="renderSignals()" style="font-size:13px"></label>
+          <select id="sig-atgard-f" onchange="renderSignals()"><option value="">Alla åtgärder</option><option value="agera">⚡ Att agera på</option><option value="spara">🔖 Sparade</option><option value="bevaka">👁 Bevakade</option><option value="dolj">🙈 Dolda</option><option value="__none__">Utan åtgärd</option></select>
           <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">Alla statusar</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
           <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
           <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
@@ -3162,6 +3165,10 @@ function renderSignals(){
     const toD=document.getElementById("sig-to-f")?.value;
     if(fromD&&(s.signal_datum||"")<fromD)return false;
     if(toD&&(s.signal_datum||"")>toD)return false;
+    const atgF=document.getElementById("sig-atgard-f")?.value;
+    if(atgF==="__none__"){if(s.atgard)return false;}
+    else if(atgF){if(s.atgard!==atgF)return false;}
+    else{if(s.atgard==="dolj")return false;} // dölj "inte intressant" som standard
     if(focusMode==="company"&&focusCompanyId&&s.company_id!==focusCompanyId)return false;
     if(hideFormedlare&&isFormedlare(s.company_id))return false;
     if(hideFast&&s.ar_fastanstallning)return false;
@@ -3214,7 +3221,7 @@ function renderSignals(){
   const fastBanner=fastHidden.length?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:10px"><span style="flex:1">🔒 ${fastHidden.length} troliga fasta tjänster är dolda (interim/konsult visas).</span><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=${!showFast};renderSignals()">${showFast?"Dölj fasta igen":"Visa fasta tjänster"}</button></div>`:(showFast?`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px"><button class="btn btn-outline btn-xs" onclick="window._showFastLeads=false;renderSignals()">Dölj fasta igen</button></div>`:"");
   const dagAlder=s=>{const d=s.created_at||s.signal_datum;if(!d)return"";const days=Math.round((Date.now()-new Date(d))/86400000);return days<=0?"idag":days===1?"1 dag":days+" dgr";};
   // Gruppera signaler per bolag (accordion)
-  const DAGAR_GRANS=10;
+  const DAGAR_GRANS=5;
   const idag14=new Date();idag14.setDate(idag14.getDate()-DAGAR_GRANS);
   const grans=idag14.toISOString().slice(0,10);
   const grupper={};
@@ -3242,10 +3249,20 @@ function renderSignals(){
         <div style="font-size:11px;color:#999;margin-top:3px">${e(s.kalla||"")} · ${dagAlder(s)} · ${"★".repeat(s.signal_styrka||1)} · <span class="badge" style="font-size:10px;background:var(--paper);border:1px solid var(--cream)">${LEAD_PIPE_LABEL[steg]||steg}</span> · ${e(vem)}${ns?` · <span style="${nsLate?'color:var(--red);font-weight:600':''}">${e(ns)}</span>`:' · <span style="color:var(--gold)">⚠ nästa steg saknas</span>'}</div>
       </div>
       <span class="badge ${s.status==="ny"?"b-ny":s.status==="granskad"?"b-granskad":"b-ignorerad"}" style="flex-shrink:0">${sigStatusName(s.status)}</span>
-      <div style="white-space:nowrap;flex-shrink:0">
+      ${s.atgard?`<span class="badge" style="flex-shrink:0;background:${s.atgard==="agera"?"var(--red)":s.atgard==="spara"?"var(--gold)":s.atgard==="bevaka"?"var(--purple)":"#bbb"};color:#fff">${ATGARD_LABEL[s.atgard]||s.atgard}</span>`:""}
+      <div style="white-space:nowrap;flex-shrink:0;position:relative">
         ${s.kalla_url?`<a href="${e(s.kalla_url)}" target="_blank" rel="noopener" class="btn-icon" title="Öppna källa">🔗</a>`:''}
-        <button class="btn-icon" title="Öppna lead" onclick="openLead('${s.id}')">↗</button>
-        <button class="btn-icon" style="color:var(--red)" title="Radera" onclick="deleteSignal('${s.id}')">🗑</button>
+        <button class="btn-icon" title="Åtgärder" onclick="event.stopPropagation();toggleSigMeny('${s.id}')">⋯</button>
+        <div id="sigmeny-${s.id}" class="sig-meny" style="display:none;position:absolute;right:0;top:100%;z-index:50;background:#fff;border:1px solid var(--cream);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;padding:4px">
+          <div class="sig-meny-item" onclick="event.stopPropagation();sigAtgard('${s.id}','agera')">⚡ Agera nu</div>
+          <div class="sig-meny-item" onclick="event.stopPropagation();sigAtgard('${s.id}','spara')">🔖 Spara till sen</div>
+          <div class="sig-meny-item" onclick="event.stopPropagation();sigAtgard('${s.id}','dolj')">🙈 Dölj / inte intressant</div>
+          <div class="sig-meny-item" onclick="event.stopPropagation();sigHittaKontakt('${s.id}','${s.company_id||""}')">👤 Hitta kontakt</div>
+          <div class="sig-meny-item" onclick="event.stopPropagation();sigAtgard('${s.id}','bevaka')">👁 Bevaka bolaget</div>
+          ${s.atgard?`<div class="sig-meny-item" style="color:#999;border-top:1px solid var(--cream)" onclick="event.stopPropagation();sigAtgard('${s.id}','')">✕ Rensa åtgärd</div>`:""}
+          <div class="sig-meny-item" onclick="event.stopPropagation();openLead('${s.id}')">↗ Öppna lead</div>
+          <div class="sig-meny-item" style="color:var(--red)" onclick="event.stopPropagation();deleteSignal('${s.id}')">🗑 Radera</div>
+        </div>
       </div>
     </div>`;
   };
@@ -3255,8 +3272,8 @@ function renderSignals(){
     const showOld=window._showOldSigs&&window._showOldSigs[g.cid||"__nobolag__"];
     const visibleSigs=showOld?g.sigs:g.farska;
     const bodyHtml=open?`<div>
-      ${visibleSigs.length?visibleSigs.map(sigRad).join(""):`<div style="padding:10px 12px;color:#aaa;font-size:12px">${g.gamla.length&&!showOld?"Alla signaler är äldre än 10 dagar.":"Inga signaler."}</div>`}
-      ${g.gamla.length&&!showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="visaGamlaSig('${g.cid||"__nobolag__"}')">Visa ${g.gamla.length} äldre (>10 dagar)</button></div>`:""}
+      ${visibleSigs.length?visibleSigs.map(sigRad).join(""):`<div style="padding:10px 12px;color:#aaa;font-size:12px">${g.gamla.length&&!showOld?"Alla signaler är äldre än 5 dagar.":"Inga signaler."}</div>`}
+      ${g.gamla.length&&!showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="visaGamlaSig('${g.cid||"__nobolag__"}')">Visa ${g.gamla.length} äldre (>5 dagar)</button></div>`:""}
       ${showOld?`<div style="padding:8px 12px;border-top:1px solid var(--cream)"><button class="btn btn-outline btn-xs" onclick="doljGamlaSig('${g.cid||"__nobolag__"}')">Dölj äldre</button></div>`:""}
     </div>`:"";
     return `<div class="sig-bolag" style="border:1px solid var(--cream);border-radius:var(--r);margin-bottom:8px;background:#fff;overflow:hidden">
@@ -3273,6 +3290,26 @@ function renderSignals(){
   }).join("");
 
   document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>');
+}
+const ATGARD_LABEL={agera:"⚡ Agera",spara:"🔖 Sparad",dolj:"🙈 Dold",bevaka:"👁 Bevakas"};
+function toggleSigMeny(id){
+  const m=document.getElementById("sigmeny-"+id);if(!m)return;
+  const open=m.style.display!=="none";
+  document.querySelectorAll(".sig-meny").forEach(x=>x.style.display="none");
+  m.style.display=open?"none":"block";
+}
+async function sigAtgard(id,atgard){
+  document.querySelectorAll(".sig-meny").forEach(x=>x.style.display="none");
+  const sig=signals.find(s=>s.id===id);if(sig)sig.atgard=atgard||null;
+  renderSignals();
+  try{await sb.from("company_signals").update({atgard:atgard||null}).eq("id",id);}catch(e){}
+  if(atgard==="agera"){openLead(id);}
+}
+function sigHittaKontakt(id,companyId){
+  document.querySelectorAll(".sig-meny").forEach(x=>x.style.display="none");
+  if(companyId){focusCompanyId=companyId;gotoView("contacts");
+    setTimeout(()=>{const sf=document.getElementById("contact-search");if(sf){const co=companies.find(c=>c.id===companyId);if(co){sf.value=co.namn;if(typeof renderContacts==="function")renderContacts();}}},100);
+  }else{toast("Inget bolag kopplat till signalen");}
 }
 function toggleSigCompany(cid){
   window._openSigCompany=(window._openSigCompany===cid)?null:cid;
