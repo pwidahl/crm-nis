@@ -3229,7 +3229,7 @@ function renderSignals(){
     const cid=s.company_id||"__nobolag__";
     (grupper[cid]=grupper[cid]||{namn:sigName(s),cid:s.company_id,sigs:[]}).sigs.push(s);
   });
-  const grpArr=Object.values(grupper).map(g=>{
+  const grpArrAlla=Object.values(grupper).map(g=>{
     g.sigs.sort((a,b)=>String(b.signal_datum||"").localeCompare(String(a.signal_datum||"")));
     g.senaste=g.sigs[0]?.signal_datum||"";
     g.farska=g.sigs.filter(s=>(s.signal_datum||"")>=grans);
@@ -3237,6 +3237,10 @@ function renderSignals(){
     g.known=g.cid?hasContact(g.cid):false;
     return g;
   }).sort((a,b)=>String(b.senaste).localeCompare(String(a.senaste)));
+  // Bolag utan färska signaler göms som standard (men kan visas)
+  const bolagMedGamlaBara=grpArrAlla.filter(g=>g.farska.length===0);
+  const visaAllaBolag=window._visaGamlaBolag||false;
+  const grpArr=visaAllaBolag?grpArrAlla:grpArrAlla.filter(g=>g.farska.length>0);
 
   const sigRad=(s)=>{
     const ns=s.nasta_steg;const nsLate=s.nasta_steg_datum&&s.nasta_steg_datum<today();
@@ -3289,7 +3293,7 @@ function renderSignals(){
     </div>`;
   }).join("");
 
-  document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga signaler</p></div>');
+  document.getElementById("signals-content").innerHTML=fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>Inga aktuella signaler (senaste 5 dagarna)</p></div>')+(bolagMedGamlaBara.length?`<div style="max-width:900px;margin-top:14px"><button class="btn btn-outline btn-sm" onclick="window._visaGamlaBolag=${!visaAllaBolag};renderSignals()">${visaAllaBolag?"Dölj":"Visa"} ${bolagMedGamlaBara.length} bolag med endast äldre signaler (>5 dgr)</button></div>`:"");
 }
 const ATGARD_LABEL={agera:"⚡ Agera",spara:"🔖 Sparad",dolj:"🙈 Dold",bevaka:"👁 Bevakas"};
 function toggleSigMeny(id){
