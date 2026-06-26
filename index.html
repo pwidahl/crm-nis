@@ -7465,20 +7465,15 @@ function openLead(sigId){
       </div>
 
       <!-- UNDERKONSULT-MATCHNING (tvärs användare) -->
-      <div id="lead-sub-match" style="grid-column:1/-1"></div>
+      <details style="grid-column:1/-1;background:var(--paper);border-radius:var(--r);border:1px solid var(--cream);padding:0">
+        <summary style="padding:11px 13px;cursor:pointer;font-size:13px;font-weight:600;color:#555">⚙️ Underkonsult-matchning</summary>
+        <div id="lead-sub-match" style="padding:0 13px 13px"></div>
+      </details>
 
-      <!-- BOLAGSINFO -->
-      <div>
+      <!-- BOLAG -->
+      <div style="grid-column:1/-1">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${TR("ld_bolagsinfo")}</div>
         ${co?`
-          <div style="font-size:13px;line-height:1.8">
-            ${co.orgnr?`<div><span style="color:#888">Org.nr:</span> ${e(co.orgnr)}</div>`:""}
-            ${co.bransch?`<div><span style="color:#888">Bransch:</span> ${e(co.bransch)}</div>`:""}
-            ${co.stad?`<div><span style="color:#888">Stad:</span> ${e(co.stad)}</div>`:""}
-            ${co.hemsida?`<div><span style="color:#888">Webb:</span> <a href="${e(co.hemsida)}" target="_blank">${e(co.hemsida.replace(/^https?:\/\//i,""))}</a></div>`:""}
-            <div><span style="color:#888">Pipeline:</span> ${pipeLabel(co.pipeline_status||"")}</div>
-            ${co.anteckningar?`<div style="margin-top:8px;font-size:12px;color:#666;white-space:pre-line">${e(co.anteckningar)}</div>`:""}
-          </div>
           <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn btn-outline btn-sm" onclick="closeM('m-lead');openCompanyCard('${co.id}')">${TR("ld_oppna_bolag")}</button>
             <button class="btn btn-primary btn-sm" onclick="movePipeline('${co.id}')">${TR("ld_flytta")}</button>
