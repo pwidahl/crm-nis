@@ -3131,6 +3131,7 @@ function toggleSigTools(){const p=document.getElementById("sig-tools-panel");if(
 function renderSignals(){
   if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
+    <div style="grid-column:1/-1;font-size:11px;color:#3a9">✓ 11 datakällor (v2)</div>
     <div class="sig-src">
       <h4>🇸🇪 Platsbanken</h4>
       <p>Finance-annonser via JobTech API – CFO, controller, ekonomichef m.fl.</p>
@@ -3146,6 +3147,46 @@ function renderSignals(){
       <h4>📈 Nasdaq Nordic</h4>
       <p>Importera börsnoterade bolag från Nasdaq Stockholm, Oslo, Köpenhamn och Helsingfors</p>
       <button class="btn btn-warm btn-sm" id="btn-nasdaq" onclick="discoverNasdaq()">Importera bolag</button>
+    </div>
+    <div class="sig-src">
+      <h4>⚖️ Bolagsverket – ändringar</h4>
+      <p>Konkurser, rekonstruktioner, likvidationer – bolag i kris/förändring</p>
+      <button class="btn btn-warm btn-sm" id="btn-bv-chg" onclick="discoverBolagsverketChanges()">Hämta ändringar</button>
+    </div>
+    <div class="sig-src">
+      <h4>🆕 Bolagsverket – nya bolag</h4>
+      <p>Nyregistrerade bolag hos Bolagsverket</p>
+      <button class="btn btn-warm btn-sm" id="btn-bv-new" onclick="discoverBolagsverketNew()">Hämta nya bolag</button>
+    </div>
+    <div class="sig-src">
+      <h4>📋 Offentliga upphandlingar</h4>
+      <p>Vunna kontrakt och upphandlingar – bolag som vinner/förlorar affärer</p>
+      <button class="btn btn-warm btn-sm" id="btn-upp" onclick="discoverUpphandling()">Hämta upphandlingar</button>
+    </div>
+    <div class="sig-src">
+      <h4>📣 Mynewsdesk</h4>
+      <p>Pressreleaser – nyheter, förändringar, expansion</p>
+      <button class="btn btn-warm btn-sm" id="btn-pr" onclick="discoverMynewsdesk()">Hämta pressreleaser</button>
+    </div>
+    <div class="sig-src">
+      <h4>🏦 Finansinspektionen</h4>
+      <p>FI:s nyheter och bolagsregister – finansbolag, tillstånd, sanktioner</p>
+      <button class="btn btn-warm btn-sm" id="btn-fi" onclick="discoverFI()">Hämta FI</button>
+    </div>
+    <div class="sig-src">
+      <h4>🇳🇴 Norge</h4>
+      <p>Nyregistrerade och ändrade bolag via Brønnøysundregisteret</p>
+      <button class="btn btn-warm btn-sm" id="btn-no" onclick="discoverNorway()">Hämta Norge</button>
+    </div>
+    <div class="sig-src">
+      <h4>🇩🇰 Danmark</h4>
+      <p>Danska bolag via CVR</p>
+      <button class="btn btn-warm btn-sm" id="btn-dk" onclick="discoverDenmark()">Hämta Danmark</button>
+    </div>
+    <div class="sig-src">
+      <h4>🇫🇮 Finland</h4>
+      <p>Finska bolag via YTJ/PRH</p>
+      <button class="btn btn-warm btn-sm" id="btn-fi2" onclick="discoverFinland()">Hämta Finland</button>
     </div>`;
   // Populate company filter
   const scf=document.getElementById("sig-company-f");
@@ -3416,23 +3457,22 @@ async function callDiscover(endpoint,btnId){
   }catch(err){toast("Fel: "+err.message,8000);}
   finally{if(btn){btn.disabled=false;btn.textContent=orig;}}
 }
-function discoverLeads(){callDiscover("/api/discover?source=leads","btn-pb");}
 function discoverLeads(){
   const q=document.getElementById("jobtech-q")?.value?.trim();
-  const url="/api/discover?source=leads"+(q?"&q="+encodeURIComponent(q):"");
+  const url="/api/discover_fas1?source=leads"+(q?"&q="+encodeURIComponent(q):"");
   callDiscover(url,"btn-pb");
 }
-function discoverNews(){callDiscover("/api/discover?source=news","btn-news");}
-function discoverFI(){callDiscover("/api/discover?source=fi","btn-fi");}
-function discoverNasdaq(){callDiscover("/api/discover?source=nasdaq","btn-nasdaq");}
-function discoverNorway(){callDiscover("/api/discover?source=norway","btn-no");}
-function discoverDenmark(){callDiscover("/api/discover?source=denmark","btn-dk");}
-function discoverFinland(){callDiscover("/api/discover?source=finland","btn-fi2");}
-function discoverBolagsverketNew(){callDiscover("/api/discover?source=bolagsverket_new","btn-bv-new");}
-function discoverBolagsverketChanges(){callDiscover("/api/discover?source=bolagsverket_changes","btn-bv-chg");}
-function discoverUpphandling(){callDiscover("/api/discover?source=upphandling","btn-upp");}
-function discoverMynewsdesk(){callDiscover("/api/discover?source=mynewsdesk","btn-pr");}
-function discoverNasdaqRSS(){callDiscover("/api/discover?source=nasdaq_rss","btn-nrss");}
+function discoverNews(){callDiscover("/api/discover_fas1?source=news","btn-news");}
+function discoverFI(){callDiscover("/api/discover_fas1?source=fi","btn-fi");}
+function discoverNasdaq(){callDiscover("/api/discover_fas1?source=nasdaq","btn-nasdaq");}
+function discoverNorway(){callDiscover("/api/discover_fas1?source=norway","btn-no");}
+function discoverDenmark(){callDiscover("/api/discover_fas1?source=denmark","btn-dk");}
+function discoverFinland(){callDiscover("/api/discover_fas1?source=finland","btn-fi2");}
+function discoverBolagsverketNew(){callDiscover("/api/discover_fas1?source=bolagsverket_new","btn-bv-new");}
+function discoverBolagsverketChanges(){callDiscover("/api/discover_fas1?source=bolagsverket_changes","btn-bv-chg");}
+function discoverUpphandling(){callDiscover("/api/discover_fas1?source=upphandling","btn-upp");}
+function discoverMynewsdesk(){callDiscover("/api/discover_fas1?source=mynewsdesk","btn-pr");}
+function discoverNasdaqRSS(){callDiscover("/api/discover_fas1?source=nasdaq_rss","btn-nrss");}
 function openAnalyze(){fillSelects();document.getElementById("ar-coid").value="";document.getElementById("ar-url").value="";document.getElementById("ar-text").value="";openM("m-analyze");}
 function openAnalyzeForCo(id){openAnalyze();document.getElementById("ar-coid").value=id;}
 async function runAnalyze(){toast("AI-analys av årsredovisning är borttagen");closeM("m-analyze");}
