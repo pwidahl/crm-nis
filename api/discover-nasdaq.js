@@ -31,22 +31,37 @@ const NASDAQ_SOURCES = [
 const NASDAQ_API = 'https://api.nasdaq.com/api/quote/list-type/download';
 
 export default async function handler(req, res) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (req.method === 'GET') {
+    const { data: settings } = await supabase.from('user_settings').select('user_id');
+    const userIds = [...new Set((settings || []).map(s => s.user_id).filter(Boolean))];
+    let totSkapade = 0, totUppd = 0; const allErrors = [];
+    const bolag = await fetchNasdaqNordic();
+    for (const uid of userIds) {
+      const r = await nasdaqForUser(supabase, uid, bolag);
+      totSkapade += r.skapade; totUppd += r.uppdaterade; allErrors.push(...r.errors.map(e => `${uid}: ${e}`));
+    }
+    return res.status(200).json({ message: `Nasdaq: ${totSkapade} nya, ${totUppd} uppdaterade`, skapade: totSkapade, uppdaterade: totUppd, errors: allErrors });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const userId = authData.user.id;
+  const bolag = await fetchNasdaqNordic();
+  const result = await nasdaqForUser(supabase, authData.user.id, bolag);
+  return res.status(200).json({ message: `Nasdaq import: ${result.skapade} nya bolag, ${result.uppdaterade} uppdaterade`, skapade: result.skapade, uppdaterade: result.uppdaterade, totalt_hämtade: bolag.length, errors: result.errors });
+}
+
+async function nasdaqForUser(supabase, userId, bolag) {
   let skapade = 0;
   let uppdaterade = 0;
   const errors = [];
-
-  // Hämta börsnoterade bolag via Nasdaq Nordic screener API
-  const bolag = await fetchNasdaqNordic();
 
   for (const b of bolag) {
     try {
@@ -88,13 +103,7 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(200).json({
-    message: `Nasdaq import: ${skapade} nya bolag, ${uppdaterade} uppdaterade`,
-    skapade,
-    uppdaterade,
-    totalt_hämtade: bolag.length,
-    errors
-  });
+  return { skapade, uppdaterade, errors };
 }
 
 async function fetchNasdaqNordic() {
