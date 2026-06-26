@@ -43,16 +43,32 @@ function detectSignalType(text) {
 }
 
 export default async function handler(req, res) {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  if (req.method === 'GET') {
+    const { data: settings } = await supabase.from('user_settings').select('user_id');
+    const userIds = [...new Set((settings || []).map(s => s.user_id).filter(Boolean))];
+    let totBolag = 0, totSignaler = 0; const allErrors = [];
+    for (const uid of userIds) {
+      const r = await discoverFiForUser(supabase, uid);
+      totBolag += r.nyaBolag; totSignaler += r.nyaSignaler; allErrors.push(...r.errors.map(e => `${uid}: ${e}`));
+    }
+    return res.status(200).json({ message: `FI: ${totBolag} nya bolag, ${totSignaler} signaler`, nya_bolag: totBolag, nya_signaler: totSignaler, errors: allErrors });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Missing Authorization header' });
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
   if (authError || !authData?.user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const userId = authData.user.id;
+  const result = await discoverFiForUser(supabase, authData.user.id);
+  return res.status(200).json({ message: `FI: ${result.nyaBolag} nya bolag, ${result.nyaSignaler} signaler`, nya_bolag: result.nyaBolag, nya_signaler: result.nyaSignaler, errors: result.errors });
+}
+
+async function discoverFiForUser(supabase, userId) {
   let nyaBolag = 0;
   let nyaSignaler = 0;
   const errors = [];
@@ -110,12 +126,7 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(200).json({
-    message: `FI discovery: ${nyaBolag} nya bolag, ${nyaSignaler} nya signaler`,
-    nya_bolag: nyaBolag,
-    nya_signaler: nyaSignaler,
-    errors
-  });
+  return { nyaBolag, nyaSignaler, errors };
 }
 
 async function fetchRSS(url) {
