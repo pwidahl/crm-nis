@@ -3131,6 +3131,7 @@ function toggleSigTools(){const p=document.getElementById("sig-tools-panel");if(
 function renderSignals(){
   if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
+    <div style="grid-column:1/-1;font-size:11px;color:#3a9">✓ 11 datakällor (v2)</div>
     <div class="sig-src">
       <h4>🇸🇪 Platsbanken</h4>
       <p>Finance-annonser via JobTech API – CFO, controller, ekonomichef m.fl.</p>
