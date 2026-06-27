@@ -3394,14 +3394,14 @@ async function startaProcess(companyId){
   }
   toast("Process startad ✓");
   if(typeof renderCompanies==="function")renderCompanies();
-  if(document.getElementById("m-company")?.classList.contains("show"))openCompanyCard(companyId);
+  if(document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(companyId);
 }
 async function toggleProcessPunkt(id){
   const p=processChecklista.find(x=>x.id===id);if(!p)return;
   p.klar=!p.klar;
   await sb.from("process_checklista").update({klar:p.klar}).eq("id",id);
   const co=processChecklista.find(x=>x.id===id)?.company_id;
-  if(co&&document.getElementById("m-company")?.classList.contains("show"))openCompanyCard(co);
+  if(co&&document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(co);
 }
 function processChecklistaHtml(companyId){
   const punkter=processChecklista.filter(p=>p.company_id===companyId).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
