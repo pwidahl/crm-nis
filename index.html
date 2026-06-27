@@ -1089,6 +1089,12 @@ let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:
 let meddelanden=[];
 let checklista=[],checklistaBockar=[];
 let liKategorier=[];
+let processChecklista=[];
+const PROCESS_MALL=["Hitta rätt kontakt på bolaget","Koppla upp på LinkedIn / mejla","Ringa","Boka lunch","Aktivt samarbete"];
+async function loadProcessChecklista(){
+  try{const r=await sb.from("process_checklista").select("*").eq("user_id",me.id).order("ordning");processChecklista=r.data||[];}
+  catch(e){processChecklista=[];}
+}
 const LI_AMNEN_DEFAULT=["Likviditet","Bokslut","Budget","Årsredovisning","Nya lagar/regler","Ränteläge/konjunktur","Hållbarhet/CSRD","Skatt","Kassaflöde","Digitalisering/system","Ekonomistyrning","Rekrytering/kompetens"];
 async function loadLiKategorier(){
   try{
@@ -1814,7 +1820,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -2995,7 +3001,7 @@ function renderCompanies(){
     return;
   }
   const q=(v("co-filter")||"").toLowerCase();const pipe=v("co-pipe-filter");const land=v("co-land-filter");const typ=v("co-typ-filter");const listed=document.getElementById("co-listed-filter")?.checked||false;
-  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad)&&(!typ||(typ==="formedlare"?c.ar_formedlare:!c.ar_formedlare));});
+  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return c.process_startad&&(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad)&&(!typ||(typ==="formedlare"?c.ar_formedlare:!c.ar_formedlare));});
   const headClass=p=>p==="Vunnet"?"ph-vunnet":p==="Kund"?"ph-kund":p==="Forlorat"?"ph-forlorat":"";
   const moving=movePipeId?companies.find(c=>c.id===movePipeId):null;
   const hint=moving?`<div class="move-hint">↔ Flyttar <strong style="margin:0 4px">${e(moving.namn)}</strong> – tryck på ett steg nedan. <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="cancelMovePipe()">Avbryt</span></div>`:"";
@@ -3042,6 +3048,7 @@ async function openCompanyCard(id){
     <div class="card-hdr" style="position:relative">${cardHistory.length?`<button onclick="navBack()" title="Tillbaka" style="position:absolute;top:14px;left:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1">←</button>`:""}<h2 style="${cardHistory.length?'padding-left:40px':''}">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:13px;color:var(--gold);margin-left:7px">★</span>':""}${c.ar_formedlare?'<span style="font-size:13px;margin-left:7px" title="Förmedlare/mellanhand">🤝</span>':""}</h2><p style="${cardHistory.length?'padding-left:40px':''}">${e([c.bransch,c.stad,c.land,c.orgnr].filter(Boolean).join(" · "))}</p><div class="card-hdr-badges"><span class="badge" style="background:rgba(255,255,255,.18);color:#fff">${pipeLabel(c.pipeline_status||"")}</span>${c.ar_formedlare?'<span class="badge" style="background:rgba(255,255,255,.18);color:#fff">🤝 Mellanhand</span>':""}</div></div>
     <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">${t("co_oversikt")}</div><div class="ctab" onclick="cct('co','ai',this)">${t("co_ai")}</div><div class="ctab" onclick="cct('co','signals',this)">${t("co_signaler")} (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">${t("co_kontakter")} (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">${t("co_projekt")} (${cp.length})</div></div>
     <div class="ctpane active" id="cco-overview">
+      ${c.process_startad?processChecklistaHtml(id):`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:14px;text-align:center"><p style="font-size:13px;color:#666;margin-bottom:10px">Du jobbar inte aktivt med detta bolag än.</p><button class="btn btn-primary btn-sm" onclick="startaProcess('${id}')">▶ Starta process</button></div>`}
       ${c.ai_score?`<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:14px;border:1px solid var(--cream)">
         <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${c.ai_score>=70?"var(--green)":c.ai_score>=45?"var(--gold)":"#aaa"}">${c.ai_score}</div>
         <div><div style="font-weight:600;font-size:13px">${e(c.ai_rekommendation||"")}</div><div style="font-size:11px;color:#888">Lead-score</div></div>
@@ -3372,6 +3379,37 @@ function sigHittaKontakt(id,companyId){
   if(companyId){focusCompanyId=companyId;gotoView("contacts");
     setTimeout(()=>{const sf=document.getElementById("contact-search");if(sf){const co=companies.find(c=>c.id===companyId);if(co){sf.value=co.namn;if(typeof renderContacts==="function")renderContacts();}}},100);
   }else{toast("Inget bolag kopplat till signalen");}
+}
+async function startaProcess(companyId){
+  const co=companies.find(c=>c.id===companyId);if(!co)return;
+  const nu=new Date().toISOString();
+  co.process_startad=nu;
+  await sb.from("companies").update({process_startad:nu}).eq("id",companyId);
+  // Skapa checklistan om den inte redan finns för bolaget
+  const finns=processChecklista.some(p=>p.company_id===companyId);
+  if(!finns){
+    const rows=PROCESS_MALL.map((text,i)=>({user_id:me.id,company_id:companyId,text,klar:false,ordning:i}));
+    const r=await sb.from("process_checklista").insert(rows).select();
+    if(r.data)processChecklista.push(...r.data);
+  }
+  toast("Process startad ✓");
+  if(typeof renderCompanies==="function")renderCompanies();
+  if(document.getElementById("m-company")?.classList.contains("show"))openCompanyCard(companyId);
+}
+async function toggleProcessPunkt(id){
+  const p=processChecklista.find(x=>x.id===id);if(!p)return;
+  p.klar=!p.klar;
+  await sb.from("process_checklista").update({klar:p.klar}).eq("id",id);
+  const co=processChecklista.find(x=>x.id===id)?.company_id;
+  if(co&&document.getElementById("m-company")?.classList.contains("show"))openCompanyCard(co);
+}
+function processChecklistaHtml(companyId){
+  const punkter=processChecklista.filter(p=>p.company_id===companyId).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+  if(!punkter.length)return "";
+  const klara=punkter.filter(p=>p.klar).length;
+  return `<div style="margin-top:14px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Process · ${klara}/${punkter.length}</div>
+    ${punkter.map(p=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:14px"><input type="checkbox" ${p.klar?"checked":""} onchange="toggleProcessPunkt('${p.id}')" style="width:auto"><span style="${p.klar?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span></label>`).join("")}
+  </div>`;
 }
 function toggleSigCompany(cid){
   window._openSigCompany=(window._openSigCompany===cid)?null:cid;
