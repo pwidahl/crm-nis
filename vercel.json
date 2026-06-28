@@ -5,20 +5,16 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/discover-denmark",
-      "schedule": "30 2 * * *"
-    },
-    {
       "path": "/api/cron/news",
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/discover-norway",
+      "path": "/api/discover-all",
       "schedule": "30 3 * * *"
     },
     {
-      "path": "/api/discover-finland",
-      "schedule": "30 4 * * *"
+      "path": "/api/regelnyheter",
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/reminders",
