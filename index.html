@@ -1095,6 +1095,12 @@ let liKategorier=[];
 let processChecklista=[];
 let bolagLogg=[];
 let leadChecklista=[];
+let checklistaMallar=[];
+async function loadChecklistaMallar(){
+  try{const r=await sb.from("checklista_mall").select("*").order("ordning");checklistaMallar=r.data||[];}
+  catch(e){checklistaMallar=[];}
+}
+function mallSteg(typ){return checklistaMallar.filter(m=>m.typ===typ).sort((a,b)=>(a.ordning||0)-(b.ordning||0)).map(m=>m.text);}
 const LEAD_MALL=["Hitta rätt kontakt på bolaget","Koppla upp på LinkedIn / mejla","Ringa","Boka lunch","Aktivt samarbete"];
 async function loadLeadChecklista(){
   try{const r=await sb.from("lead_checklista").select("*").order("ordning");leadChecklista=r.data||[];}
@@ -1107,9 +1113,8 @@ async function startaLeadProcess(sigId){
   s.tilldelad_user_id=me.id;s.tilldelad_namn=namn;s.process_startad=nu;
   await sb.from("company_signals").update({tilldelad_user_id:me.id,tilldelad_namn:namn,process_startad:nu}).eq("id",sigId);
   if(!leadChecklista.some(p=>p.signal_id===sigId)){
-    const rows=LEAD_MALL.map((text,i)=>({signal_id:sigId,user_id:me.id,text,klar:false,ordning:i}));
-    const r=await sb.from("lead_checklista").insert(rows).select();
-    if(r.data)leadChecklista.push(...r.data);
+    const steg=mallSteg("lead");const rows=steg.map((text,i)=>({signal_id:sigId,user_id:me.id,text,klar:false,ordning:i}));
+    if(rows.length){const r=await sb.from("lead_checklista").insert(rows).select();if(r.data)leadChecklista.push(...r.data);}
   }
   if(s.company_id)loggaBolag(s.company_id,`Startade process på lead: ${s.rubrik||""}`.slice(0,120));
   toast("Process startad ✓");
@@ -1910,7 +1915,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -1978,7 +1983,7 @@ function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",
 function updateBadges(){
   const today2=new Date();today2.setHours(0,0,0,0);
   const ns=signals.filter(s=>s.status==="ny").length;const nb=document.getElementById("badge-signals");if(nb){nb.textContent=ns;nb.style.display=ns>0?"inline":"none";}
-  const np=signals.filter(s=>s.process_startad).length;const npb=document.getElementById("badge-processer");if(npb){npb.textContent=np;npb.style.display=np>0?"inline":"none";}
+  const np=signals.filter(s=>s.process_startad).length+companies.filter(c=>c.process_startad).length;const npb=document.getElementById("badge-processer");if(npb){npb.textContent=np;npb.style.display=np>0?"inline":"none";}
   const nt=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const ntb=document.getElementById("badge-tasks");if(ntb){ntb.textContent=nt;ntb.style.display=nt>0?"inline":"none";}
   const nf=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;const nfb=document.getElementById("badge-followups");if(nfb){nfb.textContent=nf;nfb.style.display=nf>0?"inline":"none";}
   // LinkedIn-påminnelser → badge på Kontakter (inte Dagbok)
@@ -3229,24 +3234,35 @@ function toggleSigFilter(){const p=document.getElementById("sig-filter-panel");i
 function toggleSigTools(){const p=document.getElementById("sig-tools-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
 function renderProcesser(){
   const el=document.getElementById("processer-content");if(!el)return;
-  const aktiva=(signals||[]).filter(s=>s.process_startad).sort((a,b)=>String(b.process_startad).localeCompare(String(a.process_startad)));
-  if(!aktiva.length){el.innerHTML='<div class="empty"><div class="empty-icon">▶</div><p>Inga påbörjade processer än. Starta en process på ett lead för att se det här.</p></div>';return;}
-  el.innerHTML=`<div style="max-width:900px">${aktiva.map(s=>{
-    const co=companies.find(c=>c.id===s.company_id);
-    const punkter=leadChecklista.filter(p=>p.signal_id===s.id).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+  const filter=window._procFilter||"alla";
+  // Leads (signaler med process) + Prospekt (bolag med process)
+  const leads=(signals||[]).filter(s=>s.process_startad).map(s=>({typ:"lead",obj:s,namn:(companies.find(c=>c.id===s.company_id)?.namn)||sigName(s),rubrik:s.rubrik||"",tilldelad:s.tilldelad_namn,datum:s.process_startad,id:s.id,company_id:s.company_id}));
+  const prospekt=(companies||[]).filter(c=>c.process_startad).map(c=>({typ:"prospekt",obj:c,namn:c.namn,rubrik:"Prospekt – framtida samarbete",tilldelad:c.tilldelad_namn,datum:c.process_startad,id:c.id,company_id:c.id}));
+  let alla=[...leads,...prospekt];
+  if(filter==="lead")alla=alla.filter(x=>x.typ==="lead");
+  else if(filter==="prospekt")alla=alla.filter(x=>x.typ==="prospekt");
+  alla.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
+  const fbtn=(v,lbl)=>`<button class="btn btn-${filter===v?"primary":"outline"} btn-sm" onclick="window._procFilter='${v}';renderProcesser()">${lbl}</button>`;
+  const filterRad=`<div style="display:flex;gap:6px;margin-bottom:14px">${fbtn("alla","Alla")}${fbtn("lead","Leads")}${fbtn("prospekt","Prospekt")}</div>`;
+  if(!alla.length){el.innerHTML=filterRad+'<div class="empty"><div class="empty-icon">▶</div><p>Inga påbörjade processer än.</p></div>';return;}
+  el.innerHTML=filterRad+`<div style="max-width:900px">${alla.map(x=>{
+    const punkter=x.typ==="lead"?leadChecklista.filter(p=>p.signal_id===x.id):processChecklista.filter(p=>p.company_id===x.id);
+    punkter.sort((a,b)=>(a.ordning||0)-(b.ordning||0));
     const klara=punkter.filter(p=>p.klar).length;
     const nasta=punkter.find(p=>!p.klar);
     const pct=punkter.length?Math.round(klara/punkter.length*100):0;
+    const etikett=x.typ==="lead"?`<span class="badge" style="background:var(--accent);color:#fff">Lead</span>`:`<span class="badge" style="background:var(--purple);color:#fff">Prospekt</span>`;
+    const openFn=x.typ==="lead"?`openLead('${x.id}')`:`openCompanyCard('${x.id}')`;
     return `<div class="week-sec" style="margin-bottom:12px"><div style="padding:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
-          <strong style="cursor:pointer;color:var(--accent);font-size:15px" onclick="openLead('${s.id}')">${e(co?.namn||sigName(s))} ↗</strong>
-          <div style="font-size:13px;color:#666;margin-top:3px">${e(s.rubrik||"")}</div>
-          <div style="font-size:12px;color:#999;margin-top:4px">Tilldelad: <strong>${e(s.tilldelad_namn||"–")}</strong> · ${klara}/${punkter.length} steg${nasta?` · Nästa: <span style="color:var(--accent)">${e(nasta.text)}</span>`:" · ✓ Klar"}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${etikett}<strong style="cursor:pointer;color:var(--accent);font-size:15px" onclick="${openFn}">${e(x.namn)} ↗</strong></div>
+          <div style="font-size:13px;color:#666;margin-top:3px">${e(x.rubrik)}</div>
+          <div style="font-size:12px;color:#999;margin-top:4px">Tilldelad: <strong>${e(x.tilldelad||"–")}</strong> · ${klara}/${punkter.length} steg${nasta?` · Nästa: <span style="color:var(--accent)">${e(nasta.text)}</span>`:" · ✓ Klar"}</div>
         </div>
         <div style="text-align:right">
-          <div class="progress-wrap" style="width:90px;margin-bottom:6px"><div class="progress-bar ${pct===100?"":""}" style="width:${pct}%"></div></div>
-          <button class="btn btn-outline btn-xs" onclick="openLead('${s.id}')">Öppna</button>
+          <div class="progress-wrap" style="width:90px;margin-bottom:6px"><div class="progress-bar" style="width:${pct}%"></div></div>
+          <button class="btn btn-outline btn-xs" onclick="${openFn}">Öppna</button>
         </div>
       </div>
     </div></div>`;
@@ -3500,17 +3516,16 @@ function sigHittaKontakt(id,companyId){
 async function startaProcess(companyId){
   const co=companies.find(c=>c.id===companyId);if(!co)return;
   const nu=new Date().toISOString();
-  co.process_startad=nu;
-  await sb.from("companies").update({process_startad:nu}).eq("id",companyId);
-  // Skapa checklistan om den inte redan finns för bolaget
+  const namn=(me?.user_metadata?.namn)||me?.email||"Okänd";
+  co.process_startad=nu;co.tilldelad_user_id=me.id;co.tilldelad_namn=namn;
+  await sb.from("companies").update({process_startad:nu,tilldelad_user_id:me.id,tilldelad_namn:namn}).eq("id",companyId);
   const finns=processChecklista.some(p=>p.company_id===companyId);
   if(!finns){
-    const rows=PROCESS_MALL.map((text,i)=>({user_id:me.id,company_id:companyId,text,klar:false,ordning:i}));
-    const r=await sb.from("process_checklista").insert(rows).select();
-    if(r.data)processChecklista.push(...r.data);
+    const steg=mallSteg("prospekt");const rows=steg.map((text,i)=>({user_id:me.id,company_id:companyId,text,klar:false,ordning:i}));
+    if(rows.length){const r=await sb.from("process_checklista").insert(rows).select();if(r.data)processChecklista.push(...r.data);}
   }
   toast("Process startad ✓");
-  loggaBolag(companyId,"Startade process");
+  loggaBolag(companyId,"Startade process (prospekt)");
   if(typeof renderCompanies==="function")renderCompanies();
   if(document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(companyId);
 }
@@ -6697,6 +6712,55 @@ function deleteActivityType(id){
     toast(TR("at_borttagen"));
   });
 }
+function mallSettingsHtml(){
+  const block=(typ,titel)=>{
+    const steg=checklistaMallar.filter(m=>m.typ===typ).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+    const rows=steg.map((m,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--cream)">
+      <span style="flex:1;font-size:14px">${e(m.text)}</span>
+      <button class="btn-icon" onclick="flyttaMall('${m.id}',-1)" ${i===0?"disabled style=opacity:.3":""}>↑</button>
+      <button class="btn-icon" onclick="flyttaMall('${m.id}',1)" ${i===steg.length-1?"disabled style=opacity:.3":""}>↓</button>
+      <button class="btn-icon" onclick="redigeraMall('${m.id}')">✏️</button>
+      <button class="btn-icon" style="color:var(--red)" onclick="raderaMall('${m.id}')">🗑</button>
+    </div>`).join("")||'<p style="color:#aaa;font-size:13px;padding:8px 0">Inga steg än.</p>';
+    return `<p class="sec-title" style="margin-top:8px">${titel}</p>
+      <div class="week-sec" style="margin-bottom:18px"><div style="padding:16px">
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input id="ny-mall-${typ}" placeholder="Nytt steg…" style="flex:1" onkeydown="if(event.key==='Enter')laggTillMall('${typ}')">
+          <button class="btn btn-primary btn-sm" onclick="laggTillMall('${typ}')">+ Lägg till</button>
+        </div>${rows}
+      </div></div>`;
+  };
+  return block("lead","Checklista – Leads")+block("prospekt","Checklista – Prospekt");
+}
+async function laggTillMall(typ){
+  const namn=v("ny-mall-"+typ);if(!namn){toast("Skriv ett steg först");return;}
+  const maxOrd=checklistaMallar.filter(m=>m.typ===typ).reduce((mx,m)=>Math.max(mx,m.ordning||0),-1);
+  const r=await sb.from("checklista_mall").insert({typ,text:namn,ordning:maxOrd+1}).select().single();
+  if(r.error){toast(r.error.message);return;}
+  checklistaMallar.push(r.data);renderSettings();
+}
+async function redigeraMall(id){
+  const m=checklistaMallar.find(x=>x.id===id);if(!m)return;
+  const ny=prompt("Ändra steg:",m.text);if(ny===null||!ny.trim())return;
+  await sb.from("checklista_mall").update({text:ny.trim()}).eq("id",id);
+  m.text=ny.trim();renderSettings();
+}
+async function raderaMall(id){
+  confirm2("Ta bort detta steg? Påverkar inte redan startade processer.",async()=>{
+    await sb.from("checklista_mall").delete().eq("id",id);
+    checklistaMallar=checklistaMallar.filter(x=>x.id!==id);renderSettings();
+  });
+}
+async function flyttaMall(id,delta){
+  const m=checklistaMallar.find(x=>x.id===id);if(!m)return;
+  const syskon=checklistaMallar.filter(x=>x.typ===m.typ).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+  const idx=syskon.findIndex(x=>x.id===id);const ny=idx+delta;
+  if(ny<0||ny>=syskon.length)return;
+  const a=syskon[idx],b=syskon[ny];const ao=a.ordning,bo=b.ordning;
+  await sb.from("checklista_mall").update({ordning:bo}).eq("id",a.id);
+  await sb.from("checklista_mall").update({ordning:ao}).eq("id",b.id);
+  a.ordning=bo;b.ordning=ao;renderSettings();
+}
 function liKategoriSettingsHtml(){
   const rows=liKategorier.map((k,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream)">
     <span style="flex:1;font-size:14px">${e(k.namn)}</span>
@@ -6747,7 +6811,7 @@ async function flyttaLiKat(id,delta){
 function renderSettings(){if(!settings)return;document.getElementById("settings-content").innerHTML=`<div style="max-width:720px"><p class="sec-title" data-i18n="set_konto">Konto</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><p style="font-size:13px;color:#666;margin-bottom:10px">${t("set_inloggad_som")} <strong>${e(me?.email||"")}</strong></p>
     <div class="fg" style="margin-bottom:14px"><div class="fl"><label>🌐 ${t("sprak_valj")}</label><select id="lang-select" onchange="setLang(this.value)"><option value="sv" ${LANG==="sv"?"selected":""}>${t("sprak_sv")}</option><option value="en" ${LANG==="en"?"selected":""}>${t("sprak_en")}</option></select></div></div><div class="fg" style="margin-bottom:10px"><div class="fl"><label data-i18n="set_ditt_namn">Ditt namn (visas för kollegor)</label><input id="my-namn" value="${e(profilesMap[me?.id]||"")}" placeholder="t.ex. Paulina"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="saveMyName()" data-i18n="set_spara_namn">Spara namn</button><button class="btn btn-danger btn-sm" onclick="logout()" data-i18n="set_logga_ut">Logga ut</button></div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_byt_losen">Byt lösenord</div><div class="fg"><div class="fl"><label data-i18n="set_nytt_losen">Nytt lösenord (minst 8 tecken)</label><input id="pw-new" type="password" autocomplete="new-password"></div><div class="fl"><label data-i18n="set_upprepa">Upprepa</label><input id="pw-new2" type="password" autocomplete="new-password"></div></div><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="changePassword()" data-i18n="set_byt_losen">Byt lösenord</button><div id="pw-result" style="margin-top:8px;font-size:13px"></div></div>
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_radera_konto">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()" data-i18n="set_radera_mitt">Radera mitt konto</button></div></div></div>${actTypesManagerHtml()}<p class="sec-title" data-i18n="set_sakerhet">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666" data-i18n="set_kontrollerar">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title" data-i18n="set_rapporter">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label data-i18n="set_veckodag">Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label data-i18n="set_veckobrev_till">Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label data-i18n="set_pamin_epost">Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label data-i18n="set_dagar_forvag">Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()" data-i18n="btn_spara">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()" data-i18n="set_skicka_test">Skicka testmejl</button></div></div></div>${liKategoriSettingsHtml()}</div>`;refreshMfaStatus();}
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream)"><div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="set_radera_konto">Radera konto</div><p style="font-size:12px;color:#666;margin-bottom:8px">Raderar ditt konto och all din data permanent. Går inte att ångra.</p><button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteMyAccount()" data-i18n="set_radera_mitt">Radera mitt konto</button></div></div></div>${actTypesManagerHtml()}<p class="sec-title" data-i18n="set_sakerhet">Säkerhet (2FA)</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div id="mfa-status" style="font-size:13px;color:#666" data-i18n="set_kontrollerar">Kontrollerar status...</div><div id="mfa-actions" style="margin-top:10px"></div></div></div><div id="admin-users-sec"></div><p class="sec-title" data-i18n="set_rapporter">Rapporter</p><div class="week-sec" style="margin-bottom:18px"><div style="padding:16px"><div class="fg"><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-weekly" ${settings.weekly_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-weekly">Veckobrev aktivt</label></div><div class="fl"><label data-i18n="set_veckodag">Veckodag</label><select id="set-wday">${["Söndag","Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag"].map((d,i)=>`<option value="${i}"${settings.weekly_day===i?" selected":""}>${d}</option>`).join("")}</select></div><div class="fl"><label data-i18n="set_veckobrev_till">Veckobrev till</label><input id="set-wemail" value="${e(settings.weekly_email||"")}"></div><div class="fl fl-row" style="padding-top:4px"><input type="checkbox" id="set-fup" ${settings.followup_enabled?"checked":""} style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="set-fup">Uppföljningspåminnelser</label></div><div class="fl"><label data-i18n="set_pamin_epost">Påminnelse e-post</label><input id="set-femail" value="${e(settings.followup_email||"")}"></div><div class="fl"><label data-i18n="set_dagar_forvag">Dagar i förväg</label><input id="set-fdays" type="number" value="${settings.followup_advance_days||2}"></div></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveSettings()" data-i18n="btn_spara">Spara</button><button class="btn btn-outline" onclick="sendTestEmail()" data-i18n="set_skicka_test">Skicka testmejl</button></div></div></div>${mallSettingsHtml()}${liKategoriSettingsHtml()}</div>`;refreshMfaStatus();}
 async function saveSettings(){const data={weekly_enabled:document.getElementById("set-weekly")?.checked,weekly_day:parseInt(document.getElementById("set-wday")?.value||"1"),weekly_email:v("set-wemail"),followup_enabled:document.getElementById("set-fup")?.checked,followup_email:v("set-femail"),followup_advance_days:intv("set-fdays")||2};const r=await sb.from("user_settings").update(data).eq("user_id",me.id).select("*").single();if(r.error)alert(r.error.message);else{settings=r.data;toast("Sparat ✓");}}
 async function sendTestEmail(){toast("Skickar...",5000);const token=await getToken();if(!token)return;const r=await fetch("/api/test-email",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});const data=await r.json().catch(()=>({}));toast(data.message||"Skickat ✓");}
 
