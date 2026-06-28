@@ -437,6 +437,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-grp" id="grp-focus">
       <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
+      <div class="nav-item" data-v="processer" onclick="gotoView('processer')"><span class="nav-icon">▶</span><span data-i18n="nav_processer">Pågående leads</span><span class="nav-badge" id="badge-processer">0</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
@@ -516,10 +517,12 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="companies-content"></div>
     </div>
+    <div class="view" id="view-processer"><p class="sec-title">Pågående leads</p><div id="processer-content"></div></div>
     <div class="view" id="view-signals">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <p class="sec-title" style="margin:0;flex:1">Lead Discovery</p>
         <button class="btn-icon" id="sig-filter-btn" title="Filter" onclick="toggleSigFilter()" style="font-size:18px">🔍</button>
+        <button class="btn-icon" title="Pågående leads" onclick="gotoView('processer')" style="font-size:18px">▶</button>
         <button class="btn-icon" title="Datakällor / manuell hämtning" onclick="toggleSigTools()" style="font-size:18px">⚙️</button>
       </div>
       <div id="sig-filter-panel" style="display:none;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:14px">
@@ -1112,6 +1115,17 @@ async function startaLeadProcess(sigId){
   toast("Process startad ✓");
   openLead(sigId);
 }
+async function avbrytLeadProcess(sigId){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  confirm2("Avbryta processen? Tilldelning och checklista nollställs.",async()=>{
+    s.tilldelad_user_id=null;s.tilldelad_namn=null;s.process_startad=null;
+    await sb.from("company_signals").update({tilldelad_user_id:null,tilldelad_namn:null,process_startad:null}).eq("id",sigId);
+    await sb.from("lead_checklista").delete().eq("signal_id",sigId);
+    leadChecklista=leadChecklista.filter(p=>p.signal_id!==sigId);
+    if(s.company_id)loggaBolag(s.company_id,`Avbröt process på lead: ${s.rubrik||""}`.slice(0,120));
+    toast("Process avbruten");openLead(sigId);
+  });
+}
 async function taOverLead(sigId){
   const s=signals.find(x=>x.id===sigId);if(!s)return;
   confirm2(`Ta över leadet från ${s.tilldelad_namn||"nuvarande ägare"}?`,async()=>{
@@ -1127,7 +1141,7 @@ async function toggleLeadPunkt(id){
   p.klar=!p.klar;
   await sb.from("lead_checklista").update({klar:p.klar}).eq("id",id);
   const s=signals.find(x=>x.id===p.signal_id);
-  if(p.klar&&s?.company_id)loggaBolag(s.company_id,`Klarade: ${p.text}`);
+  if(s?.company_id)loggaBolag(s.company_id,`${p.klar?"Klarade":"Avbockade"}: ${p.text}`);
   openLead(p.signal_id);
 }
 function leadProcessHtml(s){
@@ -1143,7 +1157,7 @@ function leadProcessHtml(s){
   return `<div style="grid-column:1/-1;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Process · ${klara}/${punkter.length}</div>
-      <div style="font-size:12px;color:#888">Tilldelad: <strong>${e(s.tilldelad_namn||"–")}</strong>${!minLead?` <button class="btn btn-outline btn-xs" style="margin-left:6px" onclick="taOverLead('${s.id}')">Ta över</button>`:""}</div>
+      <div style="font-size:12px;color:#888">Tilldelad: <strong>${e(s.tilldelad_namn||"–")}</strong>${!minLead?` <button class="btn btn-outline btn-xs" style="margin-left:6px" onclick="taOverLead('${s.id}')">Ta över</button>`:""} <button class="btn btn-outline btn-xs" style="margin-left:6px;color:var(--red)" onclick="avbrytLeadProcess('${s.id}')">Avbryt</button></div>
     </div>
     ${punkter.map(p=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:14px"><input type="checkbox" ${p.klar?"checked":""} onchange="toggleLeadPunkt('${p.id}')" style="width:auto"><span style="${p.klar?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span></label>`).join("")}
   </div>`;
@@ -1373,7 +1387,7 @@ async function loadUserLang(){
 const I18N={
   sv:{
     nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
-    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_koncern:"Group map",nav_nyckeltal:"Nyckeltal",
+    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_processer:"Pågående leads",nav_koncern:"Group map",nav_nyckeltal:"Nyckeltal",
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
@@ -1478,7 +1492,7 @@ const I18N={
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
-    nav_bolag:"Companies",nav_signaler:"Signals",nav_koncern:"Group map",nav_nyckeltal:"KPIs",
+    nav_bolag:"Companies",nav_signaler:"Signals",nav_processer:"Active leads",nav_koncern:"Group map",nav_nyckeltal:"KPIs",
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
@@ -1964,6 +1978,7 @@ function setupRT(){rtChannel=sb.channel("crm").on("postgres_changes",{event:"*",
 function updateBadges(){
   const today2=new Date();today2.setHours(0,0,0,0);
   const ns=signals.filter(s=>s.status==="ny").length;const nb=document.getElementById("badge-signals");if(nb){nb.textContent=ns;nb.style.display=ns>0?"inline":"none";}
+  const np=signals.filter(s=>s.process_startad).length;const npb=document.getElementById("badge-processer");if(npb){npb.textContent=np;npb.style.display=np>0?"inline":"none";}
   const nt=tasks.filter(t=>t.status!=="Klar"&&t.due_date&&new Date(t.due_date)<today2).length;const ntb=document.getElementById("badge-tasks");if(ntb){ntb.textContent=nt;ntb.style.display=nt>0?"inline":"none";}
   const nf=contacts.filter(c=>c.nasta_foljup&&new Date(c.nasta_foljup)<today2).length;const nfb=document.getElementById("badge-followups");if(nfb){nfb.textContent=nf;nfb.style.display=nf>0?"inline":"none";}
   // LinkedIn-påminnelser → badge på Kontakter (inte Dagbok)
@@ -2022,7 +2037,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"focus",processer:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["focus","arbetsbok","natverk","bolag","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
@@ -2070,7 +2085,7 @@ function gotoView(name){
   else if(name==="cv")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="printCV()">${t("tb_skriv_ut")}</button><button class="btn btn-green" onclick="exportCVDocx()">${t("tb_word")}</button>`;
   else if(name==="goals")tr.innerHTML=msgBtn+`<button class="btn btn-primary" onclick="openNewGoal()">${t("goal_nytt")}</button>`;
   else if(name==="finans")tr.innerHTML=msgBtn+`<button class="btn btn-outline" onclick="newFinAnalysis()">${t("tb_ny_analys")}</button>`;
-  const renders={dashboard:renderDashboard,companies:renderCompanies,signals:renderSignals,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,finans:renderFinans,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
+  const renders={dashboard:renderDashboard,companies:renderCompanies,signals:renderSignals,processer:renderProcesser,network:renderNetwork,contacts:renderContacts,projects:renderProjects,dagbok:renderDagbok,tidrapport:renderTidrapport,tasks:renderTasks,followups:renderFollowups,subconsultants:renderSubconsultants,log:renderLog,settings:renderSettings,admin:renderAdmin,meddelanden:renderMeddelanden,checklista:renderChecklista,myactivity:renderMyActivity,stats:renderStats,koncern:renderKoncern,relnet:renderRelnet,relmap:renderRelmap,kb:renderKB,cv:renderCV,goals:renderGoals,prio:renderPrio,finans:renderFinans,mellanhander:renderMellanhander,linkedin:renderLinkedin,kcc:renderKcc};
   renders[name]?.();
   if(typeof applyStaticI18n==="function")applyStaticI18n();
 }
@@ -3212,6 +3227,31 @@ function diagDubbletter(){
 }
 function toggleSigFilter(){const p=document.getElementById("sig-filter-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
 function toggleSigTools(){const p=document.getElementById("sig-tools-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
+function renderProcesser(){
+  const el=document.getElementById("processer-content");if(!el)return;
+  const aktiva=(signals||[]).filter(s=>s.process_startad).sort((a,b)=>String(b.process_startad).localeCompare(String(a.process_startad)));
+  if(!aktiva.length){el.innerHTML='<div class="empty"><div class="empty-icon">▶</div><p>Inga påbörjade processer än. Starta en process på ett lead för att se det här.</p></div>';return;}
+  el.innerHTML=`<div style="max-width:900px">${aktiva.map(s=>{
+    const co=companies.find(c=>c.id===s.company_id);
+    const punkter=leadChecklista.filter(p=>p.signal_id===s.id).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+    const klara=punkter.filter(p=>p.klar).length;
+    const nasta=punkter.find(p=>!p.klar);
+    const pct=punkter.length?Math.round(klara/punkter.length*100):0;
+    return `<div class="week-sec" style="margin-bottom:12px"><div style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <strong style="cursor:pointer;color:var(--accent);font-size:15px" onclick="openLead('${s.id}')">${e(co?.namn||sigName(s))} ↗</strong>
+          <div style="font-size:13px;color:#666;margin-top:3px">${e(s.rubrik||"")}</div>
+          <div style="font-size:12px;color:#999;margin-top:4px">Tilldelad: <strong>${e(s.tilldelad_namn||"–")}</strong> · ${klara}/${punkter.length} steg${nasta?` · Nästa: <span style="color:var(--accent)">${e(nasta.text)}</span>`:" · ✓ Klar"}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="progress-wrap" style="width:90px;margin-bottom:6px"><div class="progress-bar ${pct===100?"":""}" style="width:${pct}%"></div></div>
+          <button class="btn btn-outline btn-xs" onclick="openLead('${s.id}')">Öppna</button>
+        </div>
+      </div>
+    </div></div>`;
+  }).join("")}</div>`;
+}
 function renderSignals(){
   if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
   document.getElementById("sig-sources").innerHTML=`
