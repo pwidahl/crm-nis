@@ -435,9 +435,9 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
     <div class="nav-sec" onclick="toggleNavSec('focus')" style="cursor:pointer;user-select:none"><span data-i18n="navg_focus">Focus</span> <span class="nav-sec-arrow" id="arr-focus">▾</span></div>
     <div class="nav-grp" id="grp-focus">
-      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
       <div class="nav-item" data-v="processer" onclick="gotoView('processer')"><span class="nav-icon">▶</span><span data-i18n="nav_processer">Pågående leads</span><span class="nav-badge" id="badge-processer">0</span></div>
+      <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span><span data-i18n="nav_kcc">KCC</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
@@ -449,7 +449,6 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <div class="nav-sec" onclick="toggleNavSec('natverk')" style="cursor:pointer;user-select:none"><span data-i18n="navg_natverk">Nätverk</span> <span class="nav-sec-arrow" id="arr-natverk">▾</span></div>
     <div class="nav-grp" id="grp-natverk">
-      <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span><span data-i18n="nav_kcc">KCC</span></div>
       <div class="nav-item" data-v="subconsultants" onclick="gotoView('subconsultants')"><span class="nav-icon">★</span><span data-i18n="nav_underkonsulter">Underkonsulter</span></div>
       <div class="nav-item" data-v="contacts" onclick="gotoView('contacts')"><span class="nav-icon">◉</span><span data-i18n="nav_kontakter">Kontakter</span><span class="nav-badge" id="badge-linkedin">0</span></div>
       <div class="nav-item" data-v="mellanhander" onclick="gotoView('mellanhander')"><span class="nav-icon">🤝</span><span data-i18n="nav_mellanhander">Mellanhänder</span></div>
@@ -459,6 +458,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('bolag')" style="cursor:pointer;user-select:none"><span data-i18n="navg_bolag">Bolag</span> <span class="nav-sec-arrow" id="arr-bolag">▾</span></div>
     <div class="nav-grp" id="grp-bolag">
       <div class="nav-item" data-v="companies" onclick="gotoView('companies')"><span class="nav-icon">🏢</span><span data-i18n="nav_bolag">Bolag</span></div>
+      <div class="nav-item" data-v="signals" onclick="gotoView('signals')"><span class="nav-icon">⚡</span><span data-i18n="nav_signaler">Signaler</span><span class="nav-badge" id="badge-signals">0</span></div>
       <div class="nav-item" data-v="koncern" onclick="gotoView('koncern')"><span class="nav-icon">🗺️</span><span data-i18n="nav_koncern">Group map</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('analys')" style="cursor:pointer;user-select:none"><span data-i18n="navg_analys">Analys</span> <span class="nav-sec-arrow" id="arr-analys">▾</span></div>
@@ -517,7 +517,7 @@ textarea{resize:vertical;min-height:68px}
       </div>
       <div id="companies-content"></div>
     </div>
-    <div class="view" id="view-processer"><p class="sec-title">Pågående leads</p><div id="processer-content"></div></div>
+    <div class="view" id="view-processer"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><p class="sec-title" data-i18n="nav_processer">Pågående leads</p><button class="btn btn-outline btn-sm" onclick="gotoView('signals')" data-i18n="proc_to_signals">⚡ Till signaler</button></div><div id="processer-content"></div></div>
     <div class="view" id="view-signals">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <p class="sec-title" style="margin:0;flex:1">Lead Discovery</p>
@@ -1395,7 +1395,7 @@ async function loadUserLang(){
 const I18N={
   sv:{
     nav_dashboard:"Dashboard",nav_weekly:"Veckovy",nav_mal:"Mål",nav_prio:"Prioritering",nav_schema:"Arbetsschema",
-    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_processer:"Pågående leads",nav_koncern:"Group map",nav_nyckeltal:"Nyckeltal",
+    nav_bolag:"Bolag",nav_signaler:"Signaler",nav_processer:"Pågående leads",proc_to_signals:"⚡ Till signaler",kcc_to_contacts:"👤 Till kontakter",kcc_to_subs:"🧑‍💼 Till underkonsulter",nav_koncern:"Group map",nav_nyckeltal:"Nyckeltal",
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
@@ -1500,7 +1500,7 @@ const I18N={
   },
   en:{
     nav_dashboard:"Dashboard",nav_weekly:"Weekly view",nav_mal:"Goals",nav_prio:"Prioritization",nav_schema:"Work schedule",
-    nav_bolag:"Companies",nav_signaler:"Signals",nav_processer:"Active leads",nav_koncern:"Group map",nav_nyckeltal:"KPIs",
+    nav_bolag:"Companies",nav_signaler:"Signals",nav_processer:"Active leads",proc_to_signals:"⚡ To signals",kcc_to_contacts:"👤 To contacts",kcc_to_subs:"🧑‍💼 To subconsultants",nav_koncern:"Group map",nav_nyckeltal:"KPIs",
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
@@ -5809,7 +5809,8 @@ function renderKcc(){
   }else{
     body=allaKlara.length?allaKlara.map(k=>`<div class="week-row" style="display:flex;align-items:center;gap:8px"><span style="flex:1;${k.open?"cursor:pointer":"color:#888"}" ${k.open?`onclick="${k.open}"`:""}>⭐ ${e(k.namn)}</span><span style="font-size:11px;color:#888">${k.typ}</span><button class="btn btn-outline btn-xs" onclick="returnKccToProcess('${k.refKind}','${k.refId}')">↩ ${TR("kck_aterfor")}</button></div>`).join(""):`<p style="color:#aaa;font-size:13px;padding:10px 0">${TR("kck_inga_klara")}</p>`;
   }
-  box.innerHTML=tabs+`<div>${body}</div>`;
+  const kccLankar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button class="btn btn-outline btn-sm" onclick="gotoView('contacts')" data-i18n="kcc_to_contacts">👤 Till kontakter</button><button class="btn btn-outline btn-sm" onclick="gotoView('subconsultants')" data-i18n="kcc_to_subs">🧑‍💼 Till underkonsulter</button></div>`;
+  box.innerHTML=kccLankar+tabs+`<div>${body}</div>`;
 }
 function kckRadHtml(k){
   const chefBadge=k.chefsposition?'<span style="font-size:11px" title="Chef">👔</span>':"";
