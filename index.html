@@ -538,7 +538,7 @@ textarea{resize:vertical;min-height:68px}
           <select id="sig-atgard-f" onchange="renderSignals()"><option value="">Alla åtgärder</option><option value="agera">⚡ Att agera på</option><option value="spara">🔖 Sparade</option><option value="bevaka">👁 Bevakade</option><option value="dolj">🙈 Dolda</option><option value="__none__">Utan åtgärd</option></select>
           <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">All statuses</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
           <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
-          <select id="sig-stad-f" onchange="renderSignals()"><option value="">Alla orter</option></select>
+          <div id="sig-stad-chips" style="display:flex;flex-wrap:wrap;gap:5px;width:100%"></div>
           <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px">
@@ -1479,7 +1479,7 @@ const I18N={
     sc_passande:"Passande leads",sc_oppna_cv:"Öppna CV",sc_inga_akt:"Inga aktiviteter ännu.",sc_inga_kopplade:"Inga kopplade kontakter ännu.",sc_ingen_match:"Ingen kompetensmatch",sc_aktiviteter:"Aktiviteter",sc_bolag:"Bolag",sc_kanner:"Känner",sc_niva:"Nivå",
     ld_signal:"Signal",ld_pipeline:"Lead-pipeline",ld_agare:"Ägare:",ld_nasta_steg:"Nästa steg",ld_datum:"Datum",ld_bolagsinfo:"Bolagsinformation",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Öppna bolagskort",ld_flytta:"Flytta i pipeline",ld_fristaende:"Fristående lead (inget bolag):",ld_koppla:"Koppla befintligt bolag",ld_ej_kopplat:"Bolag ej kopplat",ld_inga_kontakter:"Inga kontakter kopplade",ld_kvalificering:"Lead-kvalificering",ld_antal_anstallda:"Antal anställda",ld_okant:"Okänt",ld_omsattning:"Omsättning (MSEK)",ld_cfo_fraga:"Har de en CFO/ekonomichef idag?",ld_cfo_ja:"Ja, tillsatt",ld_cfo_vakant:"Vakant/söker",ld_cfo_nej:"Nej – saknar helt",ld_tillvaxt:"Tillväxttakt",ld_tillvaxt_stabil:"Stabil/negativ",ld_tillvaxt_mattlig:"Måttlig (0–20%)",ld_tillvaxt_snabb:"Snabb (20%+)",ld_agarstruktur:"Ägarstruktur",ld_bors:"Börsnoterat",ld_familj:"Familjeägt/grundarlett",ld_pe:"PE/riskkapital",ld_agarskifte:"Nytt ägarskifte",ld_ekonomisystem:"Ekonomisystem",ld_sys_modernt:"Modernt (SAP/D365/NetSuite)",ld_sys_gammalt:"Gammalt/okänt",ld_sys_byter:"Byter system just nu",ld_fritext:"Vad vet du om bolaget? (fritext)",ld_noteringar:"Noteringar om detta lead",ld_spara_notering:"Spara notering",ld_ignorera:"Ignorera lead",ld_nasta:"Nästa ›",
     fr_nasta_steg:"Nästa steg",fr_saker_vantar:"saker väntar",
-    flt_dolj_mellan:"🤝 Dölj mellanhänder",flt_dolj_fasta:"🔒 Dölj fastanställningar",flt_bara_mina:"✍️ Bara mina manuella",
+    flt_dolj_mellan:"🤝 Dölj mellanhänder",flt_dolj_fasta:"🔒 Dölj fastanställningar",flt_dolj_form:"🔇 Dölj förmedlare",flt_dolj_fast:"🔒 Dölj fastanställning",flt_bara_mina:"✍️ Bara mina manuella",
     flt_borsnoterade:"Börsnoterade",chk_borsnoterat:"Börsnoterat bolag",
     sig_fasta_dolda_a:"troliga fasta tjänster är dolda (interim/konsult visas).",sig_visa_fasta:"Visa fasta",
     co_dotterbolag:"dotterbolag",co_lagg_dotter:"Lägg till dotterbolag under",
@@ -1584,7 +1584,7 @@ const I18N={
     sc_passande:"Matching leads",sc_oppna_cv:"Open CV",sc_inga_akt:"No activities yet.",sc_inga_kopplade:"No linked contacts yet.",sc_ingen_match:"No skill match",sc_aktiviteter:"Activities",sc_bolag:"Companies",sc_kanner:"Knows",sc_niva:"Level",
     ld_signal:"Signal",ld_pipeline:"Lead pipeline",ld_agare:"Owner:",ld_nasta_steg:"Next step",ld_datum:"Date",ld_bolagsinfo:"Company information",ld_pipeline_kolon:"Pipeline:",ld_oppna_bolag:"Open company card",ld_flytta:"Move in pipeline",ld_fristaende:"Standalone lead (no company):",ld_koppla:"Link existing company",ld_ej_kopplat:"Company not linked",ld_inga_kontakter:"No contacts linked",ld_kvalificering:"Lead qualification",ld_antal_anstallda:"Number of employees",ld_okant:"Unknown",ld_omsattning:"Revenue (MSEK)",ld_cfo_fraga:"Do they have a CFO/finance manager today?",ld_cfo_ja:"Yes, in place",ld_cfo_vakant:"Vacant/recruiting",ld_cfo_nej:"No – none at all",ld_tillvaxt:"Growth rate",ld_tillvaxt_stabil:"Stable/negative",ld_tillvaxt_mattlig:"Moderate (0–20%)",ld_tillvaxt_snabb:"Fast (20%+)",ld_agarstruktur:"Ownership structure",ld_bors:"Publicly listed",ld_familj:"Family-owned/founder-led",ld_pe:"PE/venture capital",ld_agarskifte:"Recent ownership change",ld_ekonomisystem:"Finance system",ld_sys_modernt:"Modern (SAP/D365/NetSuite)",ld_sys_gammalt:"Old/unknown",ld_sys_byter:"Changing system right now",ld_fritext:"What do you know about the company? (free text)",ld_noteringar:"Notes about this lead",ld_spara_notering:"Save note",ld_ignorera:"Ignore lead",ld_nasta:"Next ›",
     fr_nasta_steg:"Next step",fr_saker_vantar:"items waiting",
-    flt_dolj_mellan:"🤝 Hide intermediaries",flt_dolj_fasta:"🔒 Hide permanent positions",flt_bara_mina:"✍️ Only my manual",
+    flt_dolj_mellan:"🤝 Hide intermediaries",flt_dolj_fasta:"🔒 Hide permanent positions",flt_dolj_form:"🔇 Hide intermediaries",flt_dolj_fast:"🔒 Hide permanent",flt_bara_mina:"✍️ Only my manual",
     flt_borsnoterade:"Publicly listed",chk_borsnoterat:"Publicly listed company",
     sig_fasta_dolda_a:"likely permanent positions hidden (interim/consulting shown).",sig_visa_fasta:"Show permanent",
     co_dotterbolag:"subsidiaries",co_lagg_dotter:"Add subsidiary under",
@@ -3234,12 +3234,13 @@ function diagDubbletter(){
   alert(out);
   console.log(out);
 }
-const SIG_FILTER_IDS=["sig-search-f","sig-company-f","sig-sort-f","sig-from-f","sig-to-f","sig-stad-f","sig-status-f","sig-type-f","sig-land-f","sig-atgard-f"];
+const SIG_FILTER_IDS=["sig-search-f","sig-company-f","sig-sort-f","sig-from-f","sig-to-f","sig-status-f","sig-type-f","sig-land-f","sig-atgard-f"];
 const SIG_FILTER_CHECKS=["sig-only-behov","sig-hide-formedlare","sig-hide-fast","sig-only-manual"];
 async function saveSigFilters(){
   const data={};
   SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.value;});
   SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.checked;});
+  data._stader=window._valdaStader||[];
   try{localStorage.setItem("sigFilters",JSON.stringify(data));}catch{}
   try{await sb.from("profiles").update({sig_filter:data}).eq("id",me.id);}catch(e){}
 }
@@ -3247,14 +3248,17 @@ function applySigFilters(data){
   if(!data)return;
   SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&data[id]!=null)el.value=data[id];});
   SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el&&data[id]!=null)el.checked=data[id];});
+  if(Array.isArray(data._stader))window._valdaStader=data._stader;
 }
 async function aterstallSigFilters(){
   SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  window._valdaStader=[];
   try{localStorage.removeItem("sigFilters");}catch{}
   try{await sb.from("profiles").update({sig_filter:null}).eq("id",me.id);}catch(e){}
   renderSignals();toast("Filter återställda");
 }
+function toggleStad(st){window._valdaStader=window._valdaStader||[];const i=window._valdaStader.indexOf(st);if(i>=0)window._valdaStader.splice(i,1);else window._valdaStader.push(st);renderSignals();}
 function toggleSigFilter(){const p=document.getElementById("sig-filter-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
 let sigMarkLage=false;
 let sigValda=new Set();
@@ -3391,13 +3395,13 @@ function renderSignals(){
     scf.innerHTML='<option value="">Alla bolag</option>'+uniqueCompanies.map(([id,namn])=>`<option value="${id}">${e(namn)}</option>`).join("");
     scf.value=cur;
   }
-  // Populate city filter (orter från bolag som har signaler)
-  const stf=document.getElementById("sig-stad-f");
-  if(stf){
-    const cur=stf.value;
+  // Populate city filter (orter som multi-select chips)
+  const stChips=document.getElementById("sig-stad-chips");
+  if(stChips){
     const stader=[...new Set(signals.map(s=>{const co=companies.find(c=>c.id===s.company_id);return co?.stad;}).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"sv"));
-    stf.innerHTML='<option value="">Alla orter</option>'+stader.map(st=>`<option value="${e(st)}">${e(st)}</option>`).join("");
-    stf.value=cur;
+    window._valdaStader=window._valdaStader||[];
+    const allaChip=`<button class="btn btn-${window._valdaStader.length===0?"primary":"outline"} btn-xs" onclick="window._valdaStader=[];renderSignals()">Alla orter</button>`;
+    stChips.innerHTML=allaChip+stader.map(st=>{const vald=window._valdaStader.includes(st);return `<button class="btn btn-${vald?"primary":"outline"} btn-xs" onclick="toggleStad('${e(st).replace(/'/g,"\\'")}')">${e(st)}</button>`;}).join("");
   }
   const status=v("sig-status-f"),type=v("sig-type-f"),land=v("sig-land-f"),
         coFilter=v("sig-company-f"),q=(v("sig-search-f")||"").toLowerCase();
@@ -3415,8 +3419,8 @@ function renderSignals(){
     // Bolag markerade "inte aktuella" döljs
     const sco=companies.find(c=>c.id===s.company_id);
     if(sco&&sco.inte_aktuell)return false;
-    const stadF=document.getElementById("sig-stad-f")?.value;
-    if(stadF&&sco?.stad!==stadF)return false;
+    const stadVal=window._valdaStader||[];
+    if(stadVal.length&&!stadVal.includes(sco?.stad))return false;
     const fromD=document.getElementById("sig-from-f")?.value;
     const toD=document.getElementById("sig-to-f")?.value;
     if(fromD&&(s.signal_datum||"")<fromD)return false;
