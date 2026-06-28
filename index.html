@@ -435,13 +435,13 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-item" data-v="goals" onclick="gotoView('goals')"><span class="nav-icon">🎯</span><span data-i18n="nav_mal">Mål</span></div>
     <div class="nav-sec" onclick="toggleNavSec('focus')" style="cursor:pointer;user-select:none"><span data-i18n="navg_focus">Focus</span> <span class="nav-sec-arrow" id="arr-focus">▾</span></div>
     <div class="nav-grp" id="grp-focus">
-      <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
       <div class="nav-item" data-v="processer" onclick="gotoView('processer')"><span class="nav-icon">▶</span><span data-i18n="nav_processer">Pågående leads</span><span class="nav-badge" id="badge-processer">0</span></div>
       <div class="nav-item" data-v="kcc" onclick="gotoView('kcc')"><span class="nav-icon">⭐</span><span data-i18n="nav_kcc">KCC</span></div>
       <div class="nav-item" data-v="linkedin" onclick="gotoView('linkedin')"><span class="nav-icon">💼</span>LinkedIn</div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('arbetsbok')" style="cursor:pointer;user-select:none"><span data-i18n="navg_arbetsbok">Arbetsbok</span> <span class="nav-sec-arrow" id="arr-arbetsbok">▾</span></div>
     <div class="nav-grp" id="grp-arbetsbok">
+      <div class="nav-item" onclick="openTodo()" style="cursor:pointer"><span class="nav-icon">✅</span><span data-i18n="nav_todo">Todo</span><span class="nav-badge" id="badge-todo">0</span></div>
       <div class="nav-item" data-v="checklista" onclick="gotoView('checklista')"><span class="nav-icon">📝</span><span data-i18n="nav_checklista">Daglig checklista</span></div>
       <div class="nav-item" data-v="dagbok" onclick="gotoView('dagbok')"><span class="nav-icon">📓</span><span data-i18n="nav_dagbok">Journal</span></div>
       <div class="nav-item" data-v="projects" onclick="gotoView('projects')"><span class="nav-icon">💼</span><span data-i18n="nav_projekt">Uppdrag</span></div>
@@ -2046,7 +2046,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"natverk",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"focus",processer:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"focus",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"bolag",processer:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["focus","arbetsbok","natverk","bolag","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
