@@ -668,7 +668,7 @@ textarea{resize:vertical;min-height:68px}
         <select id="kb-cat-f" onchange="renderKB()"><option value="" data-i18n="kb_alla_kat">Alla kategorier</option></select>
         <select id="kb-land-f" onchange="renderKB()"><option value="" data-i18n="kb_alla_land">Alla länder</option></select>
       </div>
-      <details id="regelnyheter-panel" style="margin-bottom:14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r)"><summary style="padding:13px 16px;cursor:pointer;font-weight:600;font-size:14px">⚖️ <span data-i18n="kb_regelnyheter">Nya lagar & regler</span> <span id="regelnyheter-antal" style="font-size:12px;color:#888;font-weight:400"></span></summary><div style="padding:0 16px 14px"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      <details id="regelnyheter-panel" style="margin-bottom:14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r)"><summary style="padding:13px 16px;cursor:pointer;font-weight:600;font-size:14px">⚖️ <span data-i18n="kb_regelnyheter">Nya lagar & regler</span> <span id="regelnyheter-antal" style="font-size:12px;color:#888;font-weight:400"></span></summary><div style="padding:0 16px 14px"><div id="bev-profil-rad"></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
         <input id="regel-sok" placeholder="Sök..." data-i18n-ph="regel_sok" oninput="renderRegelnyheter()" style="flex:1;min-width:140px;font-size:13px">
         <select id="regel-omrade-f" onchange="renderRegelnyheter()" style="font-size:13px"><option value="" data-i18n="kb_alla_omr">Alla områden</option><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option></select>
         <select id="regel-sort" onchange="renderRegelnyheter()" style="font-size:13px"><option value="datum" data-i18n="regel_sort_datum">Senaste först</option><option value="omrade" data-i18n="regel_sort_omrade">Område</option></select>
@@ -944,7 +944,8 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-conn"><div class="modal" style="width:460px"><div class="mhdr"><h2>Lägg till koppling</h2><button class="mclose" onclick="closeM('m-conn')">×</button></div><div class="mbody"><input id="conn-from" type="hidden"><div class="privacy-note">Spåra vilka av dina kontakter som känner varandra – för att hitta vägar in i bolag.</div><div class="fg"><div class="fl full"><label>Person *</label><select id="conn-other"></select></div><div class="fl full"><label>Relationstyp</label><select id="conn-typ"></select></div><div class="fl full"><label>Anteckning (valfritt)</label><input id="conn-note" placeholder="t.ex. Tidigare kollegor på EY"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-conn')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveConnection()">Spara koppling</button></div></div></div>
 
-<div class="overlay" id="m-artikel"><div class="modal modal-lg"><div class="mhdr"><h2 id="artikel-modal-title">Ny artikel</h2><button class="mclose" onclick="closeM('m-artikel')">×</button></div><div class="mbody"><input id="art-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="art-rubrik" placeholder="t.ex. Nytt för 2026: ändrade 3:12-regler"></div><div class="fl"><label>Område</label><select id="art-omrade"><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option><option>Bolagsrätt</option><option>Hållbarhet</option><option>Eget</option></select></div><div class="fl"><label>År</label><input id="art-ar" type="number" placeholder="2026"></div><div class="fl full"><label>Innehåll</label><textarea id="art-innehall" rows="10" placeholder="Skriv din sammanställning här – vad är nytt, vad innebär det, vad ska vi tänka på..."></textarea></div><div class="fl full"><label>🔗 Källor (länkar, en per rad)</label><textarea id="art-kallor" rows="3" placeholder="https://www.skatteverket.se/..."></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" style="color:var(--red)" id="art-del-btn" onclick="deleteArtikel()">Ta bort</button><button class="btn btn-outline" onclick="closeM('m-artikel')">Avbryt</button><button class="btn btn-primary" onclick="saveArtikel()">Spara</button></div></div></div>
+<div class="overlay" id="m-bevakning"><div class="modal"><div class="mhdr"><h2 data-i18n="bev_titel">Bevakningsprofiler</h2><button class="mclose" onclick="closeM('m-bevakning')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:12px" data-i18n="bev_info">Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.</p><div id="bev-modal-body" style="margin-bottom:16px"></div><div style="border-top:1px solid var(--cream);padding-top:12px"><div class="fg"><div class="fl"><label data-i18n="bev_namn_label">Namn</label><input id="bev-nytt-namn" placeholder="t.ex. Moms"></div><div class="fl full"><label data-i18n="bev_ord_label">Nyckelord (kommaseparerade)</label><input id="bev-nya-ord" placeholder="moms, mervärdesskatt, vat"></div></div><button class="btn btn-primary btn-sm" onclick="laggTillBevakning()" data-i18n="bev_lagg_till">+ Lägg till profil</button></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-bevakning')" data-i18n="btn_stang">Stäng</button></div></div></div>
+<div class="overlay" id="m-artikel"><div class="modal modal-lg"><div class="mhdr"><h2 id="artikel-modal-title">Ny artikel</h2><button class="mclose" onclick="closeM('m-artikel')">×</button></div><div class="mbody"><input id="art-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="art-rubrik" placeholder="t.ex. Nytt för 2026: ändrade 3:12-regler"></div><div class="fl"><label>Område</label><select id="art-omrade"><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option><option>Bolagsrätt</option><option>Hållbarhet</option><option>Eget</option></select></div><div class="fl"><label>År</label><input id="art-ar" type="number" placeholder="2026"></div><div class="fl full"><label>Innehåll</label><textarea id="art-innehall" rows="10" placeholder="Skriv din sammanställning här – vad är nytt, vad innebär det, vad ska vi tänka på..."></textarea></div><div class="fl full"><label>🔗 Källor (länkar, en per rad)</label><textarea id="art-kallor" rows="3" placeholder="https://www.skatteverket.se/..."></textarea></div></div><div id="art-forstaelse-box"></div></div><div class="mfoot"><button class="btn btn-outline" style="color:var(--red)" id="art-del-btn" onclick="deleteArtikel()">Ta bort</button><button class="btn btn-outline" onclick="closeM('m-artikel')">Avbryt</button><button class="btn btn-primary" onclick="saveArtikel()">Spara</button></div></div></div>
 <div class="overlay" id="m-kb"><div class="modal modal-lg"><div class="mhdr"><h2 id="kb-modal-title">Ny notering</h2><button class="mclose" onclick="closeM('m-kb')">×</button></div><div class="mbody"><input id="kb-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="kb-rubrik" placeholder="t.ex. IFRS 16 – leasingredovisning"></div><div class="fl"><label>Kategori</label><input id="kb-kat" list="kb-kat-list" placeholder="Välj eller skriv egen"><datalist id="kb-kat-list"></datalist></div><div class="fl"><label>Land</label><select id="kb-land"></select></div><div class="fl full"><label>🔗 Länk (URL till faktasida)</label><input id="kb-lank" placeholder="https://www.skatteverket.se/..."></div><div class="fl full"><label>Innehåll</label><textarea id="kb-innehall" rows="6" placeholder="Skriv din notering här..."></textarea></div></div>
 <div style="margin-top:16px;border-top:1px solid var(--cream);padding-top:14px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin:0">📒 Bokföringsexempel (valfritt)</label><button class="btn btn-outline btn-xs" onclick="kbAddRow()">+ Rad</button></div>
@@ -1296,6 +1297,21 @@ let contactConnections=[];
 let knowledgeNotes=[];
 let regelnyheter=[];
 let kunskapsartiklar=[];
+let bevakningsprofiler=[];
+async function loadBevakningsprofiler(){
+  try{const r=await sb.from("bevakningsprofiler").select("*").eq("user_id",me.id).order("namn");bevakningsprofiler=r.data||[];}
+  catch(e){bevakningsprofiler=[];}
+}
+const REGEL_VAL_IDS=["regel-sok","regel-omrade-f","regel-sort","regel-from","regel-to"];
+async function saveRegelVal(){
+  const data={};REGEL_VAL_IDS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.value;});
+  try{await sb.from("profiles").update({regel_val:data}).eq("id",me.id);}catch(e){}
+  try{localStorage.setItem("regelVal",JSON.stringify(data));}catch{}
+}
+function applyRegelVal(data){
+  if(!data)return;
+  REGEL_VAL_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&data[id]!=null)el.value=data[id];});
+}
 async function loadKunskapsartiklar(){
   try{const r=await sb.from("kunskapsartiklar").select("*").order("uppdaterad",{ascending:false});kunskapsartiklar=r.data||[];}
   catch(e){kunskapsartiklar=[];}
@@ -1429,7 +1445,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1534,7 +1550,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -1948,7 +1964,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -1962,6 +1978,7 @@ async function loadAll(){
   try{await loadDashHidden();}catch(e){}
   try{const rf=await sb.from("profiles").select("sig_filter").eq("id",me.id).maybeSingle();if(rf?.data?.sig_filter){window._dbSigFilter=rf.data.sig_filter;try{localStorage.setItem("sigFilters",JSON.stringify(rf.data.sig_filter));}catch{}}}catch(e){}
   try{const rs=await sb.from("profiles").select("ns_skip").eq("id",me.id).maybeSingle();const idag=new Date().toISOString().slice(0,10);if(rs?.data?.ns_skip&&rs.data.ns_skip.datum===idag){window._nsSkippade=rs.data.ns_skip.acts||[];}else{window._nsSkippade=[];}}catch(e){window._nsSkippade=[];}
+  try{const rv=await sb.from("profiles").select("regel_val").eq("id",me.id).maybeSingle();if(rv?.data?.regel_val)window._dbRegelVal=rv.data.regel_val;}catch(e){}
   try{updateMsgBadge();}catch(e){}
   try{applyStaticI18n();}catch(e){}
   renderCurrent();
@@ -4519,6 +4536,24 @@ function kbAllCats(){
   return [...new Set([...KB_CATS,...custom])];
 }
 
+const FORSTAELSE_FRAGOR=[
+  {k:"karna",f:"Sammanfatta i en mening – vad är kärnan i förändringen?"},
+  {k:"inlagg",f:"Skriv ett LinkedIn-inlägg om det – hur förklarar du det publikt?"},
+  {k:"bolag",f:"Vilka av våra bolag/kunder påverkas?"},
+  {k:"bokforing",f:"Förändringar för bokföring & rapportering – vad ändras praktiskt?"},
+  {k:"atgard",f:"Vad behöver jag/vi göra? (informera kund, uppdatera mallar, etc.)"},
+  {k:"reflektion",f:"Egen reflektion – analys, risker, möjligheter"}
+];
+function forstaelseHtml(svar){
+  svar=svar||{};
+  return `<div style="border-top:2px solid var(--cream);margin-top:14px;padding-top:14px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">🧠 ${TR("art_forstaelse")||"Förståelsekontroll"}</div>
+    ${FORSTAELSE_FRAGOR.map(q=>`<div style="margin-bottom:12px"><label style="font-size:12px;color:#555;display:block;margin-bottom:4px">${e(q.f)}</label><textarea id="forst-${q.k}" rows="2" style="width:100%;font-size:13px">${e(svar[q.k]||"")}</textarea></div>`).join("")}
+  </div>`;
+}
+function lasForstaelse(){
+  const o={};FORSTAELSE_FRAGOR.forEach(q=>{const el=document.getElementById("forst-"+q.k);if(el)o[q.k]=el.value;});return o;
+}
 function renderArtiklar(){
   const box=document.getElementById("artiklar-content");if(!box)return;
   const sok=(document.getElementById("artikel-sok")?.value||"").toLowerCase().trim();
@@ -4553,6 +4588,7 @@ function openNyArtikel(){
   document.getElementById("art-omrade").value="Skatt";
   document.getElementById("art-ar").value=new Date().getFullYear();
   document.getElementById("art-del-btn").style.display="none";
+  document.getElementById("art-forstaelse-box").innerHTML=forstaelseHtml({});
   openM("m-artikel");
 }
 function openArtikel(id){
@@ -4565,13 +4601,14 @@ function openArtikel(id){
   document.getElementById("art-omrade").value=a.omrade||"Skatt";
   document.getElementById("art-ar").value=a.ar||new Date().getFullYear();
   document.getElementById("art-del-btn").style.display=a.user_id===me.id?"":"none";
+  document.getElementById("art-forstaelse-box").innerHTML=forstaelseHtml(a.forstaelse);
   openM("m-artikel");
 }
 async function saveArtikel(){
   const rubrik=v("art-rubrik");if(!rubrik){toast(TR("art_rubrik_krav")||"Rubrik krävs");return;}
   const id=v("art-id");
   const forfattare=(me?.user_metadata?.namn)||me?.email||"Okänd";
-  const data={user_id:me.id,forfattare,rubrik,innehall:document.getElementById("art-innehall")?.value||"",omrade:v("art-omrade")||"Eget",ar:parseInt(v("art-ar"))||null,kallor:document.getElementById("art-kallor")?.value||"",uppdaterad:new Date().toISOString()};
+  const data={user_id:me.id,forfattare,rubrik,innehall:document.getElementById("art-innehall")?.value||"",omrade:v("art-omrade")||"Eget",ar:parseInt(v("art-ar"))||null,kallor:document.getElementById("art-kallor")?.value||"",forstaelse:lasForstaelse(),uppdaterad:new Date().toISOString()};
   const r=id?await sb.from("kunskapsartiklar").update(data).eq("id",id):await sb.from("kunskapsartiklar").insert(data);
   if(r.error){toast(r.error.message);return;}
   closeM("m-artikel");await loadKunskapsartiklar();renderKB();toast(TR("art_sparad")||"Artikel sparad ✓");
@@ -4634,8 +4671,56 @@ function artikelFranPeriod(){
   if(omr)document.getElementById("art-omrade").value=omr;
   const yr=(toD||fromD||"").slice(0,4);if(yr)document.getElementById("art-ar").value=yr;
 }
+function bevakningProfilHtml(){
+  const aktiv=bevakningsprofiler.find(p=>p.aktiv);
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+    <label style="font-size:12px;color:#888">${TR("bev_profil")||"Bevakning:"}</label>
+    <select id="bev-aktiv-select" onchange="aktiveraBevakning(this.value)" style="font-size:13px">
+      <option value="">${TR("bev_alla")||"Visa allt"}</option>
+      ${bevakningsprofiler.map(p=>`<option value="${p.id}" ${p.aktiv?"selected":""}>${e(p.namn)}</option>`).join("")}
+    </select>
+    <button class="btn btn-outline btn-xs" onclick="hanteraBevakning()">${TR("bev_hantera")||"⚙️ Hantera"}</button>
+  </div>`;
+}
+async function aktiveraBevakning(id){
+  for(const p of bevakningsprofiler){const skaVara=p.id===id;if(p.aktiv!==skaVara){p.aktiv=skaVara;await sb.from("bevakningsprofiler").update({aktiv:skaVara}).eq("id",p.id);}}
+  renderRegelnyheter();
+}
+function hanteraBevakning(){
+  const body=bevakningsprofiler.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream)">
+    <div style="flex:1"><strong style="font-size:13px">${e(p.namn)}</strong><div style="font-size:12px;color:#888">${e(p.nyckelord||"")}</div></div>
+    <button class="btn-icon" onclick="redigeraBevakning('${p.id}')">✏️</button>
+    <button class="btn-icon" style="color:var(--red)" onclick="raderaBevakning('${p.id}')">🗑</button>
+  </div>`).join("")||`<p style="color:#aaa;font-size:13px">${TR("bev_inga")||"Inga profiler än."}</p>`;
+  document.getElementById("bev-modal-body").innerHTML=body;
+  openM("m-bevakning");
+}
+async function laggTillBevakning(){
+  const namn=v("bev-nytt-namn");if(!namn){toast(TR("bev_namn_krav")||"Namn krävs");return;}
+  const nyckelord=v("bev-nya-ord");
+  const r=await sb.from("bevakningsprofiler").insert({user_id:me.id,namn,nyckelord,aktiv:false}).select().single();
+  if(r.error){toast(r.error.message);return;}
+  bevakningsprofiler.push(r.data);
+  document.getElementById("bev-nytt-namn").value="";document.getElementById("bev-nya-ord").value="";
+  hanteraBevakning();renderRegelnyheter();
+}
+async function redigeraBevakning(id){
+  const p=bevakningsprofiler.find(x=>x.id===id);if(!p)return;
+  const namn=prompt(TR("bev_namn")||"Namn på profil:",p.namn);if(namn===null)return;
+  const ord=prompt(TR("bev_ord")||"Nyckelord (kommaseparerade):",p.nyckelord||"");if(ord===null)return;
+  await sb.from("bevakningsprofiler").update({namn:namn.trim(),nyckelord:ord.trim()}).eq("id",id);
+  p.namn=namn.trim();p.nyckelord=ord.trim();hanteraBevakning();renderRegelnyheter();
+}
+async function raderaBevakning(id){
+  confirm2(TR("bev_radera")||"Ta bort bevakningsprofilen?",async()=>{
+    await sb.from("bevakningsprofiler").delete().eq("id",id);
+    bevakningsprofiler=bevakningsprofiler.filter(x=>x.id!==id);hanteraBevakning();renderRegelnyheter();
+  });
+}
 function renderRegelnyheter(){
   const box=document.getElementById("regelnyheter-content");if(!box)return;
+  if(!window._regelValRestored){window._regelValRestored=true;const v=window._dbRegelVal||JSON.parse(localStorage.getItem("regelVal")||"null");if(v)applyRegelVal(v);}
+  else{if(window._regelSaveT)clearTimeout(window._regelSaveT);window._regelSaveT=setTimeout(saveRegelVal,800);}
   const antalEl=document.getElementById("regelnyheter-antal");
   if(antalEl)antalEl.textContent=regelnyheter.length?`(${regelnyheter.length})`:"";
   const omr=document.getElementById("regel-omrade-f")?.value||"";
@@ -4643,15 +4728,22 @@ function renderRegelnyheter(){
   const sort=document.getElementById("regel-sort")?.value||"datum";
   const fromD=document.getElementById("regel-from")?.value||"";
   const toD=document.getElementById("regel-to")?.value||"";
+  // Aktiv bevakningsprofil: filtrera på dess nyckelord
+  const aktivProfil=bevakningsprofiler.find(p=>p.aktiv);
+  const profilOrd=aktivProfil&&aktivProfil.nyckelord?aktivProfil.nyckelord.toLowerCase().split(",").map(o=>o.trim()).filter(Boolean):[];
   let list=regelnyheter.filter(r=>{
     if(omr&&r.omrade!==omr)return false;
     if(sok){const hay=`${r.titel} ${r.beskrivning||""} ${r.kalla||""}`.toLowerCase();if(!sok.split(/\s+/).every(o=>hay.includes(o)))return false;}
+    if(profilOrd.length){const hay=`${r.titel} ${r.beskrivning||""}`.toLowerCase();if(!profilOrd.some(o=>hay.includes(o)))return false;}
     const d=(r.publicerad||"").slice(0,10);
     if(fromD&&d&&d<fromD)return false;
     if(toD&&d&&d>toD)return false;
     return true;
   });
-  if(!list.length){box.innerHTML=`<p style="color:#aaa;font-size:13px">${regelnyheter.length?TR("kb_ingen_match"):(TR("kb_regel_tom")||"Inga regelnyheter än.")}</p>`;return;}
+  if(!list.length){box.innerHTML=`<p style="color:#aaa;font-size:13px">${regelnyheter.length?TR("kb_ingen_match"):(TR("kb_regel_tom")||"Inga regelnyheter än.")}</p>`;
+    const pr=document.getElementById("bev-profil-rad");if(pr)pr.innerHTML=bevakningProfilHtml();
+    return;}
+  const prRad=document.getElementById("bev-profil-rad");if(prRad)prRad.innerHTML=bevakningProfilHtml();
   const kort=r=>`<div style="border-bottom:1px solid var(--cream);padding:10px 0">
     <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
       <span class="badge" style="background:var(--accent);color:#fff;font-size:10px">${e(r.omrade||"")}</span>
