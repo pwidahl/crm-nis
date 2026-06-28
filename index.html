@@ -1090,6 +1090,25 @@ let meddelanden=[];
 let checklista=[],checklistaBockar=[];
 let liKategorier=[];
 let processChecklista=[];
+let bolagLogg=[];
+async function loadBolagLogg(){
+  try{const r=await sb.from("bolag_logg").select("*").order("datum",{ascending:false}).limit(2000);bolagLogg=r.data||[];}
+  catch(e){bolagLogg=[];}
+}
+async function loggaBolag(companyId,handelse){
+  if(!companyId||!handelse)return;
+  const namn=(me?.user_metadata?.namn)||me?.email||"Okänd";
+  const rad={company_id:companyId,user_id:me.id,user_namn:namn,handelse,datum:new Date().toISOString()};
+  bolagLogg.unshift(rad);
+  try{const r=await sb.from("bolag_logg").insert({company_id:companyId,user_id:me.id,user_namn:namn,handelse}).select().single();if(r.data){bolagLogg[0]=r.data;}}catch(e){}
+}
+function bolagLoggHtml(companyId){
+  const rader=bolagLogg.filter(l=>l.company_id===companyId);
+  if(!rader.length)return "";
+  return `<div style="margin-top:14px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Aktivitetslogg</div>
+    ${rader.slice(0,30).map(l=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--cream);display:flex;justify-content:space-between;gap:10px"><span>${e(l.handelse)}</span><span style="color:#999;white-space:nowrap;font-size:12px">${e(l.user_namn||"")} · ${e((l.datum||"").slice(0,10))}</span></div>`).join("")}
+  </div>`;
+}
 const PROCESS_MALL=["Hitta rätt kontakt på bolaget","Koppla upp på LinkedIn / mejla","Ringa","Boka lunch","Aktivt samarbete"];
 async function loadProcessChecklista(){
   try{const r=await sb.from("process_checklista").select("*").eq("user_id",me.id).order("ordning");processChecklista=r.data||[];}
@@ -1820,7 +1839,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -3049,6 +3068,7 @@ async function openCompanyCard(id){
     <div class="card-tabs"><div class="ctab active" onclick="cct('co','overview',this)">${t("co_oversikt")}</div><div class="ctab" onclick="cct('co','ai',this)">${t("co_ai")}</div><div class="ctab" onclick="cct('co','signals',this)">${t("co_signaler")} (${cs.length})</div><div class="ctab" onclick="cct('co','contacts',this)">${t("co_kontakter")} (${nm.length})</div><div class="ctab" onclick="cct('co','projects',this)">${t("co_projekt")} (${cp.length})</div></div>
     <div class="ctpane active" id="cco-overview">
       ${c.process_startad?processChecklistaHtml(id):`<div style="background:var(--paper);border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:14px;text-align:center"><p style="font-size:13px;color:#666;margin-bottom:10px">Du jobbar inte aktivt med detta bolag än.</p><button class="btn btn-primary btn-sm" onclick="startaProcess('${id}')">▶ Starta process</button></div>`}
+      ${bolagLoggHtml(id)}
       ${c.ai_score?`<div style="display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:var(--r);padding:10px 13px;margin-bottom:14px;border:1px solid var(--cream)">
         <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${c.ai_score>=70?"var(--green)":c.ai_score>=45?"var(--gold)":"#aaa"}">${c.ai_score}</div>
         <div><div style="font-weight:600;font-size:13px">${e(c.ai_rekommendation||"")}</div><div style="font-size:11px;color:#888">Lead-score</div></div>
@@ -3393,6 +3413,7 @@ async function startaProcess(companyId){
     if(r.data)processChecklista.push(...r.data);
   }
   toast("Process startad ✓");
+  loggaBolag(companyId,"Startade process");
   if(typeof renderCompanies==="function")renderCompanies();
   if(document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(companyId);
 }
@@ -3400,6 +3421,7 @@ async function toggleProcessPunkt(id){
   const p=processChecklista.find(x=>x.id===id);if(!p)return;
   p.klar=!p.klar;
   await sb.from("process_checklista").update({klar:p.klar}).eq("id",id);
+  if(p.klar)loggaBolag(p.company_id,`Klarade: ${p.text}`);
   const co=processChecklista.find(x=>x.id===id)?.company_id;
   if(co&&document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(co);
 }
