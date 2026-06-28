@@ -668,6 +668,7 @@ textarea{resize:vertical;min-height:68px}
         <select id="kb-cat-f" onchange="renderKB()"><option value="" data-i18n="kb_alla_kat">Alla kategorier</option></select>
         <select id="kb-land-f" onchange="renderKB()"><option value="" data-i18n="kb_alla_land">Alla länder</option></select>
       </div>
+      <div id="kb-faktalankar"></div>
       <details id="regelnyheter-panel" style="margin-bottom:14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r)"><summary style="padding:13px 16px;cursor:pointer;font-weight:600;font-size:14px">⚖️ <span data-i18n="kb_regelnyheter">Nya lagar & regler</span> <span id="regelnyheter-antal" style="font-size:12px;color:#888;font-weight:400"></span></summary><div style="padding:0 16px 14px"><div id="bev-profil-rad"></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
         <input id="regel-sok" placeholder="Sök..." data-i18n-ph="regel_sok" oninput="renderRegelnyheter()" style="flex:1;min-width:140px;font-size:13px">
         <select id="regel-omrade-f" onchange="renderRegelnyheter()" style="font-size:13px"><option value="" data-i18n="kb_alla_omr">Alla områden</option><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option></select>
@@ -1043,7 +1044,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-schema-task"><div class="modal" style="width:420px"><div class="mhdr"><h2>Uppgift</h2><button class="mclose" onclick="closeM('m-schema-task')">×</button></div><div class="mbody" id="schema-task-body"></div></div></div>
 
-<div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()" data-i18n="btn_spara">Spara</button></div></div></div>
+<div class="overlay" id="m-quicklink"><div class="modal" style="width:380px"><div class="mhdr"><h2>Lägg till snabblänk</h2><button class="mclose" onclick="closeM('m-quicklink')">×</button></div><div class="mbody"><div class="fg"><div class="fl full"><label>Titel</label><input id="ql-titel" placeholder="t.ex. Ponty"></div><div class="fl full"><label>URL</label><input id="ql-url" placeholder="t.ex. ponty.se"></div><div class="fl full"><label>Kategori</label><select id="ql-kategori"><option value="">Allmän</option><option value="faktalank">📚 Faktalänk (visas även i Faktabank)</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-quicklink')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveQuickLink()" data-i18n="btn_spara">Spara</button></div></div></div>
 
 <div class="overlay" id="m-linkedin-editor"><div class="modal modal-lg"><div class="mhdr"><h2>💼 Veckans inlägg</h2><button class="mclose" onclick="closeM('m-linkedin-editor')">×</button></div><div class="mbody"><div id="li-editor-content"></div></div></div></div>
 
@@ -1446,7 +1447,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1551,7 +1552,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -2810,14 +2811,15 @@ function upcomingBirthdays(within){
   });
   return res.sort((a,b)=>a.days-b.days);
 }
-function openAddQuickLink(){document.getElementById("ql-titel").value="";document.getElementById("ql-url").value="";openM("m-quicklink");}
+function openAddQuickLink(){document.getElementById("ql-titel").value="";document.getElementById("ql-url").value="";const k=document.getElementById("ql-kategori");if(k)k.value="";openM("m-quicklink");}
 async function saveQuickLink(){
   const titel=v("ql-titel");let url=v("ql-url");
   if(!titel||!url){toast("Titel och URL krävs");return;}
   if(!/^https?:\/\//i.test(url))url="https://"+url;
-  const r=await sb.from("quick_links").insert({user_id:me.id,titel,url,sort_order:quickLinks.length}).select("*").single();
+  const kategori=v("ql-kategori")||null;
+  const r=await sb.from("quick_links").insert({user_id:me.id,titel,url,kategori,sort_order:quickLinks.length}).select("*").single();
   if(r.error){alert(r.error.message);return;}
-  quickLinks.push(r.data);closeM("m-quicklink");toast("Länk tillagd ✓");renderDashboard();
+  quickLinks.push(r.data);closeM("m-quicklink");toast("Länk tillagd ✓");renderDashboard();if(typeof renderKB==="function"&&document.getElementById("view-kb")?.classList.contains("active"))renderKB();
 }
 function openQuickLink(id){const l=quickLinks.find(x=>x.id===id);if(l)window.open(l.url,"_blank","noopener");}
 function deleteQuickLink(id){
@@ -4577,6 +4579,19 @@ function visaArtikel(id){
   `;
   openM("m-las");
 }
+function renderFaktalankar(){
+  const box=document.getElementById("kb-faktalankar");if(!box)return;
+  const fl=(quickLinks||[]).filter(l=>l.kategori==="faktalank");
+  box.innerHTML=`<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:13px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${fl.length?"10px":"0"}"><div style="font-weight:600;font-size:14px">📚 ${TR("kb_faktalankar")||"Faktalänkar"}</div><button class="btn btn-outline btn-xs" onclick="openAddFaktalank()">+ ${TR("kb_lagg_lank")||"Lägg till länk"}</button></div>
+    ${fl.length?`<div style="display:flex;flex-wrap:wrap;gap:8px">${fl.map(l=>`<a href="${e(l.url)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="text-decoration:none">🔗 ${e(l.titel)}</a>`).join("")}</div>`:`<p style="color:#aaa;font-size:13px;margin:6px 0 0">${TR("kb_inga_lankar")||"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl."}</p>`}
+  </div>`;
+}
+function openAddFaktalank(){
+  openAddQuickLink();
+  // förvälj faktalänk-kategori
+  setTimeout(()=>{const k=document.getElementById("ql-kategori");if(k)k.value="faktalank";},50);
+}
 function renderArtiklar(){
   const box=document.getElementById("artiklar-content");if(!box)return;
   const sok=(document.getElementById("artikel-sok")?.value||"").toLowerCase().trim();
@@ -4785,6 +4800,7 @@ function renderRegelnyheter(){
   }
 }
 function renderKB(){
+  renderFaktalankar();
   renderRegelnyheter();
   // Fyll årsfilter för artiklar
   const arF=document.getElementById("artikel-ar-f");
