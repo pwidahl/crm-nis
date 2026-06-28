@@ -669,6 +669,12 @@ textarea{resize:vertical;min-height:68px}
         <select id="kb-land-f" onchange="renderKB()"><option value="" data-i18n="kb_alla_land">Alla länder</option></select>
       </div>
       <details id="regelnyheter-panel" style="margin-bottom:14px;background:#fff;border:1px solid var(--cream);border-radius:var(--r)"><summary style="padding:13px 16px;cursor:pointer;font-weight:600;font-size:14px">⚖️ <span data-i18n="kb_regelnyheter">Nya lagar & regler</span> <span id="regelnyheter-antal" style="font-size:12px;color:#888;font-weight:400"></span></summary><div style="padding:0 16px 14px"><div style="margin-bottom:10px"><select id="regel-omrade-f" onchange="renderRegelnyheter()" style="font-size:13px"><option value="" data-i18n="kb_alla_omr">Alla områden</option><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option></select></div><div id="regelnyheter-content"></div></div></details>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <input id="artikel-sok" placeholder="..." data-i18n-ph="art_sok" oninput="renderArtiklar()" style="flex:1;max-width:280px">
+        <select id="artikel-ar-f" onchange="renderArtiklar()"><option value="" data-i18n="art_alla_ar">Alla år</option></select>
+        <button class="btn btn-primary btn-sm" onclick="openNyArtikel()" data-i18n="art_ny_btn">+ Ny artikel</button>
+      </div>
+      <div id="artiklar-content"></div>
       <div id="kb-content"></div>
     </div>
     <div class="view" id="view-cv">
@@ -926,6 +932,7 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-conn"><div class="modal" style="width:460px"><div class="mhdr"><h2>Lägg till koppling</h2><button class="mclose" onclick="closeM('m-conn')">×</button></div><div class="mbody"><input id="conn-from" type="hidden"><div class="privacy-note">Spåra vilka av dina kontakter som känner varandra – för att hitta vägar in i bolag.</div><div class="fg"><div class="fl full"><label>Person *</label><select id="conn-other"></select></div><div class="fl full"><label>Relationstyp</label><select id="conn-typ"></select></div><div class="fl full"><label>Anteckning (valfritt)</label><input id="conn-note" placeholder="t.ex. Tidigare kollegor på EY"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-conn')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveConnection()">Spara koppling</button></div></div></div>
 
+<div class="overlay" id="m-artikel"><div class="modal modal-lg"><div class="mhdr"><h2 id="artikel-modal-title">Ny artikel</h2><button class="mclose" onclick="closeM('m-artikel')">×</button></div><div class="mbody"><input id="art-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="art-rubrik" placeholder="t.ex. Nytt för 2026: ändrade 3:12-regler"></div><div class="fl"><label>Område</label><select id="art-omrade"><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option><option>Bolagsrätt</option><option>Hållbarhet</option><option>Eget</option></select></div><div class="fl"><label>År</label><input id="art-ar" type="number" placeholder="2026"></div><div class="fl full"><label>Innehåll</label><textarea id="art-innehall" rows="10" placeholder="Skriv din sammanställning här – vad är nytt, vad innebär det, vad ska vi tänka på..."></textarea></div><div class="fl full"><label>🔗 Källor (länkar, en per rad)</label><textarea id="art-kallor" rows="3" placeholder="https://www.skatteverket.se/..."></textarea></div></div></div><div class="mfoot"><button class="btn btn-outline" style="color:var(--red)" id="art-del-btn" onclick="deleteArtikel()">Ta bort</button><button class="btn btn-outline" onclick="closeM('m-artikel')">Avbryt</button><button class="btn btn-primary" onclick="saveArtikel()">Spara</button></div></div></div>
 <div class="overlay" id="m-kb"><div class="modal modal-lg"><div class="mhdr"><h2 id="kb-modal-title">Ny notering</h2><button class="mclose" onclick="closeM('m-kb')">×</button></div><div class="mbody"><input id="kb-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="kb-rubrik" placeholder="t.ex. IFRS 16 – leasingredovisning"></div><div class="fl"><label>Kategori</label><input id="kb-kat" list="kb-kat-list" placeholder="Välj eller skriv egen"><datalist id="kb-kat-list"></datalist></div><div class="fl"><label>Land</label><select id="kb-land"></select></div><div class="fl full"><label>🔗 Länk (URL till faktasida)</label><input id="kb-lank" placeholder="https://www.skatteverket.se/..."></div><div class="fl full"><label>Innehåll</label><textarea id="kb-innehall" rows="6" placeholder="Skriv din notering här..."></textarea></div></div>
 <div style="margin-top:16px;border-top:1px solid var(--cream);padding-top:14px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin:0">📒 Bokföringsexempel (valfritt)</label><button class="btn btn-outline btn-xs" onclick="kbAddRow()">+ Rad</button></div>
@@ -1276,6 +1283,11 @@ function applyPermissions(){
 let contactConnections=[];
 let knowledgeNotes=[];
 let regelnyheter=[];
+let kunskapsartiklar=[];
+async function loadKunskapsartiklar(){
+  try{const r=await sb.from("kunskapsartiklar").select("*").order("uppdaterad",{ascending:false});kunskapsartiklar=r.data||[];}
+  catch(e){kunskapsartiklar=[];}
+}
 async function loadRegelnyheter(){
   try{const r=await sb.from("regelnyheter").select("*").order("publicerad",{ascending:false,nullsFirst:false}).limit(200);regelnyheter=r.data||[];}
   catch(e){regelnyheter=[];}
@@ -1405,7 +1417,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1510,7 +1522,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -1924,7 +1936,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -4495,6 +4507,80 @@ function kbAllCats(){
   return [...new Set([...KB_CATS,...custom])];
 }
 
+function renderArtiklar(){
+  const box=document.getElementById("artiklar-content");if(!box)return;
+  const sok=(document.getElementById("artikel-sok")?.value||"").toLowerCase().trim();
+  const arF=document.getElementById("artikel-ar-f")?.value||"";
+  let list=kunskapsartiklar.filter(a=>{
+    const hay=`${a.rubrik} ${a.innehall||""} ${a.omrade||""} ${a.kallor||""}`.toLowerCase();
+    return (!sok||sok.split(/\s+/).every(o=>hay.includes(o)))&&(!arF||String(a.ar)===arF);
+  });
+  if(!list.length){box.innerHTML=`<div class="empty"><div class="empty-icon">📝</div><p>${kunskapsartiklar.length?TR("kb_ingen_match"):(TR("art_tom")||"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.")}</p></div>`;return;}
+  // Gruppera per år (senaste först)
+  const byAr={};list.forEach(a=>{const k=a.ar||"–";(byAr[k]=byAr[k]||[]).push(a);});
+  const arSort=Object.keys(byAr).sort((a,b)=>String(b).localeCompare(String(a)));
+  box.innerHTML=arSort.map(ar=>`
+    <div class="week-sec" style="margin-bottom:14px">
+      <div class="week-sec-hdr"><h3>${ar==="–"?(TR("art_utan_ar")||"Utan år"):ar}</h3><span style="font-size:12px;color:#888">${byAr[ar].length} ${TR("art_st")||"artiklar"}</span></div>
+      <div style="padding:6px 14px 14px">
+        ${byAr[ar].map(a=>`<div style="border-bottom:1px solid var(--cream);padding:12px 0;cursor:pointer" onclick="openArtikel('${a.id}')">
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px">${e(a.rubrik)}</div>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${a.omrade?`<span class="badge" style="background:var(--accent);color:#fff;font-size:10px">${e(a.omrade)}</span>`:""}<span style="font-size:11px;color:#999">${e(a.forfattare||"")} · ${e((a.uppdaterad||"").slice(0,10))}</span></div>
+              ${a.innehall?`<div style="font-size:13px;color:#555;margin-top:6px;line-height:1.5">${e(a.innehall.slice(0,160))}${a.innehall.length>160?"…":""}</div>`:""}
+            </div>
+          </div>
+        </div>`).join("")}
+      </div>
+    </div>`).join("");
+}
+function openNyArtikel(){
+  document.getElementById("artikel-modal-title").textContent=TR("art_ny")||"Ny artikel";
+  ["art-id","art-rubrik","art-innehall","art-kallor"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("art-omrade").value="Skatt";
+  document.getElementById("art-ar").value=new Date().getFullYear();
+  document.getElementById("art-del-btn").style.display="none";
+  openM("m-artikel");
+}
+function openArtikel(id){
+  const a=kunskapsartiklar.find(x=>x.id===id);if(!a)return;
+  document.getElementById("artikel-modal-title").textContent=TR("art_redigera")||"Redigera artikel";
+  document.getElementById("art-id").value=a.id;
+  document.getElementById("art-rubrik").value=a.rubrik||"";
+  document.getElementById("art-innehall").value=a.innehall||"";
+  document.getElementById("art-kallor").value=a.kallor||"";
+  document.getElementById("art-omrade").value=a.omrade||"Skatt";
+  document.getElementById("art-ar").value=a.ar||new Date().getFullYear();
+  document.getElementById("art-del-btn").style.display=a.user_id===me.id?"":"none";
+  openM("m-artikel");
+}
+async function saveArtikel(){
+  const rubrik=v("art-rubrik");if(!rubrik){toast(TR("art_rubrik_krav")||"Rubrik krävs");return;}
+  const id=v("art-id");
+  const forfattare=(me?.user_metadata?.namn)||me?.email||"Okänd";
+  const data={user_id:me.id,forfattare,rubrik,innehall:document.getElementById("art-innehall")?.value||"",omrade:v("art-omrade")||"Eget",ar:parseInt(v("art-ar"))||null,kallor:document.getElementById("art-kallor")?.value||"",uppdaterad:new Date().toISOString()};
+  const r=id?await sb.from("kunskapsartiklar").update(data).eq("id",id):await sb.from("kunskapsartiklar").insert(data);
+  if(r.error){toast(r.error.message);return;}
+  closeM("m-artikel");await loadKunskapsartiklar();renderKB();toast(TR("art_sparad")||"Artikel sparad ✓");
+}
+async function deleteArtikel(){
+  const id=v("art-id");if(!id)return;
+  confirm2(TR("art_radera_fraga")||"Ta bort artikeln?",async()=>{
+    await sb.from("kunskapsartiklar").delete().eq("id",id);
+    closeM("m-artikel");await loadKunskapsartiklar();renderKB();toast(TR("art_borttagen")||"Artikel borttagen");
+  });
+}
+function artikelFranFeed(lank){
+  const r=regelnyheter.find(x=>x.lank===lank);
+  openNyArtikel();
+  if(r){
+    document.getElementById("art-rubrik").value=r.titel||"";
+    document.getElementById("art-innehall").value=(r.beskrivning||"")+"\n\n";
+    document.getElementById("art-kallor").value=r.lank||"";
+    if(r.omrade)document.getElementById("art-omrade").value=r.omrade;
+  }
+}
 function renderRegelnyheter(){
   const box=document.getElementById("regelnyheter-content");if(!box)return;
   const antalEl=document.getElementById("regelnyheter-antal");
@@ -4509,11 +4595,15 @@ function renderRegelnyheter(){
       <span style="font-size:11px;color:#999;white-space:nowrap">${e((r.publicerad||"").slice(0,10))}</span>
     </div>
     ${r.beskrivning?`<div style="font-size:12px;color:#666;margin-top:4px;line-height:1.5">${e(r.beskrivning.slice(0,220))}${r.beskrivning.length>220?"…":""}</div>`:""}
-    <div style="font-size:11px;color:#aaa;margin-top:3px">${e(r.kalla||"")}</div>
+    <div style="font-size:11px;color:#aaa;margin-top:3px;display:flex;justify-content:space-between;align-items:center"><span>${e(r.kalla||"")}</span><button class="btn btn-outline btn-xs" onclick="artikelFranFeed('${(r.lank||'').replace(/'/g,"\\'")}')">${TR("art_gor")||"→ Gör artikel"}</button></div>
   </div>`).join("");
 }
 function renderKB(){
   renderRegelnyheter();
+  // Fyll årsfilter för artiklar
+  const arF=document.getElementById("artikel-ar-f");
+  if(arF){const cur=arF.value;const ar=[...new Set(kunskapsartiklar.map(a=>a.ar).filter(Boolean))].sort((a,b)=>b-a);arF.innerHTML='<option value="">'+(TR("art_alla_ar")||"Alla år")+'</option>'+ar.map(y=>`<option value="${y}">${y}</option>`).join("");arF.value=cur;}
+  renderArtiklar();
   // fyll filter
   const catF=document.getElementById("kb-cat-f");
   if(catF){const cur=catF.value;catF.innerHTML='<option value="">Alla kategorier</option>'+kbAllCats().map(c=>`<option value="${e(c)}">${e(c)}</option>`).join("");catF.value=cur;}
