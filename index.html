@@ -538,6 +538,7 @@ textarea{resize:vertical;min-height:68px}
           <select id="sig-atgard-f" onchange="renderSignals()"><option value="">Alla åtgärder</option><option value="agera">⚡ Att agera på</option><option value="spara">🔖 Sparade</option><option value="bevaka">👁 Bevakade</option><option value="dolj">🙈 Dolda</option><option value="__none__">Utan åtgärd</option></select>
           <select id="sig-status-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_status">All statuses</option><option value="ny" data-i18n="sig_ny">Ny</option><option value="granskad" data-i18n="sig_granskad">Granskad</option><option value="ignorerad" data-i18n="sig_ignorerad">Ignorerad</option></select>
           <select id="sig-type-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_typer">Alla typer</option></select>
+          <select id="sig-stad-f" onchange="renderSignals()"><option value="">Alla orter</option></select>
           <select id="sig-land-f" onchange="renderSignals()"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:10px">
@@ -545,6 +546,7 @@ textarea{resize:vertical;min-height:68px}
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-formedlare" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_form">🔇 Dölj förmedlare</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-hide-fast" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_dolj_fast">🔒 Hide permanent</span></label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="sig-only-manual" onchange="renderSignals()" style="width:auto"><span data-i18n="flt_bara_mina">✍️ Bara mina manuella</span></label>
+          <button class="btn btn-outline btn-xs" onclick="aterstallSigFilters()" style="margin-left:auto">↺ Återställ filter</button>
         </div>
       </div>
       <div id="sig-tools-panel" style="display:none">
@@ -1928,6 +1930,7 @@ async function loadAll(){
   try{await loadUserLang();}catch(e){}
   try{await loadMyRole();applyPermissions();}catch(e){}
   try{await loadDashHidden();}catch(e){}
+  try{const rf=await sb.from("profiles").select("sig_filter").eq("id",me.id).maybeSingle();if(rf?.data?.sig_filter){window._dbSigFilter=rf.data.sig_filter;try{localStorage.setItem("sigFilters",JSON.stringify(rf.data.sig_filter));}catch{}}}catch(e){}
   try{updateMsgBadge();}catch(e){}
   try{applyStaticI18n();}catch(e){}
   renderCurrent();
@@ -3231,6 +3234,27 @@ function diagDubbletter(){
   alert(out);
   console.log(out);
 }
+const SIG_FILTER_IDS=["sig-search-f","sig-company-f","sig-sort-f","sig-from-f","sig-to-f","sig-stad-f","sig-status-f","sig-type-f","sig-land-f","sig-atgard-f"];
+const SIG_FILTER_CHECKS=["sig-only-behov","sig-hide-formedlare","sig-hide-fast","sig-only-manual"];
+async function saveSigFilters(){
+  const data={};
+  SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.value;});
+  SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el)data[id]=el.checked;});
+  try{localStorage.setItem("sigFilters",JSON.stringify(data));}catch{}
+  try{await sb.from("profiles").update({sig_filter:data}).eq("id",me.id);}catch(e){}
+}
+function applySigFilters(data){
+  if(!data)return;
+  SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&data[id]!=null)el.value=data[id];});
+  SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el&&data[id]!=null)el.checked=data[id];});
+}
+async function aterstallSigFilters(){
+  SIG_FILTER_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  SIG_FILTER_CHECKS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  try{localStorage.removeItem("sigFilters");}catch{}
+  try{await sb.from("profiles").update({sig_filter:null}).eq("id",me.id);}catch(e){}
+  renderSignals();toast("Filter återställda");
+}
 function toggleSigFilter(){const p=document.getElementById("sig-filter-panel");if(p)p.style.display=p.style.display==="none"?"block":"none";}
 let sigMarkLage=false;
 let sigValda=new Set();
@@ -3300,7 +3324,7 @@ function renderProcesser(){
   }).join("")}</div>`;
 }
 function renderSignals(){
-  if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=JSON.parse(localStorage.getItem("sigFilters")||"{}");const f=document.getElementById("sig-hide-formedlare");if(f&&sf.hideFormedlare)f.checked=true;const fa=document.getElementById("sig-hide-fast");if(fa&&sf.hideFast)fa.checked=true;const om=document.getElementById("sig-only-manual");if(om&&sf.onlyManual)om.checked=true;const so=document.getElementById("sig-sort-f");if(so&&sf.sortBy)so.value=sf.sortBy;}catch{}}
+  if(!window._sigFiltersRestored){window._sigFiltersRestored=true;try{const sf=window._dbSigFilter||JSON.parse(localStorage.getItem("sigFilters")||"null");if(sf)applySigFilters(sf);}catch{}}else{if(window._sigSaveT)clearTimeout(window._sigSaveT);window._sigSaveT=setTimeout(saveSigFilters,800);}
   document.getElementById("sig-sources").innerHTML=`
     <div style="grid-column:1/-1;font-size:11px;color:#3a9">✓ 11 datakällor (v2)</div>
     <div class="sig-src">
@@ -3367,6 +3391,14 @@ function renderSignals(){
     scf.innerHTML='<option value="">Alla bolag</option>'+uniqueCompanies.map(([id,namn])=>`<option value="${id}">${e(namn)}</option>`).join("");
     scf.value=cur;
   }
+  // Populate city filter (orter från bolag som har signaler)
+  const stf=document.getElementById("sig-stad-f");
+  if(stf){
+    const cur=stf.value;
+    const stader=[...new Set(signals.map(s=>{const co=companies.find(c=>c.id===s.company_id);return co?.stad;}).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"sv"));
+    stf.innerHTML='<option value="">Alla orter</option>'+stader.map(st=>`<option value="${e(st)}">${e(st)}</option>`).join("");
+    stf.value=cur;
+  }
   const status=v("sig-status-f"),type=v("sig-type-f"),land=v("sig-land-f"),
         coFilter=v("sig-company-f"),q=(v("sig-search-f")||"").toLowerCase();
   const hideFormedlare=document.getElementById("sig-hide-formedlare")?.checked||false;
@@ -3383,6 +3415,8 @@ function renderSignals(){
     // Bolag markerade "inte aktuella" döljs
     const sco=companies.find(c=>c.id===s.company_id);
     if(sco&&sco.inte_aktuell)return false;
+    const stadF=document.getElementById("sig-stad-f")?.value;
+    if(stadF&&sco?.stad!==stadF)return false;
     const fromD=document.getElementById("sig-from-f")?.value;
     const toD=document.getElementById("sig-to-f")?.value;
     if(fromD&&(s.signal_datum||"")<fromD)return false;
@@ -3527,7 +3561,7 @@ function renderSignals(){
     </div>`;
   }).join("");
 
-  const markRad=sigMarkLage?`<div id="sig-mark-rad" style="position:sticky;top:0;z-index:10;background:var(--accent);color:#fff;padding:10px 14px;border-radius:var(--r);margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong><span id="sig-mark-antal">${sigValda.size}</span> valda</strong><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massGranska()">✓ Granska</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massDolj()">🙈 Dölj</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massTaBortBolag()">🗑 Bolag inte aktuellt</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff;margin-left:auto" onclick="toggleMarkLage()">Avbryt</button></div>`:"";
+  const markRad=sigMarkLage?`<div id="sig-mark-rad" style="background:var(--accent);color:#fff;padding:10px 14px;border-radius:var(--r);margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong><span id="sig-mark-antal">${sigValda.size}</span> valda</strong><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massGranska()">✓ Granska</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massDolj()">🙈 Dölj</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff" onclick="massTaBortBolag()">🗑 Bolag inte aktuellt</button><button class="btn btn-xs" style="background:rgba(255,255,255,.2);color:#fff;margin-left:auto" onclick="toggleMarkLage()">Avbryt</button></div>`:"";
   document.getElementById("signals-content").innerHTML=markRad+fastBanner+(grpArr.length?`<div style="max-width:900px">${accordionHtml}</div>`:'<div class="empty"><div class="empty-icon">⚡</div><p>No current signals (last 5 days)</p></div>')+(bolagMedGamlaBara.length?`<div style="max-width:900px;margin-top:14px"><button class="btn btn-outline btn-sm" onclick="window._visaGamlaBolag=${!visaAllaBolag};renderSignals()">${visaAllaBolag?"Hide":"Show"} ${bolagMedGamlaBara.length} companies with only older signals (>5 days)</button></div>`:"");
 }
 const ATGARD_LABEL={agera:"⚡ Agera",spara:"🔖 Sparad",dolj:"🙈 Dold",bevaka:"👁 Bevakas"};
