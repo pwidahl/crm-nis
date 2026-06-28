@@ -3513,6 +3513,19 @@ function sigHittaKontakt(id,companyId){
     setTimeout(()=>{const sf=document.getElementById("contact-search");if(sf){const co=companies.find(c=>c.id===companyId);if(co){sf.value=co.namn;if(typeof renderContacts==="function")renderContacts();}}},100);
   }else{toast("Inget bolag kopplat till signalen");}
 }
+async function avbrytProcess(companyId){
+  const co=companies.find(c=>c.id===companyId);if(!co)return;
+  confirm2("Avbryta prospekt-processen? Tilldelning och checklista nollställs.",async()=>{
+    co.process_startad=null;co.tilldelad_user_id=null;co.tilldelad_namn=null;
+    await sb.from("companies").update({process_startad:null,tilldelad_user_id:null,tilldelad_namn:null}).eq("id",companyId);
+    await sb.from("process_checklista").delete().eq("company_id",companyId);
+    processChecklista=processChecklista.filter(p=>p.company_id!==companyId);
+    loggaBolag(companyId,"Avbröt process (prospekt)");
+    toast("Process avbruten");
+    if(typeof renderProcesser==="function")renderProcesser();
+    if(document.getElementById("m-company-card")?.classList.contains("open"))openCompanyCard(companyId);
+  });
+}
 async function startaProcess(companyId){
   const co=companies.find(c=>c.id===companyId);if(!co)return;
   const nu=new Date().toISOString();
@@ -3540,8 +3553,9 @@ async function toggleProcessPunkt(id){
 function processChecklistaHtml(companyId){
   const punkter=processChecklista.filter(p=>p.company_id===companyId).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
   if(!punkter.length)return "";
+  const co=companies.find(c=>c.id===companyId);
   const klara=punkter.filter(p=>p.klar).length;
-  return `<div style="margin-top:14px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Process · ${klara}/${punkter.length}</div>
+  return `<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Process · ${klara}/${punkter.length}</div><div style="font-size:12px;color:#888">Tilldelad: <strong>${e(co?.tilldelad_namn||"–")}</strong> <button class="btn btn-outline btn-xs" style="margin-left:6px;color:var(--red)" onclick="avbrytProcess('${companyId}')">Avbryt</button></div></div>
     ${punkter.map(p=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:14px"><input type="checkbox" ${p.klar?"checked":""} onchange="toggleProcessPunkt('${p.id}')" style="width:auto"><span style="${p.klar?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span></label>`).join("")}
   </div>`;
 }
