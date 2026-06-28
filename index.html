@@ -1091,6 +1091,63 @@ let checklista=[],checklistaBockar=[];
 let liKategorier=[];
 let processChecklista=[];
 let bolagLogg=[];
+let leadChecklista=[];
+const LEAD_MALL=["Hitta rätt kontakt på bolaget","Koppla upp på LinkedIn / mejla","Ringa","Boka lunch","Aktivt samarbete"];
+async function loadLeadChecklista(){
+  try{const r=await sb.from("lead_checklista").select("*").order("ordning");leadChecklista=r.data||[];}
+  catch(e){leadChecklista=[];}
+}
+async function startaLeadProcess(sigId){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  const namn=(me?.user_metadata?.namn)||me?.email||"Okänd";
+  const nu=new Date().toISOString();
+  s.tilldelad_user_id=me.id;s.tilldelad_namn=namn;s.process_startad=nu;
+  await sb.from("company_signals").update({tilldelad_user_id:me.id,tilldelad_namn:namn,process_startad:nu}).eq("id",sigId);
+  if(!leadChecklista.some(p=>p.signal_id===sigId)){
+    const rows=LEAD_MALL.map((text,i)=>({signal_id:sigId,user_id:me.id,text,klar:false,ordning:i}));
+    const r=await sb.from("lead_checklista").insert(rows).select();
+    if(r.data)leadChecklista.push(...r.data);
+  }
+  if(s.company_id)loggaBolag(s.company_id,`Startade process på lead: ${s.rubrik||""}`.slice(0,120));
+  toast("Process startad ✓");
+  openLead(sigId);
+}
+async function taOverLead(sigId){
+  const s=signals.find(x=>x.id===sigId);if(!s)return;
+  confirm2(`Ta över leadet från ${s.tilldelad_namn||"nuvarande ägare"}?`,async()=>{
+    const namn=(me?.user_metadata?.namn)||me?.email||"Okänd";
+    s.tilldelad_user_id=me.id;s.tilldelad_namn=namn;
+    await sb.from("company_signals").update({tilldelad_user_id:me.id,tilldelad_namn:namn}).eq("id",sigId);
+    if(s.company_id)loggaBolag(s.company_id,`Tog över lead: ${s.rubrik||""}`.slice(0,120));
+    toast("Du äger nu leadet");openLead(sigId);
+  });
+}
+async function toggleLeadPunkt(id){
+  const p=leadChecklista.find(x=>x.id===id);if(!p)return;
+  p.klar=!p.klar;
+  await sb.from("lead_checklista").update({klar:p.klar}).eq("id",id);
+  const s=signals.find(x=>x.id===p.signal_id);
+  if(p.klar&&s?.company_id)loggaBolag(s.company_id,`Klarade: ${p.text}`);
+  openLead(p.signal_id);
+}
+function leadProcessHtml(s){
+  const minLead=s.tilldelad_user_id===me.id;
+  if(!s.process_startad){
+    return `<div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--cream);border-radius:var(--r);padding:14px;text-align:center">
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Ingen process startad på detta lead än.</p>
+      <button class="btn btn-primary btn-sm" onclick="startaLeadProcess('${s.id}')">▶ Starta process</button>
+    </div>`;
+  }
+  const punkter=leadChecklista.filter(p=>p.signal_id===s.id).sort((a,b)=>(a.ordning||0)-(b.ordning||0));
+  const klara=punkter.filter(p=>p.klar).length;
+  return `<div style="grid-column:1/-1;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">Process · ${klara}/${punkter.length}</div>
+      <div style="font-size:12px;color:#888">Tilldelad: <strong>${e(s.tilldelad_namn||"–")}</strong>${!minLead?` <button class="btn btn-outline btn-xs" style="margin-left:6px" onclick="taOverLead('${s.id}')">Ta över</button>`:""}</div>
+    </div>
+    ${punkter.map(p=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:14px"><input type="checkbox" ${p.klar?"checked":""} onchange="toggleLeadPunkt('${p.id}')" style="width:auto"><span style="${p.klar?"text-decoration:line-through;color:#aaa":""}">${e(p.text)}</span></label>`).join("")}
+  </div>`;
+}
 async function loadBolagLogg(){
   try{const r=await sb.from("bolag_logg").select("*").order("datum",{ascending:false}).limit(2000);bolagLogg=r.data||[];}
   catch(e){bolagLogg=[];}
@@ -1839,7 +1896,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -7552,23 +7609,14 @@ function openLead(sigId){
         </div>
       </div>
 
-      <!-- PIPELINE & NÄSTA STEG -->
-      <div style="grid-column:1/-1;background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">${TR("ld_pipeline")}</div><div style="font-size:11px;color:#888">Ägare: <strong>${e(userName(s.user_id))}</strong>${s.senast_agerad_av?` · senast: ${e(userName(s.senast_agerad_av))} ${s.senast_agerad_datum?"("+e((s.senast_agerad_datum||"").slice(0,10))+")":""}`:""}</div></div>        <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
-          ${LEAD_PIPELINE.map(st=>{const active=(s.pipeline_steg||"Signal")===st;return`<button class="btn btn-xs ${active?'btn-primary':'btn-outline'}" onclick="setLeadSteg('${s.id}','${st}')">${LEAD_PIPE_LABEL[st]}</button>`;}).join("")}
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:2;min-width:160px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${TR("ld_nasta_steg")}</label><input id="lead-nasta" value="${e(s.nasta_steg||"")}" placeholder="t.ex. Ring ekonomichefen" style="width:100%"></div>
-          <div style="flex:1;min-width:110px"><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Datum</label><input id="lead-nasta-datum" type="date" value="${e(s.nasta_steg_datum||"")}" style="width:100%"></div>
-          <button class="btn btn-primary btn-sm" onclick="saveLeadNasta('${s.id}')" data-i18n="btn_spara">Spara</button>
-        </div>
-      </div>
+      <!-- LEAD-PROCESS & TILLDELNING -->
+      ${leadProcessHtml(s)}
 
-      <!-- UNDERKONSULT-MATCHNING (tvärs användare) -->
-      <details style="grid-column:1/-1;background:var(--paper);border-radius:var(--r);border:1px solid var(--cream);padding:0">
-        <summary style="padding:11px 13px;cursor:pointer;font-size:13px;font-weight:600;color:#555">⚙️ Underkonsult-matchning</summary>
-        <div id="lead-sub-match" style="padding:0 13px 13px"></div>
-      </details>
+      <!-- PASSANDE KONSULT (minst 5 kompetenser) -->
+      <div style="grid-column:1/-1;background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Passande konsult (minst 5 kompetenser)</div>
+        <div id="lead-sub-match"></div>
+      </div>
 
       <!-- BOLAG -->
       <div style="grid-column:1/-1">
@@ -7711,21 +7759,21 @@ function openLead(sigId){
 }
 async function loadLeadSubMatches(s){
   const box=document.getElementById("lead-sub-match");if(!box)return;
-  // Sökord: använd efterfrågad roll eller nyckelord ur rubriken
-  const sok=(s.efterfragar||s.rubrik||"").trim();
-  if(!sok){box.innerHTML="";return;}
-  // Plocka ut troliga rollord ur texten för bättre träff
-  const roller=["controller","cfo","ekonomichef","redovisning","redovisningschef","business controller","koncernredovisning","interim","ekonom"];
-  const lc=sok.toLowerCase();
-  const term=roller.find(r=>lc.includes(r))||sok.split(/\s+/)[0];
-  try{
-    const r=await sb.rpc("lead_sub_matches",{sokord:term});
-    if(r.error||!r.data||!r.data.length){box.innerHTML="";return;}
-    box.innerHTML=`<div style="background:#fff;border-radius:var(--r);padding:13px;border:1px solid var(--cream);border-left:4px solid var(--gold)">
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⭐ Underkonsulter som kan matcha (sökord: "${e(term)}")</div>
-      ${r.data.map(m=>`<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--cream)"><strong>${e(m.agare)}</strong> har ${m.antal} konsult${m.antal>1?"er":""} – <span style="color:#666">${e(m.kompetenser||"")}</span>${m.agare!=="Du"?` · <span style="color:var(--accent)">be om intro</span>`:""}</div>`).join("")}
+  // Matcha alla underkonsulter mot leadets text via matchScore – kräv minst 5 gemensamma kompetenser
+  const MINST=5;
+  const matchade=(subs||[]).map(sub=>{
+    const m=matchScore(sub.id,s);
+    return {sub,count:m.count,traffar:m.traffar||m.matched||[]};
+  }).filter(x=>x.count>=MINST).sort((a,b)=>b.count-a.count);
+  if(!matchade.length){box.innerHTML=`<p style="font-size:13px;color:#aaa">Ingen underkonsult matchar minst ${MINST} kompetenser.</p>`;return;}
+  box.innerHTML=matchade.map(({sub,count,traffar})=>{
+    const namn=`${sub.fornamn||""} ${sub.efternamn||""}`.trim();
+    const traffLista=Array.isArray(traffar)?traffar.slice(0,8):[];
+    return `<div style="font-size:13px;padding:7px 0;border-bottom:1px solid var(--cream);display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <div><strong style="cursor:pointer;color:var(--accent)" onclick="openSubCard('${sub.id}')">${e(namn)} ↗</strong>${traffLista.length?`<div style="color:#888;font-size:11px;margin-top:2px">${traffLista.map(t=>e(t)).join(", ")}</div>`:""}</div>
+      <span class="badge" style="background:var(--gold);color:#fff;white-space:nowrap">${count} match</span>
     </div>`;
-  }catch{box.innerHTML="";}
+  }).join("");
 }
 
 async function sigStatusThenNext(sigId,status){
