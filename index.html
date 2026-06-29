@@ -509,6 +509,8 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
     <div class="view" id="view-companies">
       <div class="toolbar" style="flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" id="co-tab-alla" onclick="window._coVisaProspekt=false;renderCompanies()" data-i18n="co_alla">Alla</button>
+        <button class="btn btn-outline btn-sm" id="co-tab-prospekt" onclick="window._coVisaProspekt=true;renderCompanies()" data-i18n="co_prospekt">⭐ Prospekt</button>
         <input id="co-filter" data-i18n-ph="co_filter" placeholder="Filtrera bolag..." oninput="renderCompanies()" style="flex:1;min-width:160px;max-width:240px">
         <select id="co-pipe-filter" onchange="renderCompanies()" style="width:150px;flex:0 0 auto"><option value="" data-i18n="co_alla_steg">Alla steg</option></select>
         <select id="co-land-filter" onchange="renderCompanies()" style="width:140px;flex:0 0 auto"><option value="" data-i18n="sig_alla_lander">Alla länder</option><option>Sverige</option><option>Norge</option><option>Danmark</option><option>Finland</option></select>
@@ -1493,7 +1495,7 @@ const I18N={
     fs_ny:"🔵 Ny kontakt",fs_aktiv:"🟢 Aktiv relation",fs_varm:"🟠 Varm – möte bokat",fs_kund:"⭐ Kund",fs_intro:"🤝 Introduktör",fs_kollega:"👥 Kollega / nätverk",fs_tidigare:"📁 Tidigare kund",fs_vilande:"💤 Vilande",fs_prospekt:"📋 Prospekt",fs_inaktiv:"⛔ Inaktiv",
     cc_oversikt:"Översikt",cc_relpoang:"Relationspoäng",cc_logg:"Logg",cc_anteckningar:"Anteckningar",cc_kanner:"Känner",cc_relkedja:"Relationskedja",cc_telefon:"Telefon",cc_hemsida:"Bolagets hemsida",cc_senaste:"Senaste kontakt",cc_nasta:"Nästa uppföljning",cc_introducerad:"Introducerad av",
     sig_sok:"Sök signaler...",sig_alla_bolag:"Alla bolag",sig_alla_status:"Alla statusar",sig_ny:"Ny",sig_granskad:"Granskad",sig_ignorerad:"Ignorerad",sig_alla_typer:"Alla typer",sig_alla_lander:"Alla länder",sig_sort_kand:"👤 Känd kontakt först",sig_sort_senast:"🆕 Senast inkomna",sig_sort_pub:"📅 Publiceringsdatum",sig_sort_stark:"★ Starkast först",sig_sort_ai:"📊 AI-score först",sig_sort_az:"🔤 Bolag A–Ö",sig_lead_discovery:"Lead Discovery",
-    co_filter:"Filtrera bolag...",co_alla_steg:"Alla steg",co_direktkunder:"Direktkunder",co_mellanhander:"Mellanhänder",
+    co_filter:"Filtrera bolag...",co_alla:"Alla",co_prospekt:"⭐ Prospekt",co_alla_steg:"Alla steg",co_direktkunder:"Direktkunder",co_mellanhander:"Mellanhänder",
     sub_filter:"Filtrera eller sök kompetens...",sub_alla:"Alla",sub_tillganglig:"Tillgänglig",sub_i_uppdrag:"I uppdrag",sub_ej_tillganglig:"Ej tillgänglig",
     pr_filter:"Filtrera tasks...",land_sverige:"Sverige",land_norge:"Norge",land_danmark:"Danmark",land_finland:"Finland",
     l_namn:"Namn *",l_orgnr:"Org.nr",l_bransch:"Bransch",l_stad:"Stad",l_land:"Land",l_hemsida:"Hemsida",l_pipeline:"Pipeline",l_moderbolag:"Moderbolag (koncern)",l_anteckningar:"Anteckningar",
@@ -1598,7 +1600,7 @@ const I18N={
     fs_ny:"🔵 New contact",fs_aktiv:"🟢 Active relationship",fs_varm:"🟠 Warm – meeting booked",fs_kund:"⭐ Client",fs_intro:"🤝 Introducer",fs_kollega:"👥 Colleague / network",fs_tidigare:"📁 Former client",fs_vilande:"💤 Dormant",fs_prospekt:"📋 Prospect",fs_inaktiv:"⛔ Inactive",
     cc_oversikt:"Overview",cc_relpoang:"Relationship score",cc_logg:"Log",cc_anteckningar:"Notes",cc_kanner:"Knows",cc_relkedja:"Relationship chain",cc_telefon:"Phone",cc_hemsida:"Company website",cc_senaste:"Last contact",cc_nasta:"Next follow-up",cc_introducerad:"Introduced by",
     sig_sok:"Search signals...",sig_alla_bolag:"All companies",sig_alla_status:"All statuses",sig_ny:"New",sig_granskad:"Reviewed",sig_ignorerad:"Ignored",sig_alla_typer:"All types",sig_alla_lander:"All countries",sig_sort_kand:"👤 Known contact first",sig_sort_senast:"🆕 Most recent",sig_sort_pub:"📅 Publication date",sig_sort_stark:"★ Strongest first",sig_sort_ai:"📊 AI score first",sig_sort_az:"🔤 Company A–Z",sig_lead_discovery:"Lead Discovery",
-    co_filter:"Filter companies...",co_alla_steg:"All stages",co_direktkunder:"Direct clients",co_mellanhander:"Intermediaries",
+    co_filter:"Filter companies...",co_alla:"All",co_prospekt:"⭐ Prospects",co_alla_steg:"All stages",co_direktkunder:"Direct clients",co_mellanhander:"Intermediaries",
     sub_filter:"Filter or search skills...",sub_alla:"All",sub_tillganglig:"Available",sub_i_uppdrag:"On assignment",sub_ej_tillganglig:"Unavailable",
     pr_filter:"Filter tasks...",land_sverige:"Sweden",land_norge:"Norway",land_danmark:"Denmark",land_finland:"Finland",
     l_namn:"Name *",l_orgnr:"Reg. no.",l_bransch:"Industry",l_stad:"City",l_land:"Country",l_hemsida:"Website",l_pipeline:"Pipeline",l_moderbolag:"Parent company (group)",l_anteckningar:"Notes",
@@ -3199,6 +3201,9 @@ function loadVpTasks(){}
 
 // COMPANIES
 function renderCompanies(){
+  // Markera aktiv flik (Alla/Prospekt)
+  const ta=document.getElementById("co-tab-alla"),tp=document.getElementById("co-tab-prospekt");
+  if(ta&&tp){const p=!!window._coVisaProspekt;ta.className="btn btn-"+(p?"outline":"primary")+" btn-sm";tp.className="btn btn-"+(p?"primary":"outline")+" btn-sm";}
   if(focusMode==="company"&&focusCompanyId){
     // Only show the one focused company
     const list2=[companies.find(x=>x.id===focusCompanyId)].filter(Boolean);
@@ -3206,7 +3211,7 @@ function renderCompanies(){
     return;
   }
   const q=(v("co-filter")||"").toLowerCase();const pipe=v("co-pipe-filter");const land=v("co-land-filter");const typ=v("co-typ-filter");const listed=document.getElementById("co-listed-filter")?.checked||false;
-  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return c.process_startad&&(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad)&&(!typ||(typ==="formedlare"?c.ar_formedlare:!c.ar_formedlare));});
+  const list=companies.filter(c=>{const hay=[c.namn,c.orgnr,c.bransch,c.stad,c.land].join(" ").toLowerCase();return (!window._coVisaProspekt||c.process_startad)&&(!q||hay.includes(q))&&(!pipe||c.pipeline_status===pipe)&&(!land||c.land===land)&&(!listed||c.borsnoterad)&&(!typ||(typ==="formedlare"?c.ar_formedlare:!c.ar_formedlare));});
   const headClass=p=>p==="Vunnet"?"ph-vunnet":p==="Kund"?"ph-kund":p==="Forlorat"?"ph-forlorat":"";
   const moving=movePipeId?companies.find(c=>c.id===movePipeId):null;
   const hint=moving?`<div class="move-hint">↔ Flyttar <strong style="margin:0 4px">${e(moving.namn)}</strong> – tryck på ett steg nedan. <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="cancelMovePipe()">Avbryt</span></div>`:"";
@@ -4847,9 +4852,9 @@ function renderKB(){
   renderArtiklar();
   // fyll filter
   const catF=document.getElementById("kb-cat-f");
-  if(catF){const cur=catF.value;catF.innerHTML='<option value="">Alla kategorier</option>'+kbAllCats().map(c=>`<option value="${e(c)}">${e(c)}</option>`).join("");catF.value=cur;}
+  if(catF){const cur=catF.value;catF.innerHTML='<option value="">'+TR("kb_alla_kat")+'</option>'+kbAllCats().map(c=>`<option value="${e(c)}">${e(c)}</option>`).join("");catF.value=cur;}
   const landF=document.getElementById("kb-land-f");
-  if(landF&&landF.children.length<=1){landF.innerHTML='<option value="">Alla länder</option>'+KB_LANDS.map(l=>`<option value="${e(l)}">${e(l)}</option>`).join("");}
+  if(landF&&landF.children.length<=1){landF.innerHTML='<option value="">'+TR("kb_alla_land")+'</option>'+KB_LANDS.map(l=>`<option value="${e(l)}">${e(l)}</option>`).join("");}
 
   const q=(v("kb-search")||"").toLowerCase().trim();
   const words=q?q.split(/\s+/).filter(Boolean):[];
