@@ -3215,7 +3215,38 @@ function renderCompanies(){
   const headClass=p=>p==="Vunnet"?"ph-vunnet":p==="Kund"?"ph-kund":p==="Forlorat"?"ph-forlorat":"";
   const moving=movePipeId?companies.find(c=>c.id===movePipeId):null;
   const hint=moving?`<div class="move-hint">↔ Flyttar <strong style="margin:0 4px">${e(moving.namn)}</strong> – tryck på ett steg nedan. <span style="cursor:pointer;text-decoration:underline;margin-left:6px" onclick="cancelMovePipe()">Avbryt</span></div>`:"";
-  document.getElementById("companies-content").innerHTML=hint+`<div class="pipe">${PIPELINE.map(p=>{const arr=list.filter(c=>c.pipeline_status===p);const LIMIT=25;const shown=arr.slice(0,LIMIT);const rest=arr.length-LIMIT;return`<div class="pipe-col ${moving?"move-target":""}" ${moving?`onclick="dropMovePipe('${p}')"`:""}><div class="pipe-head ${headClass(p)}">${pipeLabel(p)}<span style="background:rgba(255,255,255,.18);padding:1px 6px;border-radius:20px;font-size:11px">${arr.length}</span></div>${shown.map(c=>{const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;const fl=FLAG[c.land]||"🌍";const inConcern=c.parent_company_id||companies.some(x=>x.parent_company_id===c.id);const meta=[];if(c.ai_score!=null&&c.ai_score!=="")meta.push(`AI ${c.ai_score}`);if(sig>0)meta.push(`<span style="color:var(--red);font-weight:600">${sig} nya</span>`);return`<div class="pipe-card ${movePipeId===c.id?"move-selected":""}"><div onclick="openCompanyCard('${c.id}')" style="cursor:pointer"><div class="pipe-title">${fl} ${e(c.namn)}${c.borsnoterad?'<span style="font-size:10px;color:var(--gold);margin-left:3px">★</span>':""}${c.ar_formedlare?'<span title="Förmedlare/mellanhand" style="font-size:10px;margin-left:3px">🤝</span>':""}${inConcern?'<span title="Del av koncern" style="font-size:10px;margin-left:3px">🏢</span>':""}</div>${meta.length?`<div class="pipe-meta">${meta.join(" · ")}</div>`:""}</div><div class="pc-actions"><button class="btn-icon" title="Flytta steg" onclick="event.stopPropagation();startMovePipe('${c.id}')" style="font-size:11px;flex:1">↔ Flytta</button><button class="btn-icon" title="Redigera" onclick="event.stopPropagation();openEditCompany('${c.id}')" style="font-size:11px;flex:1">✎</button><button class="btn-icon" title="Radera" onclick="event.stopPropagation();confirmDeleteCompany('${c.id}')" style="font-size:11px;flex:1;color:var(--red)">🗑</button></div></div>`;}).join("")}${rest>0?`<div style="padding:8px;text-align:center;font-size:12px;color:#888">+${rest} till – använd filtret för att hitta specifika bolag</div>`:""}</div>`;}).join("")}</div>`;
+  document.getElementById("companies-content").innerHTML=hint+(()=>{
+    // Listvy sorterbar per status m.m.
+    const sortV=window._coSort||"status";
+    const statusOrd={};PIPELINE.forEach((p,idx)=>statusOrd[p]=idx);
+    let rows=[...list];
+    if(sortV==="status")rows.sort((a,b)=>(statusOrd[a.pipeline_status]??99)-(statusOrd[b.pipeline_status]??99)||String(a.namn).localeCompare(String(b.namn),"sv"));
+    else if(sortV==="namn")rows.sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv"));
+    else if(sortV==="ai")rows.sort((a,b)=>(b.ai_score??-1)-(a.ai_score??-1));
+    else if(sortV==="signaler")rows.sort((a,b)=>signals.filter(s=>s.company_id===b.id&&s.status==="ny").length-signals.filter(s=>s.company_id===a.id&&s.status==="ny").length);
+    const sortBtn=(v,lbl)=>`<button class="btn btn-${sortV===v?"primary":"outline"} btn-xs" onclick="window._coSort='${v}';renderCompanies()">${lbl}</button>`;
+    const sortRad=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center"><span style="font-size:12px;color:#888">Sortera:</span>${sortBtn("status","Status")}${sortBtn("namn","Namn A–Ö")}${sortBtn("ai","AI-score")}${sortBtn("signaler","Nya signaler")}</div>`;
+    if(!rows.length)return sortRad+'<div class="empty"><div class="empty-icon">🏢</div><p>Inga bolag matchar.</p></div>';
+    const rad=c=>{
+      const sig=signals.filter(s=>s.company_id===c.id&&s.status==="ny").length;
+      const fl=FLAG[c.land]||"🌍";
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--cream);cursor:pointer" onclick="openCompanyCard('${c.id}')">
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">${fl} ${e(c.namn)}${c.process_startad?' <span style=\'font-size:11px;color:var(--gold)\'>⭐</span>':''}${c.borsnoterad?' <span style=\'font-size:10px;color:var(--gold)\'>★</span>':''}</div><div style="font-size:12px;color:#888">${e(c.stad||"")}${c.bransch?" · "+e(c.bransch):""}</div></div>
+        <span class="badge" style="font-size:11px;white-space:nowrap">${pipeLabel(c.pipeline_status||"")}</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap;width:54px;text-align:right">AI ${c.ai_score??"--"}</span>
+        <span style="font-size:12px;white-space:nowrap;width:64px;text-align:right">${sig>0?`<span style=\'color:var(--red);font-weight:600\'>${sig} nya</span>`:"0 nya"}</span>
+      </div>`;
+    };
+    if(sortV==="status"){
+      // gruppera per status med rubrik
+      let html=sortRad;
+      PIPELINE.forEach(p=>{const arr=rows.filter(c=>(c.pipeline_status||"")===p);if(!arr.length)return;html+=`<div class="week-sec" style="margin-bottom:10px"><div class="week-sec-hdr"><h3>${pipeLabel(p)}</h3><span style="font-size:12px;color:#888">${arr.length}</span></div><div>${arr.map(rad).join("")}</div></div>`;});
+      const utan=rows.filter(c=>!c.pipeline_status||!PIPELINE.includes(c.pipeline_status));
+      if(utan.length)html+=`<div class="week-sec" style="margin-bottom:10px"><div class="week-sec-hdr"><h3>Utan status</h3><span style="font-size:12px;color:#888">${utan.length}</span></div><div>${utan.map(rad).join("")}</div></div>`;
+      return html;
+    }
+    return sortRad+`<div class="week-sec"><div>${rows.map(rad).join("")}</div></div>`;
+  })();
 }
 
 let movePipeId=null;
