@@ -134,27 +134,39 @@ async function discoverNorwayForUser(supabase, userId) {
 }
 
 async function fetchNyregistrerade() {
-  // Hämta bolag registrerade senaste 30 dagarna, med mer än 5 anställda
-  const fraDate = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-  const url = `${BRREG_API}/enheter?registrertDatoFra=${fraDate}&antallAnsatteStørreEnn=4&size=50&sort=registreringsdatoEnhetsregisteret,desc`;
-
+  // Hämta bolag registrerade senaste 90 dagarna. Använd encodeURIComponent för specialtecken.
+  const fraDate = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
+  // Brønnøysund: parametern heter 'fraRegistreringsdatoEnhetsregisteret'
+  const params = new URLSearchParams();
+  params.set('fraRegistreringsdatoEnhetsregisteret', fraDate);
+  params.set('size', '100');
+  params.set('sort', 'registreringsdatoEnhetsregisteret,desc');
+  const url = `${BRREG_API}/enheter?${params.toString()}`;
   const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
   if (!r.ok) return [];
-
   const data = await r.json();
-  return (data._embedded?.enheter || []).map(mapNorwegianCompany);
+  const enheter = data._embedded?.enheter || [];
+  // Filtrera i koden i stället för i API:t (robustare): minst 3 anställda ELLER relevant bransch
+  return enheter
+    .filter(e => (e.antallAnsatte || 0) >= 3 || RELEVANTA_NACE.some(n => (e.naeringskode1?.kode || '').startsWith(n)))
+    .map(mapNorwegianCompany);
 }
 
 async function fetchEndringer() {
-  // Hämta bolag med endringer siste 7 dager, relevante bransjer
-  const fraDate = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-  const url = `${BRREG_API}/enheter?sistEndretFra=${fraDate}&antallAnsatteStørreEnn=9&size=50&sort=sistEndret,desc`;
-
+  // Hämta bolag med endringer siste 14 dager
+  const fraDate = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+  const params = new URLSearchParams();
+  params.set('fraSistEndret', fraDate);
+  params.set('size', '100');
+  params.set('sort', 'sistEndret,desc');
+  const url = `${BRREG_API}/enheter?${params.toString()}`;
   const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
   if (!r.ok) return [];
-
   const data = await r.json();
-  return (data._embedded?.enheter || []).map(mapNorwegianCompany);
+  const enheter = data._embedded?.enheter || [];
+  return enheter
+    .filter(e => (e.antallAnsatte || 0) >= 5 && RELEVANTA_NACE.some(n => (e.naeringskode1?.kode || '').startsWith(n)))
+    .map(mapNorwegianCompany);
 }
 
 function mapNorwegianCompany(e) {
