@@ -35,6 +35,21 @@ const RELEVANTA_ORD = [
   'penningtvätt','gdpr','ekonomi','finans','löne','pension','tjänstepension'
 ];
 
+function normaliseraLank(l) {
+  let s = String(l || '').trim();
+  // Ta bort spårningsparametrar (utm_*, fbclid m.fl.)
+  try {
+    const u = new URL(s);
+    const rensa = [];
+    u.searchParams.forEach((_, k) => { if (/^utm_|^fbclid$|^gclid$/i.test(k)) rensa.push(k); });
+    rensa.forEach(k => u.searchParams.delete(k));
+    s = u.toString();
+  } catch (e) { /* ignorera ogiltiga URL:er */ }
+  // Ta bort avslutande slash
+  s = s.replace(/\/+$/, '');
+  return s;
+}
+
 function rensaTaggar(s) {
   return String(s || '').replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -83,8 +98,17 @@ async function hamtaKalla(supabase, kalla) {
       if (!arRelevant(`${titel} ${beskrivning}`)) continue;
       let publicerad = null;
       if (datumRaw) { const d = new Date(datumRaw); if (!isNaN(d)) publicerad = d.toISOString(); }
+      // Normalisera länken (ta bort trailing slash och spårningsparametrar) för stabil dedup
+      const normLank = normaliseraLank(lank);
+      // Kolla om nyheten redan finns (på normaliserad länk) – undvik dubbletter
+      const { data: finns } = await supabase.from('regelnyheter')
+        .select('id')
+        .eq('lank', normLank)
+        .limit(1)
+        .maybeSingle();
+      if (finns) continue;
       const { error } = await supabase.from('regelnyheter').insert({
-        titel, beskrivning, lank, kalla: kalla.namn, omrade: kalla.omrade, publicerad
+        titel, beskrivning, lank: normLank, kalla: kalla.namn, omrade: kalla.omrade, publicerad
       });
       if (!error) nya++;
       // unik lank -> dubbletter ignoreras tyst
