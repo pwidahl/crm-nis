@@ -859,7 +859,7 @@ textarea{resize:vertical;min-height:68px}
           <div class="fl"><label>Kund</label><select id="de-kund" onchange="loadDiaryProjects()"></select></div>
           <div class="fl"><label>Projekt *</label><select id="de-proj" onchange="loadDiaryTasks()"></select></div>
           <div class="fl full"><label>Uppgift</label><select id="de-task"></select></div>
-          <div class="fl full"><label>📋 Bolags-todo (valfritt)</label><select id="de-todo" onchange="pickDiaryTodo()"><option value="">– Ingen –</option></select></div>
+          <div class="fl full"><label>📋 Välj uppgift från Todo (valfritt)</label><select id="de-todo" onchange="pickDiaryTodo()"><option value="">– Ingen –</option></select></div>
           <div class="fl"><label>Kategori</label><select id="de-cat"></select></div>
           <div class="fl full fl-row" style="padding-top:4px"><input type="checkbox" id="de-bill" checked style="width:auto"><label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;cursor:pointer" for="de-bill">Fakturerbar tid</label></div>
         </div>
@@ -3109,7 +3109,7 @@ function selectDiaryType(typ,btn){
 }
 
 function loadDiaryProjects(){const kid=v("de-kund");const dp=document.getElementById("de-proj");if(!dp)return;const list=projects.filter(p=>!kid||p.company_id===kid);dp.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadDiaryTasks();loadDiaryTodos();}
-function loadDiaryTodos(){const kid=v("de-kund");const dt=document.getElementById("de-todo");if(!dt)return;const list=todos.filter(t=>!t.done&&t.company_id&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=companies.find(c=>c.id===t.company_id);return`<option value="${t.id}">${e(t.text)}${co&&!kid?" ("+e(co.namn)+")":""}</option>`;}).join("");}
+function loadDiaryTodos(){const kid=v("de-kund");const dt=document.getElementById("de-todo");if(!dt)return;const list=todos.filter(t=>!t.done&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<option value="${t.id}">${e(t.text)}${co?" ("+e(co.namn)+")":""}</option>`;}).join("");}
 function pickDiaryTodo(){const id=v("de-todo");window._diaryFromTodo=id||null;if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("de-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("de-kund");if(k&&!k.value){k.value=t.company_id;loadDiaryProjects();}}}
 function loadDiaryTasks(){const pid=v("de-proj");const dt=document.getElementById("de-task");if(!dt)return;dt.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
 
