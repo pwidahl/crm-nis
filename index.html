@@ -217,6 +217,10 @@ textarea{resize:vertical;min-height:68px}
 .timer-fab-btn.running{background:var(--red);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 4px 14px rgba(176,48,48,.4)}50%{box-shadow:0 4px 22px rgba(176,48,48,.65)}}
 .timer-panel{background:#fff;border:1px solid var(--cream);border-radius:10px;padding:15px;width:320px;box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;max-height:80vh;overflow-y:auto}
+.timer-panel select,.timer-panel input{max-width:100%;box-sizing:border-box;text-overflow:ellipsis}
+.timer-panel .fl{min-width:0}
+.timer-panel .inline-create{min-width:0}
+.timer-panel .inline-create select{flex:1;min-width:0}
 .timer-panel.open{display:block}
 .timer-display{font-family:"DM Serif Display",serif;font-size:34px;text-align:center;margin:9px 0;color:var(--ink)}
 .timer-display.running{color:var(--red)}
@@ -7387,7 +7391,7 @@ function fillTimerSelects(){
 }
 function loadTimerProjects(){const kid=v("t-kund");const ps=document.getElementById("t-proj");if(!ps)return;const list=projects.filter(p=>p.status==="Aktiv"&&(!kid||p.company_id===kid));ps.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadTimerTasks();}
 function loadTimerTasks(){const pid=v("t-proj");const el=document.getElementById("t-task");if(!el)return;el.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");loadTimerTodos();}
-function loadTimerTodos(){const kid=v("t-kund");const dt=document.getElementById("t-todo");if(!dt)return;const cur=dt.value;const list=todos.filter(t=>!t.done&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<option value="${t.id}">${e(t.text)}${co?" ("+e(co.namn)+")":""}</option>`;}).join("");dt.value=cur;}
+function loadTimerTodos(){const kid=v("t-kund");const dt=document.getElementById("t-todo");if(!dt)return;const cur=dt.value;const list=todos.filter(t=>!t.done&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;const txt=(t.text||"").length>40?(t.text||"").slice(0,40)+"…":(t.text||"");return`<option value="${t.id}">${e(txt)}${co?" ("+e(co.namn)+")":""}</option>`;}).join("");dt.value=cur;}
 function pickTimerTodo(){const id=v("t-todo");if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("t-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("t-kund");if(k&&!k.value){k.value=t.company_id;loadTimerProjects();}}}
 function updateTimerType(){const typ=v("t-typ");const isUppdrag=typ==="uppdrag";document.getElementById("timer-uppdrag-fields").style.display=isUppdrag?"":"none";document.getElementById("timer-social-fields").style.display=isUppdrag?"":"block";}
 let quickMenuOpen=false;
