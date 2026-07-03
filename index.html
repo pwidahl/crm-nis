@@ -1192,6 +1192,23 @@ function aterBeraknaDatum(u,ar,manad0){
   return null;
 }
 // Nästa förekomst-datum från idag för en uppgift
+// Datum för uppgiften i innevarande månad (för filter), oavsett om passerat
+function aterBeraknaDatumForPeriod(u,ar){
+  const nu=new Date();
+  if(u.period==="kvartal"){
+    // Är innevarande månad en kvartalsmånad för uppgiften?
+    const bas=(u.manad!=null?u.manad:0)%3;
+    if(nu.getMonth()%3===bas)return aterBeraknaDatum(u,ar,nu.getMonth());
+    return null;
+  }
+  if(u.period==="arsbokslut"){
+    const m=u.manad!=null?u.manad:0;
+    if(nu.getMonth()===m)return aterBeraknaDatum(u,ar,m);
+    return null;
+  }
+  if(u.period==="manad")return aterBeraknaDatum(u,ar,nu.getMonth());
+  return aterNastaDatum(u);
+}
 function aterNastaDatum(u){
   const nu=new Date();const ar=nu.getFullYear();
   if(u.period==="daglig")return nu;
@@ -2546,9 +2563,21 @@ function renderAterUppgifter(){
     if(fPeriod&&u.period!==fPeriod)return false;
     if(fBolag&&u.company_id!==fBolag)return false;
     if(fVy==="vecka"||fVy==="manad"){
-      const dt=aterNastaDatum(u);if(!dt)return false;
-      if(fVy==="vecka"){const slut=new Date(nu);slut.setDate(nu.getDate()+7);if(dt>slut)return false;}
-      if(fVy==="manad"){if(dt.getMonth()!==nu.getMonth()||dt.getFullYear()!==nu.getFullYear())return false;}
+      // Dagliga/vecko-uppgifter hör alltid till innevarande vecka/månad
+      if(u.period==="daglig"||u.period==="vecka")return true;
+      if(fVy==="manad"){
+        // Månad: visa alla månadsuppgifter; kvartal/år bara om datum infaller denna månad
+        if(u.period==="manad")return true;
+        const dt=aterBeraknaDatumForPeriod(u,nu.getFullYear());
+        if(!dt)return false;
+        if(dt.getMonth()!==nu.getMonth()||dt.getFullYear()!==nu.getFullYear())return false;
+      }
+      if(fVy==="vecka"){
+        const dt=aterNastaDatum(u);if(!dt)return false;
+        const slut=new Date(nu);slut.setDate(nu.getDate()+7);
+        const start=new Date(nu);start.setHours(0,0,0,0);
+        if(dt<start||dt>slut)return false;
+      }
     }
     return true;
   });
