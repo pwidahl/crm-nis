@@ -976,6 +976,19 @@ textarea{resize:vertical;min-height:68px}
 
 <div class="overlay" id="m-conn"><div class="modal" style="width:460px"><div class="mhdr"><h2>Lägg till koppling</h2><button class="mclose" onclick="closeM('m-conn')">×</button></div><div class="mbody"><input id="conn-from" type="hidden"><div class="privacy-note">Spåra vilka av dina kontakter som känner varandra – för att hitta vägar in i bolag.</div><div class="fg"><div class="fl full"><label>Person *</label><select id="conn-other"></select></div><div class="fl full"><label>Relationstyp</label><select id="conn-typ"></select></div><div class="fl full"><label>Anteckning (valfritt)</label><input id="conn-note" placeholder="t.ex. Tidigare kollegor på EY"></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-conn')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveConnection()">Spara koppling</button></div></div></div>
 
+<div class="overlay" id="m-ater"><div class="modal modal-lg"><div class="mhdr"><h2 id="ater-modal-title">Ny uppgift</h2><button class="mclose" onclick="closeM('m-ater')">×</button></div><div class="mbody"><input id="au-id" type="hidden">
+<div class="fg">
+  <div class="fl full"><label>Titel *</label><input id="au-titel" placeholder="t.ex. Momsdeklaration"></div>
+  <div class="fl"><label>Period</label><select id="au-period" onchange="aterUppdateraDagFalt()"><option value="daglig">Daglig</option><option value="vecka">Vecka</option><option value="manad" selected>Månad</option><option value="kvartal">Kvartal</option><option value="arsbokslut">Årsbokslut</option></select></div>
+  <div class="fl"><label>Bolag</label><select id="au-company"><option value="">Inget bolag</option></select></div>
+  <div class="fl" id="au-dag-wrap"><label>Dagregel</label><div style="display:flex;gap:6px"><select id="au-dagtyp" onchange="aterUppdateraDagFalt()" style="flex:1"><option value="fast">Fast datum (den N:e)</option><option value="arbetsdag">N:te arbetsdagen</option><option value="veckodag">N:te veckodagen</option></select><input id="au-dagn" type="number" min="1" max="28" value="1" style="width:60px"></div></div>
+  <div class="fl" id="au-veckodag-wrap"><label>Veckodag</label><select id="au-veckodag"><option value="0">Måndag</option><option value="1">Tisdag</option><option value="2">Onsdag</option><option value="3">Torsdag</option><option value="4">Fredag</option><option value="5">Lördag</option><option value="6">Söndag</option></select></div>
+  <div class="fl" id="au-manad-wrap"><label>Månad</label><select id="au-manad"><option value="0">Januari</option><option value="1">Februari</option><option value="2">Mars</option><option value="3">April</option><option value="4">Maj</option><option value="5">Juni</option><option value="6">Juli</option><option value="7">Augusti</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">December</option></select></div>
+  <div class="fl full"><label>Kort beskrivning</label><input id="au-besk" placeholder="Kort om uppgiften"></div>
+  <div class="fl full"><label>Mer information</label><textarea id="au-info" rows="4" placeholder="Detaljer, rutin, att tänka på..."></textarea></div>
+  <div class="fl full"><label>🔗 Länk</label><input id="au-lank" placeholder="https://..."></div>
+</div>
+</div><div class="mfoot"><button class="btn btn-danger" id="au-del-btn" style="display:none" onclick="deleteAterUppgift()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-ater')">Avbryt</button><button class="btn btn-primary" onclick="saveAterUppgift()">Spara</button></div></div></div>
 <div class="overlay" id="m-las"><div class="modal modal-lg"><div class="mhdr"><h2 data-i18n="art_las">Artikel</h2><button class="mclose" onclick="closeM('m-las')">×</button></div><div class="mbody"><div id="las-modal-content"></div></div></div></div>
 <div class="overlay" id="m-bevakning"><div class="modal"><div class="mhdr"><h2 data-i18n="bev_titel">Bevakningsprofiler</h2><button class="mclose" onclick="closeM('m-bevakning')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:12px" data-i18n="bev_info">Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.</p><div id="bev-modal-body" style="margin-bottom:16px"></div><div style="border-top:1px solid var(--cream);padding-top:12px"><div class="fg"><div class="fl"><label data-i18n="bev_namn_label">Namn</label><input id="bev-nytt-namn" placeholder="t.ex. Moms"></div><div class="fl full"><label data-i18n="bev_ord_label">Nyckelord (kommaseparerade)</label><input id="bev-nya-ord" placeholder="moms, mervärdesskatt, vat"></div></div><button class="btn btn-primary btn-sm" onclick="laggTillBevakning()" data-i18n="bev_lagg_till">+ Lägg till profil</button></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-bevakning')" data-i18n="btn_stang">Stäng</button></div></div></div>
 <div class="overlay" id="m-artikel"><div class="modal modal-lg"><div class="mhdr"><h2 id="artikel-modal-title">Ny artikel</h2><button class="mclose" onclick="closeM('m-artikel')">×</button></div><div class="mbody"><input id="art-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="art-rubrik" placeholder="t.ex. Nytt för 2026: ändrade 3:12-regler"></div><div class="fl"><label>Område</label><select id="art-omrade"><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option><option>Bolagsrätt</option><option>Hållbarhet</option><option>Eget</option></select></div><div class="fl"><label>År</label><input id="art-ar" type="number" placeholder="2026"></div><div class="fl full"><label>Innehåll</label><textarea id="art-innehall" rows="10" placeholder="Skriv din sammanställning här – vad är nytt, vad innebär det, vad ska vi tänka på..."></textarea></div><div class="fl full"><label>🔗 Källor (länkar, en per rad)</label><textarea id="art-kallor" rows="3" placeholder="https://www.skatteverket.se/..."></textarea></div></div><div id="art-forstaelse-box"></div></div><div class="mfoot"><button class="btn btn-outline" style="color:var(--red)" id="art-del-btn" onclick="deleteArtikel()">Ta bort</button><button class="btn btn-outline" onclick="closeM('m-artikel')">Avbryt</button><button class="btn btn-primary" onclick="saveArtikel()">Spara</button></div></div></div>
@@ -1149,6 +1162,56 @@ let allaRoller=[],minRollObj=null;
 let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:3,kontaktforfragan:2};
 let meddelanden=[];
 let checklista=[],checklistaBockar=[];
+let aterUppgifter=[],aterBockar=[];
+async function loadAterUppgifter(){
+  try{const r=await sb.from("aterkommande_uppgifter").select("*").eq("user_id",me.id).order("ordning");aterUppgifter=r.data||[];}catch(e){aterUppgifter=[];}
+  try{const b=await sb.from("aterkommande_bock").select("*").eq("user_id",me.id);aterBockar=b.data||[];}catch(e){aterBockar=[];}
+}
+// Räkna ut faktiskt datum för en uppgift i en given månad/år
+function aterBeraknaDatum(u,ar,manad0){
+  // manad0: 0-11. Returnerar Date eller null.
+  if(u.dag_typ==="fast"){
+    const dag=Math.min(Math.max(u.dag_n||1,1),28);
+    return new Date(ar,manad0,dag);
+  }
+  if(u.dag_typ==="veckodag"){
+    // N:te [veckodag] i månaden. dag_veckodag 0=måndag..6=söndag
+    const mål=((u.dag_veckodag??0)+1)%7; // JS: 0=söndag; vår 0=måndag → +1
+    const n=u.dag_n||1;let count=0;
+    for(let d=1;d<=31;d++){const dt=new Date(ar,manad0,d);if(dt.getMonth()!==manad0)break;if(dt.getDay()===mål){count++;if(count===n)return dt;}}
+    return null;
+  }
+  if(u.dag_typ==="arbetsdag"){
+    // N:te arbetsdagen (mån-fre) i månaden
+    const n=u.dag_n||1;let count=0;
+    for(let d=1;d<=31;d++){const dt=new Date(ar,manad0,d);if(dt.getMonth()!==manad0)break;const wd=dt.getDay();if(wd>=1&&wd<=5){count++;if(count===n)return dt;}}
+    return null;
+  }
+  return null;
+}
+// Nästa förekomst-datum från idag för en uppgift
+function aterNastaDatum(u){
+  const nu=new Date();const ar=nu.getFullYear();
+  if(u.period==="daglig")return nu;
+  if(u.period==="vecka")return nu;
+  if(u.period==="manad"){
+    let dt=aterBeraknaDatum(u,ar,nu.getMonth());
+    if(dt&&dt<nu){dt=aterBeraknaDatum(u,ar,nu.getMonth()+1);}
+    return dt;
+  }
+  // kvartal: månad 0,3,6,9 (eller angiven månad-mönster)
+  if(u.period==="kvartal"){
+    for(let q=0;q<4;q++){const m=(u.manad!=null?u.manad:0)+q*3;if(m>11)continue;const dt=aterBeraknaDatum(u,ar,m%12);if(dt&&dt>=nu)return dt;}
+    // annars nästa år
+    return aterBeraknaDatum(u,ar+1,(u.manad!=null?u.manad:0));
+  }
+  if(u.period==="arsbokslut"){
+    const m=u.manad!=null?u.manad:0;let dt=aterBeraknaDatum(u,ar,m);
+    if(dt&&dt<nu)dt=aterBeraknaDatum(u,ar+1,m);
+    return dt;
+  }
+  return null;
+}
 let liKategorier=[];
 let processChecklista=[];
 let bolagLogg=[];
@@ -1494,7 +1557,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_till_artikel:"Till artikel",art_till_bokf:"Till bokföring",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_till_artikel:"Till artikel",art_till_bokf:"Till bokföring",ater_rubrik:"Återkommande uppgifter",ater_ny_btn:"Ny uppgift",ater_ny:"Ny uppgift",ater_red:"Redigera uppgift",ater_tom:"Inga återkommande uppgifter än. Lägg till moms, bokslut, rapporter m.m.",ater_titel_krav:"Titel krävs",ater_sparad:"Uppgift sparad ✓",ater_radera:"Ta bort uppgiften?",ater_borttagen:"Borttagen",ater_inget_bolag:"Inget bolag",ater_vy_alla:"Alla",ater_vy_vecka:"Denna vecka",ater_vy_manad:"Denna månad",ater_alla_perioder:"Alla perioder",ater_alla_bolag:"Alla bolag",ater_rensa:"Rensa",ater_inga_match:"Inga uppgifter matchar filtret.",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1599,7 +1662,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_till_artikel:"To article",art_till_bokf:"To bookkeeping",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_till_artikel:"To article",art_till_bokf:"To bookkeeping",ater_rubrik:"Recurring tasks",ater_ny_btn:"New task",ater_ny:"New task",ater_red:"Edit task",ater_tom:"No recurring tasks yet. Add VAT, closing, reports, etc.",ater_titel_krav:"Title required",ater_sparad:"Task saved ✓",ater_radera:"Delete the task?",ater_borttagen:"Deleted",ater_inget_bolag:"No company",ater_vy_alla:"All",ater_vy_vecka:"This week",ater_vy_manad:"This month",ater_alla_perioder:"All periods",ater_alla_bolag:"All companies",ater_rensa:"Clear",ater_inga_match:"No tasks match the filter.",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -2013,7 +2076,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus],["ateruppg",loadAterUppgifter]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -2344,6 +2407,183 @@ function msgSokResultatHtml(namnAv){
     </div>`;
   }).join("");
 }
+function aterPeriodLabel(p){return {daglig:"Daglig",vecka:"Vecka",manad:"Månad",kvartal:"Kvartal",arsbokslut:"Årsbokslut"}[p]||p;}
+const ATER_VECKODAGAR=["Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag","Söndag"];
+const ATER_MANADER=["Januari","Februari","Mars","April","Maj","Juni","Juli","Augusti","September","Oktober","November","December"];
+function openNyAterUppgift(){
+  document.getElementById("ater-modal-title").textContent=TR("ater_ny")||"Ny uppgift";
+  ["au-id","au-titel","au-besk","au-info","au-lank"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("au-period").value="manad";
+  document.getElementById("au-dagtyp").value="arbetsdag";
+  document.getElementById("au-dagn").value="1";
+  document.getElementById("au-veckodag").value="0";
+  document.getElementById("au-manad").value="0";
+  fillAterCompanySelect();
+  document.getElementById("au-company").value="";
+  document.getElementById("au-del-btn").style.display="none";
+  aterUppdateraDagFalt();
+  openM("m-ater");
+}
+function openRedigeraAterUppgift(id){
+  const u=aterUppgifter.find(x=>x.id===id);if(!u)return;
+  document.getElementById("ater-modal-title").textContent=TR("ater_red")||"Redigera uppgift";
+  document.getElementById("au-id").value=u.id;
+  document.getElementById("au-titel").value=u.titel||"";
+  document.getElementById("au-besk").value=u.beskrivning||"";
+  document.getElementById("au-info").value=u.info||"";
+  document.getElementById("au-lank").value=u.lank||"";
+  document.getElementById("au-period").value=u.period||"manad";
+  document.getElementById("au-dagtyp").value=u.dag_typ||"fast";
+  document.getElementById("au-dagn").value=u.dag_n||1;
+  document.getElementById("au-veckodag").value=u.dag_veckodag??0;
+  document.getElementById("au-manad").value=u.manad??0;
+  fillAterCompanySelect();
+  document.getElementById("au-company").value=u.company_id||"";
+  document.getElementById("au-del-btn").style.display="";
+  aterUppdateraDagFalt();
+  openM("m-ater");
+}
+function fillAterCompanySelect(){
+  const s=document.getElementById("au-company");if(!s)return;
+  s.innerHTML='<option value="">'+(TR("ater_inget_bolag")||"Inget bolag")+'</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
+}
+function aterUppdateraDagFalt(){
+  const period=document.getElementById("au-period")?.value;
+  const dagtyp=document.getElementById("au-dagtyp")?.value;
+  // Visa/dölj fält beroende på val
+  const visaDag=period!=="daglig"&&period!=="vecka";
+  document.getElementById("au-dag-wrap").style.display=visaDag?"":"none";
+  document.getElementById("au-veckodag-wrap").style.display=(visaDag&&dagtyp==="veckodag")?"":"none";
+  document.getElementById("au-manad-wrap").style.display=(period==="kvartal"||period==="arsbokslut")?"":"none";
+}
+async function saveAterUppgift(){
+  const titel=v("au-titel");if(!titel){toast(TR("ater_titel_krav")||"Titel krävs");return;}
+  const id=v("au-id");
+  const data={user_id:me.id,titel,beskrivning:v("au-besk")||null,info:document.getElementById("au-info")?.value||null,lank:v("au-lank")||null,company_id:v("au-company")||null,period:v("au-period")||"manad",dag_typ:v("au-dagtyp")||"fast",dag_n:parseInt(v("au-dagn"))||1,dag_veckodag:parseInt(v("au-veckodag"))||0,manad:parseInt(v("au-manad"))||0};
+  const r=id?await sb.from("aterkommande_uppgifter").update(data).eq("id",id):await sb.from("aterkommande_uppgifter").insert(data);
+  if(r.error){toast(r.error.message);return;}
+  closeM("m-ater");await loadAterUppgifter();renderChecklista();toast(TR("ater_sparad")||"Uppgift sparad ✓");
+}
+async function deleteAterUppgift(){
+  const id=v("au-id");if(!id)return;
+  confirm2(TR("ater_radera")||"Ta bort uppgiften?",async()=>{
+    await sb.from("aterkommande_uppgifter").delete().eq("id",id);
+    closeM("m-ater");await loadAterUppgifter();renderChecklista();toast(TR("ater_borttagen")||"Borttagen");
+  });
+}
+async function toggleAterBock(uppgiftId,periodNyckel){
+  const finns=aterBockar.find(b=>b.uppgift_id===uppgiftId&&b.period_nyckel===periodNyckel);
+  if(finns){await sb.from("aterkommande_bock").delete().eq("id",finns.id);aterBockar=aterBockar.filter(b=>b.id!==finns.id);}
+  else{const r=await sb.from("aterkommande_bock").insert({user_id:me.id,uppgift_id:uppgiftId,period_nyckel:periodNyckel}).select().single();if(r.data)aterBockar.push(r.data);}
+  renderChecklista();
+}
+function aterPeriodNyckel(u){
+  // Nyckel för avbockning per period
+  const dt=aterNastaDatum(u)||new Date();
+  if(u.period==="daglig")return liToday?liToday():new Date().toISOString().slice(0,10);
+  if(u.period==="vecka"){const d=new Date();const on=new Date(d);on.setDate(d.getDate()-((d.getDay()+6)%7));return "v"+on.toISOString().slice(0,10);}
+  if(u.period==="manad")return dt.toISOString().slice(0,7);
+  if(u.period==="kvartal")return dt.getFullYear()+"-Q"+(Math.floor(dt.getMonth()/3)+1);
+  if(u.period==="arsbokslut")return "ar"+dt.getFullYear();
+  return dt.toISOString().slice(0,10);
+}
+function aterDagText(u){
+  if(u.period==="daglig")return "Varje dag";
+  if(u.period==="vecka")return "Varje vecka";
+  const ord=["","1:a","2:a","3:e","4:e","5:e"][u.dag_n]||u.dag_n+":e";
+  let bas="";
+  if(u.dag_typ==="fast")bas=`Den ${u.dag_n}:e`;
+  else if(u.dag_typ==="veckodag")bas=`${ord} ${ATER_VECKODAGAR[u.dag_veckodag]||""}`;
+  else if(u.dag_typ==="arbetsdag")bas=`${ord} arbetsdagen`;
+  if(u.period==="kvartal")return `${bas} i kvartalets månad`;
+  if(u.period==="arsbokslut")return `${bas} i ${ATER_MANADER[u.manad]||""}`;
+  return bas;
+}
+function renderAterUppgifter(){
+  const box=document.getElementById("ater-uppgifter-sektion");if(!box)return;
+  const fPeriod=window._aterFPeriod||"";
+  const fBolag=window._aterFBolag||"";
+  const fVy=window._aterFVy||"alla";
+  const nu=new Date();
+  // Filtrering
+  let lista=aterUppgifter.filter(u=>{
+    if(fPeriod&&u.period!==fPeriod)return false;
+    if(fBolag&&u.company_id!==fBolag)return false;
+    if(fVy==="vecka"||fVy==="manad"){
+      const dt=aterNastaDatum(u);if(!dt)return false;
+      if(fVy==="vecka"){const slut=new Date(nu);slut.setDate(nu.getDate()+7);if(dt>slut)return false;}
+      if(fVy==="manad"){if(dt.getMonth()!==nu.getMonth()||dt.getFullYear()!==nu.getFullYear())return false;}
+    }
+    return true;
+  });
+  // Sortering: efter nästa datum
+  lista.sort((a,b)=>{const da=aterNastaDatum(a),db=aterNastaDatum(b);if(!da)return 1;if(!db)return -1;return da-db;});
+  const bolagMedUppg=[...new Set(aterUppgifter.map(u=>u.company_id).filter(Boolean))];
+  const filterRad=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+    <select onchange="window._aterFVy=this.value;renderAterUppgifter()" style="font-size:13px">
+      <option value="alla" ${fVy==="alla"?"selected":""}>${TR("ater_vy_alla")||"Alla"}</option>
+      <option value="vecka" ${fVy==="vecka"?"selected":""}>${TR("ater_vy_vecka")||"Denna vecka"}</option>
+      <option value="manad" ${fVy==="manad"?"selected":""}>${TR("ater_vy_manad")||"Denna månad"}</option>
+    </select>
+    <select onchange="window._aterFPeriod=this.value;renderAterUppgifter()" style="font-size:13px">
+      <option value="">${TR("ater_alla_perioder")||"Alla perioder"}</option>
+      <option value="daglig" ${fPeriod==="daglig"?"selected":""}>Daglig</option>
+      <option value="vecka" ${fPeriod==="vecka"?"selected":""}>Vecka</option>
+      <option value="manad" ${fPeriod==="manad"?"selected":""}>Månad</option>
+      <option value="kvartal" ${fPeriod==="kvartal"?"selected":""}>Kvartal</option>
+      <option value="arsbokslut" ${fPeriod==="arsbokslut"?"selected":""}>Årsbokslut</option>
+    </select>
+    ${bolagMedUppg.length?`<select onchange="window._aterFBolag=this.value;renderAterUppgifter()" style="font-size:13px">
+      <option value="">${TR("ater_alla_bolag")||"Alla bolag"}</option>
+      ${bolagMedUppg.map(cid=>{const c=companies.find(x=>x.id===cid);return c?`<option value="${cid}" ${fBolag===cid?"selected":""}>${e(c.namn)}</option>`:"";}).join("")}
+    </select>`:""}
+    ${(fPeriod||fBolag||fVy!=="alla")?`<button class="btn btn-outline btn-xs" onclick="window._aterFPeriod='';window._aterFBolag='';window._aterFVy='alla';renderAterUppgifter()">${TR("ater_rensa")||"Rensa"}</button>`:""}
+  </div>`;
+  const rows=lista.map(u=>{
+    const nyckel=aterPeriodNyckel(u);
+    const klar=aterBockar.some(b=>b.uppgift_id===u.id&&b.period_nyckel===nyckel);
+    const co=u.company_id?companies.find(c=>c.id===u.company_id):null;
+    const dt=aterNastaDatum(u);
+    return `<div class="week-row" style="display:flex;align-items:flex-start;gap:10px;padding:11px 12px">
+      <input type="checkbox" ${klar?"checked":""} onchange="toggleAterBock('${u.id}','${nyckel}')" style="width:19px;height:19px;cursor:pointer;margin-top:2px">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="visaAterUppgift('${u.id}')">
+        <div style="font-weight:600;font-size:14px;${klar?"text-decoration:line-through;color:#aaa":""}">${e(u.titel)}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">
+          <span class="badge" style="background:var(--accent);color:#fff;font-size:10px">${aterPeriodLabel(u.period)}</span>
+          ${co?` · 🏢 ${e(co.namn)}`:""} · 📅 ${e(aterDagText(u))}${dt?` (${dt.toLocaleDateString("sv-SE")})`:""}
+        </div>
+        ${u.beskrivning?`<div style="font-size:12px;color:#666;margin-top:3px">${e(u.beskrivning)}</div>`:""}
+      </div>
+      ${u.lank?`<a href="${e(u.lank)}" target="_blank" rel="noopener" class="btn-icon" title="Länk" onclick="event.stopPropagation()">🔗</a>`:""}
+      <button class="btn-icon" title="Redigera" onclick="event.stopPropagation();openRedigeraAterUppgift('${u.id}')">✎</button>
+    </div>`;
+  }).join("");
+  box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin:0">${TR("ater_rubrik")||"Återkommande uppgifter"}</h2>
+      <button class="btn btn-primary btn-sm" onclick="openNyAterUppgift()">+ ${TR("ater_ny_btn")||"Ny uppgift"}</button>
+    </div>
+    ${aterUppgifter.length?filterRad:""}
+    ${!aterUppgifter.length?`<p style="color:#aaa;font-size:13px">${TR("ater_tom")||"Inga återkommande uppgifter än. Lägg till moms, bokslut, rapporter m.m."}</p>`:(lista.length?rows:`<p style="color:#aaa;font-size:13px">${TR("ater_inga_match")||"Inga uppgifter matchar filtret."}</p>`)}`;
+}
+function visaAterUppgift(id){
+  const u=aterUppgifter.find(x=>x.id===id);if(!u)return;
+  const co=u.company_id?companies.find(c=>c.id===u.company_id):null;
+  const dt=aterNastaDatum(u);
+  document.getElementById("las-modal-content").innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+      <h2 style="margin:0;font-size:19px">${e(u.titel)}</h2>
+      <button class="btn btn-primary btn-sm" onclick="closeM('m-las');openRedigeraAterUppgift('${u.id}')">✏️ ${TR("art_redigera_btn")||"Redigera"}</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="badge" style="background:var(--accent);color:#fff;font-size:11px">${aterPeriodLabel(u.period)}</span>
+      ${co?`<span class="badge b-prospekt" style="font-size:11px">🏢 ${e(co.namn)}</span>`:""}
+      <span style="font-size:12px;color:#888">📅 ${e(aterDagText(u))}${dt?` – nästa: ${dt.toLocaleDateString("sv-SE")}`:""}</span>
+    </div>
+    ${u.beskrivning?`<div style="font-size:14px;color:#444;margin-bottom:10px">${e(u.beskrivning)}</div>`:""}
+    ${u.info?`<div style="font-size:13px;line-height:1.7;color:#333;white-space:pre-line;background:var(--paper);padding:12px;border-radius:var(--r);margin-bottom:10px">${lankaText(u.info)}</div>`:""}
+    ${u.lank?`<div><a href="${e(u.lank)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:14px;font-weight:600">🔗 ${TR("kb_oppna_lank")||"Öppna länk"} ↗</a></div>`:""}`;
+  openM("m-las");
+}
 function renderChecklista(){
   const box=document.getElementById("checklista-content");if(!box)return;
   const klara=checklista.filter(p=>checklistaArBockad(p.id)).length;
@@ -2364,7 +2604,9 @@ function renderChecklista(){
       <input id="ny-checklista-text" placeholder="Add an item…" style="flex:1;padding:9px" onkeydown="if(event.key==='Enter')laggTillChecklista()">
       <button class="btn btn-primary btn-sm" onclick="laggTillChecklista()">+ Add</button>
     </div>
-    ${rows}`;
+    ${rows}
+    <div id="ater-uppgifter-sektion" style="margin-top:28px"></div>`;
+  renderAterUppgifter();
 }
 async function laggTillChecklista(){
   const text=v("ny-checklista-text");if(!text){toast("Skriv något först");return;}
