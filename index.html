@@ -391,6 +391,10 @@ textarea{resize:vertical;min-height:68px}
         </div>
       </div>
       <div class="fl" style="margin-bottom:7px">
+        <label>📋 Välj uppgift från Todo</label>
+        <select id="t-todo" onchange="pickTimerTodo()"><option value="">– Ingen –</option></select>
+      </div>
+      <div class="fl" style="margin-bottom:7px">
         <label>Kategori</label>
         <select id="t-cat"></select>
       </div>
@@ -7377,11 +7381,14 @@ async function sendTestEmail(){toast("Skickar...",5000);const token=await getTok
 function fillTimerSelects(){
   const ks=document.getElementById("t-kund");if(ks)ks.innerHTML='<option value="">– Välj kund –</option>'+companies.filter(c=>projects.some(p=>p.company_id===c.id)).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
   const cs=document.getElementById("t-cat");if(cs)cs.innerHTML=WORK_CATS.map(c=>`<option>${c}</option>`).join("");
+  loadTimerTodos();
   const dco=document.getElementById("t-contacts");if(dco)dco.innerHTML=contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}</option>`).join("");
   loadTimerProjects();
 }
 function loadTimerProjects(){const kid=v("t-kund");const ps=document.getElementById("t-proj");if(!ps)return;const list=projects.filter(p=>p.status==="Aktiv"&&(!kid||p.company_id===kid));ps.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadTimerTasks();}
-function loadTimerTasks(){const pid=v("t-proj");const el=document.getElementById("t-task");if(!el)return;el.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
+function loadTimerTasks(){const pid=v("t-proj");const el=document.getElementById("t-task");if(!el)return;el.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");loadTimerTodos();}
+function loadTimerTodos(){const kid=v("t-kund");const dt=document.getElementById("t-todo");if(!dt)return;const cur=dt.value;const list=todos.filter(t=>!t.done&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=t.company_id?companies.find(c=>c.id===t.company_id):null;return`<option value="${t.id}">${e(t.text)}${co?" ("+e(co.namn)+")":""}</option>`;}).join("");dt.value=cur;}
+function pickTimerTodo(){const id=v("t-todo");if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("t-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("t-kund");if(k&&!k.value){k.value=t.company_id;loadTimerProjects();}}}
 function updateTimerType(){const typ=v("t-typ");const isUppdrag=typ==="uppdrag";document.getElementById("timer-uppdrag-fields").style.display=isUppdrag?"":"none";document.getElementById("timer-social-fields").style.display=isUppdrag?"":"block";}
 let quickMenuOpen=false;
 function toggleQuickMenu(){
@@ -7427,11 +7434,22 @@ async function saveDirectLog(){const hours=parseFloat(document.getElementById("t
 async function saveTimerEntry(hours){
   const typ=v("t-typ");const desc=v("t-desc");if(!desc){toast("Beskriv vad du gjort");return;}
   const isUppdrag=typ==="uppdrag";const pid=isUppdrag?v("t-proj")||null:null;if(isUppdrag&&!pid){toast("Välj projekt");return;}
-  const data={user_id:me.id,project_id:pid,task_id:isUppdrag?v("t-task")||null:null,datum:today(),hours,billable:isUppdrag,work_category:v("t-cat")||"Löpande arbete",description:desc,invoice_note:desc,aktivitet_typ:typ,plats:v("t-plats")||null};
+  const data={user_id:me.id,project_id:pid,task_id:isUppdrag?v("t-task")||null:null,todo_id:v("t-todo")||null,datum:today(),hours,billable:isUppdrag,work_category:v("t-cat")||"Löpande arbete",description:desc,invoice_note:desc,aktivitet_typ:typ,plats:v("t-plats")||null};
   const r=await sb.from("project_diary_entries").insert(data);if(r.error){alert(r.error.message);return;}
   if(!isUppdrag){const dco=document.getElementById("t-contacts");const selected=dco?Array.from(dco.selectedOptions).map(o=>o.value):[];for(const cid of selected){await sb.from("activity_log").insert({user_id:me.id,contact_id:cid,kontakt_namn:"",foretag:"",typ:typ==="lunch"?"Lunch":"Mote",interaktionstyp:typ,datum:today(),anteckning:desc,plats:v("t-plats")||null,aktivitet_typ:typ});await sb.from("contacts").update({nasta_foljup:calcNextDate(typ==="lunch"?"Lunch":"Mote",today())}).eq("id",cid);}}
   document.getElementById("t-desc").value="";document.getElementById("t-direct-hours").value="";document.getElementById("t-startlbl").textContent="";
-  toast(`✓ Loggat ${hours.toFixed(2)}h`);closeTimerPanel();await loadAll();
+  toast(`✓ Loggat ${hours.toFixed(2)}h`);
+  const fromTodo=v("t-todo");
+  closeTimerPanel();await loadAll();
+  if(fromTodo){
+    const t=todos.find(x=>x.id===fromTodo);
+    if(t&&!t.done){
+      confirm2("Tid loggad ✓ Är uppgiften slutförd?",async()=>{
+        await sb.from("todos").update({done:true}).eq("id",fromTodo);
+        t.done=true;toast("Uppgift markerad som klar");renderTodoList?.();renderDashboard();
+      });
+    }
+  }
 }
 
 // Snabbskapa från timer
