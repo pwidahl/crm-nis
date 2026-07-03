@@ -981,8 +981,9 @@ textarea{resize:vertical;min-height:68px}
 <div class="overlay" id="m-artikel"><div class="modal modal-lg"><div class="mhdr"><h2 id="artikel-modal-title">Ny artikel</h2><button class="mclose" onclick="closeM('m-artikel')">×</button></div><div class="mbody"><input id="art-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="art-rubrik" placeholder="t.ex. Nytt för 2026: ändrade 3:12-regler"></div><div class="fl"><label>Område</label><select id="art-omrade"><option>Skatt</option><option>Redovisning</option><option>Lagstiftning</option><option>Bolagsrätt</option><option>Hållbarhet</option><option>Eget</option></select></div><div class="fl"><label>År</label><input id="art-ar" type="number" placeholder="2026"></div><div class="fl full"><label>Innehåll</label><textarea id="art-innehall" rows="10" placeholder="Skriv din sammanställning här – vad är nytt, vad innebär det, vad ska vi tänka på..."></textarea></div><div class="fl full"><label>🔗 Källor (länkar, en per rad)</label><textarea id="art-kallor" rows="3" placeholder="https://www.skatteverket.se/..."></textarea></div></div><div id="art-forstaelse-box"></div></div><div class="mfoot"><button class="btn btn-outline" style="color:var(--red)" id="art-del-btn" onclick="deleteArtikel()">Ta bort</button><button class="btn btn-outline" onclick="closeM('m-artikel')">Avbryt</button><button class="btn btn-primary" onclick="saveArtikel()">Spara</button></div></div></div>
 <div class="overlay" id="m-kb"><div class="modal modal-lg"><div class="mhdr"><h2 id="kb-modal-title">Ny notering</h2><button class="mclose" onclick="closeM('m-kb')">×</button></div><div class="mbody"><input id="kb-id" type="hidden"><div class="fg"><div class="fl full"><label>Rubrik *</label><input id="kb-rubrik" placeholder="t.ex. IFRS 16 – leasingredovisning"></div><div class="fl"><label>Kategori</label><input id="kb-kat" list="kb-kat-list" placeholder="Välj eller skriv egen"><datalist id="kb-kat-list"></datalist></div><div class="fl"><label>Land</label><select id="kb-land"></select></div><div class="fl full"><label>🔗 Länk (URL till faktasida)</label><input id="kb-lank" placeholder="https://www.skatteverket.se/..."></div><div class="fl full"><label>Innehåll</label><textarea id="kb-innehall" rows="6" placeholder="Skriv din notering här..."></textarea></div></div>
 <div style="margin-top:16px;border-top:1px solid var(--cream);padding-top:14px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin:0">📒 Bokföringsexempel (valfritt)</label><button class="btn btn-outline btn-xs" onclick="kbAddRow()">+ Rad</button></div>
-  <div class="tw" style="overflow-x:auto"><table style="min-width:480px"><thead><tr><th style="width:90px">Konto</th><th>Kontonamn</th><th style="width:110px">Debet</th><th style="width:110px">Kredit</th><th style="width:36px"></th></tr></thead><tbody id="kb-kont-rows"></tbody><tfoot><tr style="background:var(--paper)"><td colspan="2" style="text-align:right;font-weight:600">Summa</td><td id="kb-sum-d" style="font-weight:600">0</td><td id="kb-sum-k" style="font-weight:600">0</td><td></td></tr><tr><td colspan="5" id="kb-balance" style="text-align:center;font-size:12px;padding:6px"></td></tr></tfoot></table></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin:0">📒 Bokföringsordrar (valfritt)</label><button class="btn btn-outline btn-xs" onclick="kbAddSteg()">+ Nytt steg</button></div>
+  <div id="kb-steg-container"></div>
+  <div id="kb-koppla-artikel" style="margin-top:10px"></div>
 </div>
 </div><div class="mfoot"><button class="btn btn-danger" id="kb-del-btn" style="display:none" onclick="deleteKB()">Ta bort</button><div style="flex:1"></div><button class="btn btn-outline" onclick="closeM('m-kb')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveKB()" data-i18n="btn_spara">Spara</button></div></div></div>
 
@@ -1493,7 +1494,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1598,7 +1599,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -5000,7 +5001,16 @@ function renderKB(){
               ${n.land?`<span class="badge b-prospekt" style="font-size:10px;margin-top:4px;display:inline-block">${e(n.land)}</span>`:""}
               ${n.innehall?`<div style="font-size:13px;line-height:1.6;color:#444;margin-top:6px;white-space:pre-line">${e(n.innehall)}</div>`:""}
               ${n.lank?`<div style="margin-top:6px"><a href="${e(n.lank)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:13px;color:var(--accent);text-decoration:none">🔗 ${TR("kb_oppna_lank")} →</a></div>`:""}
-              ${Array.isArray(n.konteringar)&&n.konteringar.length?`<div class="tw" style="margin-top:8px;max-width:520px"><table style="font-size:12px"><thead><tr><th style="padding:5px 8px">Konto</th><th style="padding:5px 8px">Namn</th><th style="padding:5px 8px;text-align:right">Debet</th><th style="padding:5px 8px;text-align:right">Kredit</th></tr></thead><tbody>${n.konteringar.map(r=>`<tr><td style="padding:4px 8px">${e(r.konto||"")}</td><td style="padding:4px 8px">${e(r.namn||"")}</td><td style="padding:4px 8px;text-align:right">${r.debet?Number(r.debet).toLocaleString("sv-SE"):""}</td><td style="padding:4px 8px;text-align:right">${r.kredit?Number(r.kredit).toLocaleString("sv-SE"):""}</td></tr>`).join("")}<tr style="background:var(--paper);font-weight:600"><td colspan="2" style="padding:4px 8px;text-align:right">Summa</td><td style="padding:4px 8px;text-align:right">${n.konteringar.reduce((s,r)=>s+(Number(r.debet)||0),0).toLocaleString("sv-SE")}</td><td style="padding:4px 8px;text-align:right">${n.konteringar.reduce((s,r)=>s+(Number(r.kredit)||0),0).toLocaleString("sv-SE")}</td></tr></tbody></table></div>`:""}
+              ${(()=>{
+                let steg=Array.isArray(n.bokforingssteg)?n.bokforingssteg:[];
+                if(!steg.length&&Array.isArray(n.konteringar)&&n.konteringar.length)steg=[{rubrik:"Bokföring",rader:n.konteringar}];
+                if(!steg.length)return "";
+                return steg.map(st=>{
+                  const rader=Array.isArray(st.rader)?st.rader:[];
+                  const sumD=rader.reduce((s,r)=>s+(Number(r.debet)||0),0),sumK=rader.reduce((s,r)=>s+(Number(r.kredit)||0),0);
+                  return `<div style="margin-top:8px"><div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:3px">${st.rubrik?e(st.rubrik):""}</div><div class="tw" style="max-width:520px"><table style="font-size:12px"><thead><tr><th style="padding:5px 8px">Konto</th><th style="padding:5px 8px">Namn</th><th style="padding:5px 8px;text-align:right">Debet</th><th style="padding:5px 8px;text-align:right">Kredit</th></tr></thead><tbody>${rader.map(r=>`<tr><td style="padding:4px 8px">${e(r.konto||"")}</td><td style="padding:4px 8px">${e(r.namn||"")}</td><td style="padding:4px 8px;text-align:right">${r.debet?Number(r.debet).toLocaleString("sv-SE"):""}</td><td style="padding:4px 8px;text-align:right">${r.kredit?Number(r.kredit).toLocaleString("sv-SE"):""}</td></tr>`).join("")}<tr style="background:var(--paper);font-weight:600"><td colspan="2" style="padding:4px 8px;text-align:right">Summa</td><td style="padding:4px 8px;text-align:right">${sumD.toLocaleString("sv-SE")}</td><td style="padding:4px 8px;text-align:right">${sumK.toLocaleString("sv-SE")}</td></tr></tbody></table></div></div>`;
+                }).join("");
+              })()}
             </div>
             <div style="display:flex;flex-direction:column;gap:2px">
               <button class="btn-icon" title="Redigera" onclick="openEditKB('${n.id}')">✎</button>
@@ -5018,33 +5028,80 @@ function fillKBModalSelects(){
   document.getElementById("kb-land").innerHTML=KB_LANDS.map(l=>`<option value="${e(l)}">${e(l)}</option>`).join("");
 }
 
+function kbRenderKopplaArtikel(){
+  const box=document.getElementById("kb-koppla-artikel");if(!box)return;
+  const kopplad=window._kbKoppladArtikel?kunskapsartiklar.find(a=>a.id===window._kbKoppladArtikel):null;
+  box.innerHTML=`<label style="display:block;margin-bottom:4px">🔗 ${TR("kb_koppla_art")||"Kopplad artikel"}</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="kb-artikel-select" onchange="window._kbKoppladArtikel=this.value||null" style="flex:1">
+        <option value="">${TR("kb_ingen_art")||"– Ingen –"}</option>
+        ${kunskapsartiklar.map(a=>`<option value="${a.id}" ${window._kbKoppladArtikel===a.id?"selected":""}>${e(a.rubrik)}</option>`).join("")}
+      </select>
+      ${kopplad?`<button class="btn btn-outline btn-xs" onclick="closeM('m-kb');visaArtikel('${kopplad.id}')">📄 ${TR("art_oppna")||"Öppna"}</button>`:""}
+    </div>`;
+}
+function kbStegHtml(steg={},idx){
+  const rader=Array.isArray(steg.rader)?steg.rader:[];
+  const rowsHtml=rader.map(r=>kbRowHtml(r)).join("");
+  return `<div class="kb-steg" data-steg="${idx}" style="border:1px solid var(--cream);border-radius:var(--r);padding:10px;margin-bottom:12px;background:var(--paper)">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <input class="kb-steg-rubrik" value="${e(steg.rubrik||"")}" placeholder="t.ex. Steg 1: Inköp" style="flex:1;font-weight:600">
+      <button class="btn btn-outline btn-xs" onclick="kbAddRowTo(this)">+ Rad</button>
+      <button class="btn-icon" style="color:var(--red)" title="Ta bort steg" onclick="this.closest('.kb-steg').remove();kbRecalc()">🗑</button>
+    </div>
+    <div class="tw" style="overflow-x:auto"><table style="min-width:440px"><thead><tr><th style="width:80px">Konto</th><th>Kontonamn</th><th style="width:100px">Debet</th><th style="width:100px">Kredit</th><th style="width:32px"></th></tr></thead>
+    <tbody class="kb-steg-rows">${rowsHtml}</tbody>
+    <tfoot><tr style="background:#fff"><td colspan="2" style="text-align:right;font-weight:600;font-size:12px">Summa</td><td class="kb-steg-sumd" style="font-weight:600;font-size:12px">0</td><td class="kb-steg-sumk" style="font-weight:600;font-size:12px">0</td><td></td></tr><tr><td colspan="5" class="kb-steg-balance" style="text-align:center;font-size:11px;padding:4px"></td></tr></tfoot></table></div>
+  </div>`;
+}
 function kbRowHtml(r={}){
   return`<tr>
     <td><input class="kb-k-konto" value="${e(r.konto||"")}" placeholder="1930" style="padding:5px 7px"></td>
     <td><input class="kb-k-namn" value="${e(r.namn||"")}" placeholder="Företagskonto" style="padding:5px 7px"></td>
     <td><input class="kb-k-debet" type="number" step="0.01" value="${r.debet??""}" oninput="kbRecalc()" style="padding:5px 7px"></td>
     <td><input class="kb-k-kredit" type="number" step="0.01" value="${r.kredit??""}" oninput="kbRecalc()" style="padding:5px 7px"></td>
-    <td><button class="btn-icon" onclick="this.closest('tr').remove();kbRecalc()" style="color:var(--red)">🗑</button></td>
+    <td><button class="btn-icon" style="color:var(--red)" onclick="this.closest('tr').remove();kbRecalc()">×</button></td>
   </tr>`;
 }
-function kbAddRow(r){const tb=document.getElementById("kb-kont-rows");tb.insertAdjacentHTML("beforeend",kbRowHtml(r||{}));kbRecalc();}
-function kbReadRows(){
-  return [...document.querySelectorAll("#kb-kont-rows tr")].map(tr=>({
-    konto:tr.querySelector(".kb-k-konto").value.trim(),
-    namn:tr.querySelector(".kb-k-namn").value.trim(),
-    debet:parseFloat(tr.querySelector(".kb-k-debet").value)||0,
-    kredit:parseFloat(tr.querySelector(".kb-k-kredit").value)||0
-  })).filter(r=>r.konto||r.namn||r.debet||r.kredit);
+function kbAddSteg(steg){
+  const c=document.getElementById("kb-steg-container");if(!c)return;
+  const idx=c.querySelectorAll(".kb-steg").length;
+  c.insertAdjacentHTML("beforeend",kbStegHtml(steg||{rader:[{}]},idx));
+  kbRecalc();
+}
+function kbAddRowTo(btn){
+  const tb=btn.closest(".kb-steg").querySelector(".kb-steg-rows");
+  tb.insertAdjacentHTML("beforeend",kbRowHtml({}));
+  kbRecalc();
+}
+// Bakåtkompatibel: gamla anrop
+function kbAddRow(r){kbAddRowTo;const c=document.getElementById("kb-steg-container");if(c&&!c.querySelector(".kb-steg"))kbAddSteg({rader:[r||{}]});}
+function kbReadSteg(){
+  return [...document.querySelectorAll("#kb-steg-container .kb-steg")].map(st=>({
+    rubrik:st.querySelector(".kb-steg-rubrik")?.value.trim()||"",
+    rader:[...st.querySelectorAll(".kb-steg-rows tr")].map(tr=>({
+      konto:tr.querySelector(".kb-k-konto").value.trim(),
+      namn:tr.querySelector(".kb-k-namn").value.trim(),
+      debet:parseFloat(tr.querySelector(".kb-k-debet").value)||0,
+      kredit:parseFloat(tr.querySelector(".kb-k-kredit").value)||0
+    })).filter(r=>r.konto||r.namn||r.debet||r.kredit)
+  })).filter(st=>st.rubrik||st.rader.length);
 }
 function kbRecalc(){
-  const rows=kbReadRows();
-  const sumD=rows.reduce((s,r)=>s+r.debet,0),sumK=rows.reduce((s,r)=>s+r.kredit,0);
-  document.getElementById("kb-sum-d").textContent=sumD.toLocaleString("sv-SE");
-  document.getElementById("kb-sum-k").textContent=sumK.toLocaleString("sv-SE");
-  const bal=document.getElementById("kb-balance");
-  if(!rows.length){bal.innerHTML="";return;}
-  const diff=Math.round((sumD-sumK)*100)/100;
-  bal.innerHTML=diff===0?'<span style="color:var(--green);font-weight:600">✓ Balanserar</span>':`<span style="color:var(--red);font-weight:600">⚠ Differens: ${diff.toLocaleString("sv-SE")} (debet − kredit)</span>`;
+  document.querySelectorAll("#kb-steg-container .kb-steg").forEach(st=>{
+    const rows=[...st.querySelectorAll(".kb-steg-rows tr")].map(tr=>({
+      debet:parseFloat(tr.querySelector(".kb-k-debet").value)||0,
+      kredit:parseFloat(tr.querySelector(".kb-k-kredit").value)||0
+    }));
+    const sumD=rows.reduce((s,r)=>s+r.debet,0),sumK=rows.reduce((s,r)=>s+r.kredit,0);
+    st.querySelector(".kb-steg-sumd").textContent=sumD.toLocaleString("sv-SE");
+    st.querySelector(".kb-steg-sumk").textContent=sumK.toLocaleString("sv-SE");
+    const bal=st.querySelector(".kb-steg-balance");
+    if(!rows.length){bal.innerHTML="";return;}
+    const diff=sumD-sumK;
+    if(Math.abs(diff)<0.005)bal.innerHTML='<span style="color:var(--green)">✓ Balanserar</span>';
+    else bal.innerHTML=`<span style="color:var(--red)">Obalans: ${diff.toLocaleString("sv-SE")} (debet − kredit)</span>`;
+  });
 }
 
 function openNewKB(){
@@ -5053,7 +5110,9 @@ function openNewKB(){
   fillKBModalSelects();
   ["kb-rubrik","kb-kat","kb-innehall","kb-lank"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("kb-land").value="Generellt/EU";
-  document.getElementById("kb-kont-rows").innerHTML="";
+  document.getElementById("kb-steg-container").innerHTML="";
+  window._kbKoppladArtikel=null;
+  kbRenderKopplaArtikel();
   kbRecalc();
   document.getElementById("kb-del-btn").style.display="none";
   openM("m-kb");
@@ -5069,8 +5128,13 @@ function openEditKB(id){
   document.getElementById("kb-land").value=n.land||"Generellt/EU";
   document.getElementById("kb-innehall").value=n.innehall||"";
   document.getElementById("kb-lank").value=n.lank||"";
-  document.getElementById("kb-kont-rows").innerHTML="";
-  (Array.isArray(n.konteringar)?n.konteringar:[]).forEach(r=>kbAddRow(r));
+  document.getElementById("kb-steg-container").innerHTML="";
+  // Nya formatet: bokforingssteg. Bakåtkompatibelt: gamla konteringar blir ett steg.
+  let steg=Array.isArray(n.bokforingssteg)?n.bokforingssteg:[];
+  if(!steg.length&&Array.isArray(n.konteringar)&&n.konteringar.length){steg=[{rubrik:"Bokföring",rader:n.konteringar}];}
+  steg.forEach(st=>kbAddSteg(st));
+  window._kbKoppladArtikel=n.kopplad_artikel_id||null;
+  kbRenderKopplaArtikel();
   kbRecalc();
   document.getElementById("kb-del-btn").style.display="";
   openM("m-kb");
@@ -5079,7 +5143,7 @@ function openEditKB(id){
 async function saveKB(){
   const rubrik=v("kb-rubrik");if(!rubrik){toast("Rubrik krävs");return;}
   const id=v("kb-id");
-  const data={user_id:me.id,rubrik,kategori:v("kb-kat")||"Övrigt",land:v("kb-land")||"Generellt/EU",innehall:document.getElementById("kb-innehall")?.value||"",lank:v("kb-lank")||null,konteringar:kbReadRows(),updated_at:new Date().toISOString()};
+  const data={user_id:me.id,rubrik,kategori:v("kb-kat")||"Övrigt",land:v("kb-land")||"Generellt/EU",innehall:document.getElementById("kb-innehall")?.value||"",lank:v("kb-lank")||null,bokforingssteg:kbReadSteg(),kopplad_artikel_id:window._kbKoppladArtikel||null,updated_at:new Date().toISOString()};
   const r=id?await sb.from("knowledge_notes").update(data).eq("id",id):await sb.from("knowledge_notes").insert(data);
   if(r.error){alert(r.error.message);return;}
   closeM("m-kb");toast("Notering sparad ✓");
