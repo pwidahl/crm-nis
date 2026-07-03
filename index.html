@@ -1042,7 +1042,7 @@ textarea{resize:vertical;min-height:68px}
   </div>
 </div>
 
-<div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Edit to-do</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 High</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Low</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><div style="display:flex;gap:6px"><select id="te-company" style="flex:1"><option value="">Inget</option></select><button class="btn btn-outline btn-sm" onclick="skapaBolagFranTodo()" title="Skapa nytt bolag">+ Nytt</button></div></div><div class="fl full"><label>Kopplad underkonsult</label><select id="te-sub"><option value="">Ingen</option></select></div><div class="fl full"><label>Snabblänk</label><select id="te-link"><option value="">Ingen</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()" data-i18n="btn_spara">Spara</button></div></div></div>
+<div class="overlay" id="m-todo-edit"><div class="modal" style="width:440px"><div class="mhdr"><h2>Edit to-do</h2><button class="mclose" onclick="closeM('m-todo-edit')">×</button></div><div class="mbody"><input id="te-id" type="hidden"><div class="fg"><div class="fl full"><label>Uppgift</label><input id="te-text"></div><div class="fl"><label>Deadline</label><input id="te-date" type="date"></div><div class="fl"><label>Prioritet</label><select id="te-prio"><option value="Hög">🔴 High</option><option value="Medium">🟡 Medium</option><option value="Låg">🟢 Low</option></select></div><div class="fl full"><label>Kopplad kontakt</label><select id="te-contact"><option value="">Ingen</option></select></div><div class="fl full"><label>Kopplat bolag</label><select id="te-company"><option value="">Inget</option></select></div><div class="fl full"><label>Kopplad underkonsult</label><select id="te-sub"><option value="">Ingen</option></select></div><div class="fl full"><label>Snabblänk</label><select id="te-link"><option value="">Ingen</option></select></div></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-todo-edit')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveTodoEdit()" data-i18n="btn_spara">Spara</button></div></div></div>
 
 <div class="overlay" id="m-dash-cust"><div class="modal" style="width:380px"><div class="mhdr"><h2>Anpassa dashboard</h2><button class="mclose" onclick="closeM('m-dash-cust')">×</button></div><div class="mbody"><p style="font-size:13px;color:#666;margin-bottom:8px">Bocka i de sektioner du vill se på dashboarden.</p><div id="dash-cust-body"></div></div><div class="mfoot"><button class="btn btn-outline" onclick="closeM('m-dash-cust')" data-i18n="btn_avbryt">Avbryt</button><button class="btn btn-primary" onclick="saveDashCustomize()" data-i18n="btn_spara">Spara</button></div></div></div>
 
@@ -3065,6 +3065,7 @@ function renderDagbok(){
 
 function openNewDiaryEntry(){
   editDid=null;
+  window._diaryFromTodo=null;
   selectDiaryType("uppdrag",null);
   document.getElementById("de-id").value="";
   document.getElementById("de-datum").value=today();
@@ -3109,7 +3110,7 @@ function selectDiaryType(typ,btn){
 
 function loadDiaryProjects(){const kid=v("de-kund");const dp=document.getElementById("de-proj");if(!dp)return;const list=projects.filter(p=>!kid||p.company_id===kid);dp.innerHTML='<option value="">– Välj projekt –</option>'+list.map(p=>`<option value="${p.id}">${e(p.namn)}</option>`).join("");loadDiaryTasks();loadDiaryTodos();}
 function loadDiaryTodos(){const kid=v("de-kund");const dt=document.getElementById("de-todo");if(!dt)return;const list=todos.filter(t=>!t.done&&t.company_id&&(!kid||t.company_id===kid));dt.innerHTML='<option value="">– Ingen –</option>'+list.map(t=>{const co=companies.find(c=>c.id===t.company_id);return`<option value="${t.id}">${e(t.text)}${co&&!kid?" ("+e(co.namn)+")":""}</option>`;}).join("");}
-function pickDiaryTodo(){const id=v("de-todo");if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("de-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("de-kund");if(k&&!k.value){k.value=t.company_id;loadDiaryProjects();}}}
+function pickDiaryTodo(){const id=v("de-todo");window._diaryFromTodo=id||null;if(!id)return;const t=todos.find(x=>x.id===id);if(!t)return;const desc=document.getElementById("de-desc");if(desc&&!desc.value.trim())desc.value=t.text;if(t.company_id){const k=document.getElementById("de-kund");if(k&&!k.value){k.value=t.company_id;loadDiaryProjects();}}}
 function loadDiaryTasks(){const pid=v("de-proj");const dt=document.getElementById("de-task");if(!dt)return;dt.innerHTML='<option value="">Ingen uppgift</option>'+tasks.filter(t=>t.project_id===pid&&t.status!=="Klar").map(t=>`<option value="${t.id}">${e(t.title)}</option>`).join("");}
 
 async function saveDiaryEntry(){
@@ -3125,7 +3126,7 @@ async function saveDiaryEntry(){
   const tid=isUppdrag?v("de-task")||null:null;
   if(isUppdrag&&!pid){toast("Välj projekt");return;}
 
-  const data={user_id:me.id,project_id:pid,task_id:tid,datum,hours,billable:isUppdrag?document.getElementById("de-bill")?.checked!==false:false,work_category:v("de-cat")||"Löpande arbete",description:desc,invoice_note:v("de-invnote")||null,next_step:v("de-nextstep")||null,aktivitet_typ:typ,plats:v("de-plats")||null};
+  const data={user_id:me.id,project_id:pid,task_id:tid,todo_id:window._diaryFromTodo||null,datum,hours,billable:isUppdrag?document.getElementById("de-bill")?.checked!==false:false,work_category:v("de-cat")||"Löpande arbete",description:desc,invoice_note:v("de-invnote")||null,next_step:v("de-nextstep")||null,aktivitet_typ:typ,plats:v("de-plats")||null};
 
   const r=editDid?await sb.from("project_diary_entries").update(data).eq("id",editDid):await sb.from("project_diary_entries").insert(data);
   if(r.error){alert(r.error.message);return;}
@@ -3140,7 +3141,19 @@ async function saveDiaryEntry(){
     }
   }
 
-  closeM("m-diary-entry");toast("Aktivitet sparad ✓");editDid=null;await loadAll();
+  closeM("m-diary-entry");toast("Aktivitet sparad ✓");editDid=null;
+  // Om loggen kom från en todo: fråga om uppgiften är klar
+  const fromTodo=window._diaryFromTodo;window._diaryFromTodo=null;
+  await loadAll();
+  if(fromTodo){
+    const t=todos.find(x=>x.id===fromTodo);
+    if(t&&!t.done){
+      confirm2("Tid loggad ✓ Är uppgiften slutförd?",async()=>{
+        await sb.from("todos").update({done:true}).eq("id",fromTodo);
+        t.done=true;toast("Uppgift markerad som klar");renderTodoList?.();renderDashboard();
+      });
+    }
+  }
 }
 
 function deleteDiaryEntry(id){confirm2("Ta bort aktiviteten?",async()=>{await sb.from("project_diary_entries").delete().eq("id",id);await loadAll();});}
@@ -7646,6 +7659,17 @@ function aterTillTodo(nyttBolagId){
   },30);
   window._todoReturnData=null;window._skapaBolagFranTodo=false;
 }
+async function loggaTidFranTodo(todoId){
+  const t=todos.find(x=>x.id===todoId);if(!t)return;
+  openNewDiaryEntry();
+  window._diaryFromTodo=todoId;
+  setTimeout(()=>{
+    const desc=document.getElementById("de-desc");if(desc)desc.value=t.text||"";
+    if(t.company_id){const dc=document.getElementById("de-kund");if(dc&&[...dc.options].some(o=>o.value===t.company_id)){dc.value=t.company_id;loadDiaryProjects();}}
+    // Förvälj todo:n i dropdownen (efter att kund/projekt laddats)
+    setTimeout(()=>{const dt=document.getElementById("de-todo");if(dt&&[...dt.options].some(o=>o.value===todoId)){dt.value=todoId;}window._diaryFromTodo=todoId;},80);
+  },60);
+}
 async function saveTodoEdit(){
   const id=v("te-id");const t=todos.find(x=>x.id===id);if(!t)return;
   const text=v("te-text");if(!text){toast("Skriv en uppgift");return;}
@@ -7896,6 +7920,7 @@ function renderTodoList(){
     </div>
     ${ql?`<button class="btn-icon" title="Öppna ${e(ql.titel)}" onclick="window.open('${e(ql.url)}','_blank','noopener')">🔗</button>`:""}
     <button class="btn-icon" title="${t.loggad?'Markera ej loggad':'Markera loggad'}" onclick="toggleLogged('${t.id}')" style="${t.loggad?'color:var(--green)':''}">📝</button>
+    <button class="btn-icon" title="Logga tid" onclick="loggaTidFranTodo('${t.id}')">⏱</button>
     <button class="btn-icon" title="Redigera" onclick="openEditTodo('${t.id}')">✎</button>
     <button class="btn-icon" style="color:var(--red)" onclick="deleteTodo('${t.id}')">🗑</button>
   </div>`;};
