@@ -1651,7 +1651,7 @@ const I18N={
     set_konto:"Konto",set_sakerhet:"Säkerhet (2FA)",set_rapporter:"Rapporter",set_inloggad_som:"Inloggad som:",
     set_ditt_namn:"Ditt namn (visas för kollegor)",set_spara_namn:"Spara namn",set_logga_ut:"Logga ut",
     set_byt_losen:"Byt lösenord",set_nytt_losen:"Nytt lösenord (minst 8 tecken)",set_upprepa:"Upprepa",
-    set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_data:"Data & säkerhetskopia",set_backup_info:"Ladda ner en komplett säkerhetskopia av all din data som en JSON-fil. Spara den på ett tryggt ställe.",set_ladda_backup:"Ladda ner säkerhetskopia",backup_klar:"Säkerhetskopia nedladdad",backup_poster:"poster",set_radera_mitt:"Radera mitt konto",
+    set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_data:"Data & säkerhetskopia",set_backup_info:"Ladda ner en komplett säkerhetskopia av all din data som en JSON-fil. Spara den på ett tryggt ställe.",set_ladda_backup:"Ladda ner säkerhetskopia",backup_klar:"Säkerhetskopia nedladdad",backup_hamtar:"Hämtar all data…",backup_poster:"poster",set_radera_mitt:"Radera mitt konto",
     set_veckobrev_aktivt:"Veckobrev aktivt",set_veckodag:"Veckodag",set_veckobrev_till:"Veckobrev till",set_uppf_pamin:"Uppföljningspåminnelser",set_pamin_epost:"Påminnelse e-post",set_dagar_forvag:"Dagar i förväg",set_skicka_test:"Skicka testmejl",set_kontrollerar:"Kontrollerar status...",
     kcc_totalt:"KCC totalt",kcc_guld_l:"Guld",kcc_silver_l:"Silver",kcc_kontakter:"KCC-kontakter",kcc_underkonsulter:"KCC-underkonsulter",
     kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult",
@@ -8086,29 +8086,19 @@ function makeICS(events){const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-/
 function ics(s){return String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;");}
 function dlICS(c,f){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/calendar;charset=utf-8"}));a.download=f;a.click();}
 function exportSingleICS(id){const c=contacts.find(x=>x.id===id);if(!c||!c.nasta_foljup){toast("Ingen uppföljning");return;}const k=kedja(c.senast_typ);dlICS(makeICS([{date:c.nasta_foljup,title:k[0]+": "+c.fornamn+" "+c.efternamn,desc:k[1]}]),"uppfoljning.ics");toast("Kalenderpost laddas ner");}
-function exportAllData(){
-  // Fullständig säkerhetskopia av all data till JSON-fil
-  const backup={
-    _exporterad:new Date().toISOString(),
-    _version:1,
-    _user:me?.email||"",
-    companies:companies||[],
-    contacts:contacts||[],
-    signals:signals||[],
-    network:network||[],
-    projects:projects||[],
-    tasks:tasks||[],
-    diary:diary||[],
-    todos:todos||[],
-    checklista:checklista||[],
-    knowledgeNotes:knowledgeNotes||[],
-    kunskapsartiklar:kunskapsartiklar||[],
-    regelnyheter:regelnyheter||[],
-    aterUppgifter:aterUppgifter||[],
-    aterBockar:aterBockar||[],
-    quickLinks:quickLinks||[]
-  };
-  const antalPoster=Object.entries(backup).filter(([k])=>!k.startsWith("_")).reduce((s,[,v])=>s+(Array.isArray(v)?v.length:0),0);
+async function exportAllData(){
+  toast(TR("backup_hamtar")||"Hämtar all data…");
+  // Hämta färskt från databasen så backupen är komplett (även tabeller utan globaler)
+  const tabeller=["companies","contacts","company_signals","network","projects","project_tasks","project_diary_entries","project_contacts","project_closeouts","todos","daglig_checklista","daglig_checklista_bock","knowledge_notes","kunskapsartiklar","regelnyheter","regel_status","bevakningsprofiler","aterkommande_uppgifter","aterkommande_bock","checklista_mall","bolag_logg","quick_links","subconsultants","meddelanden","profiles","user_settings"];
+  const backup={_exporterad:new Date().toISOString(),_version:2,_user:me?.email||""};
+  let antalPoster=0,fel=[];
+  for(const tab of tabeller){
+    try{
+      const r=await sb.from(tab).select("*");
+      if(r.error){fel.push(tab);backup[tab]=[];}
+      else{backup[tab]=r.data||[];antalPoster+=backup[tab].length;}
+    }catch(e){fel.push(tab);backup[tab]=[];}
+  }
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
