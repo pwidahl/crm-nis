@@ -515,7 +515,7 @@ textarea{resize:vertical;min-height:68px}
   </div>
 
   <div class="content">
-    <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><p class="sec-title" data-i18n="dash_kommande_uppf">Kommande uppföljningar</p><div id="dash-fups"></div></div>
+    <div class="view active" id="view-dashboard"><div id="dash-kpi"></div><div id="dash-chain"></div><div id="dash-ater"></div><div id="dash-regel"></div><p class="sec-title" data-i18n="dash_kommande_uppf">Kommande uppföljningar</p><div id="dash-fups"></div></div>
     <div class="view" id="view-goals"><div id="goals-content"></div></div>
         <div class="view" id="view-linkedin"><div id="linkedin-content"></div></div>
     <div class="view" id="view-kcc"><div id="kcc-content"></div></div>
@@ -1651,7 +1651,7 @@ const I18N={
     set_konto:"Konto",set_sakerhet:"Säkerhet (2FA)",set_rapporter:"Rapporter",set_inloggad_som:"Inloggad som:",
     set_ditt_namn:"Ditt namn (visas för kollegor)",set_spara_namn:"Spara namn",set_logga_ut:"Logga ut",
     set_byt_losen:"Byt lösenord",set_nytt_losen:"Nytt lösenord (minst 8 tecken)",set_upprepa:"Upprepa",
-    set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_data:"Data & säkerhetskopia",set_backup_info:"Ladda ner en komplett säkerhetskopia av all din data som en JSON-fil. Spara den på ett tryggt ställe.",set_ladda_backup:"Ladda ner säkerhetskopia",backup_klar:"Säkerhetskopia nedladdad",backup_hamtar:"Hämtar all data…",backup_poster:"poster",set_radera_mitt:"Radera mitt konto",
+    set_radera_konto:"Radera konto",set_radera_info:"Raderar ditt konto och all din data permanent. Går inte att ångra.",set_data:"Data & säkerhetskopia",set_backup_info:"Ladda ner en komplett säkerhetskopia av all din data som en JSON-fil. Spara den på ett tryggt ställe.",set_ladda_backup:"Ladda ner säkerhetskopia",backup_klar:"Säkerhetskopia nedladdad",backup_hamtar:"Hämtar all data…",dash_kommande_uppgifter:"Kommande uppgifter",dash_nya_regler:"Nya lagar & regler",dash_idag:"Idag",dash_imorgon:"Imorgon",dash_dagar:"dagar",backup_poster:"poster",set_radera_mitt:"Radera mitt konto",
     set_veckobrev_aktivt:"Veckobrev aktivt",set_veckodag:"Veckodag",set_veckobrev_till:"Veckobrev till",set_uppf_pamin:"Uppföljningspåminnelser",set_pamin_epost:"Påminnelse e-post",set_dagar_forvag:"Dagar i förväg",set_skicka_test:"Skicka testmejl",set_kontrollerar:"Kontrollerar status...",
     kcc_totalt:"KCC totalt",kcc_guld_l:"Guld",kcc_silver_l:"Silver",kcc_kontakter:"KCC-kontakter",kcc_underkonsulter:"KCC-underkonsulter",
     kcc_inga_kontakter:"Inga KCC-kontakter ännu. Markera en kontakt som KCC i dess formulär.",kcc_inga_subs:"Inga KCC-underkonsulter ännu.",kcc_kontakt:"Kontakt",kcc_underkonsult_l:"Underkonsult",
@@ -3227,6 +3227,8 @@ function _renderDashboardInner(){
 
   const fupsEl=document.getElementById("dash-fups");if(fupsEl)fupsEl.innerHTML="";
   const secTitle=document.querySelector("#view-dashboard .sec-title");if(secTitle)secTitle.style.display="none";
+  try{renderDashAter();}catch(e){}
+  try{renderDashRegel();}catch(e){}
 }
 
 let _dashHidden=null;
@@ -3234,6 +3236,41 @@ function getDashHidden(){
   if(_dashHidden!==null)return _dashHidden;
   try{const raw=localStorage.getItem("dashHidden");if(raw===null)return null;_dashHidden=JSON.parse(raw);}catch{_dashHidden=null;}
   return _dashHidden;
+}
+function renderDashAter(){
+  const box=document.getElementById("dash-ater");if(!box)return;
+  const nu=new Date();nu.setHours(0,0,0,0);
+  const inom14=new Date(nu);inom14.setDate(nu.getDate()+14);
+  // Kommande ej utförda uppgifter inom 14 dagar
+  const kommande=(aterUppgifter||[]).map(u=>{
+    const dt=aterNastaDatum(u);if(!dt)return null;
+    const nyckel=aterPeriodNyckel(u);
+    const klar=aterBockar.some(b=>b.uppgift_id===u.id&&b.period_nyckel===nyckel);
+    return {u,dt,klar};
+  }).filter(x=>x&&!x.klar&&x.dt>=nu&&x.dt<=inom14).sort((a,b)=>a.dt-b.dt).slice(0,6);
+  if(!kommande.length){box.innerHTML="";return;}
+  box.innerHTML=`<p style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;font-weight:600;margin:0 0 8px">📋 ${TR("dash_kommande_uppgifter")||"Kommande uppgifter"}</p>
+    <div class="week-sec" style="margin-bottom:18px"><div>${kommande.map(({u,dt})=>{
+      const co=u.company_id?companies.find(c=>c.id===u.company_id):null;
+      const dagar=Math.round((dt-nu)/86400000);
+      const nar=dagar===0?(TR("dash_idag")||"Idag"):dagar===1?(TR("dash_imorgon")||"Imorgon"):`${dagar} ${TR("dash_dagar")||"dagar"}`;
+      return `<div class="week-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer" onclick="gotoView('checklista')">
+        <span style="font-size:12px;color:${dagar<=1?"var(--red)":"var(--warm)"};font-weight:600;white-space:nowrap;width:70px">${nar}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">${e(u.titel)}</div><div style="font-size:12px;color:#888">${aterPeriodLabel(u.period)}${co?" · 🏢 "+e(co.namn):""} · ${dt.toLocaleDateString("sv-SE")}</div></div>
+      </div>`;
+    }).join("")}</div></div>`;
+}
+function renderDashRegel(){
+  const box=document.getElementById("dash-regel");if(!box)return;
+  // Olästa regelnyheter (senaste, ej markerade lästa)
+  const olasta=(regelnyheter||[]).filter(r=>regelStatus[r.id]!=="last").slice(0,4);
+  if(!olasta.length){box.innerHTML="";return;}
+  box.innerHTML=`<p style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;font-weight:600;margin:0 0 8px">⚖️ ${TR("dash_nya_regler")||"Nya lagar & regler"}</p>
+    <div class="week-sec" style="margin-bottom:18px"><div>${olasta.map(r=>`
+      <div class="week-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer" onclick="gotoView('kb');setTimeout(()=>{if(typeof setKbTab==='function')setKbTab('regler');},100)">
+        <span class="badge" style="background:var(--accent);color:#fff;font-size:10px;white-space:nowrap">${e(r.omrade||"")}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(r.titel)}</div><div style="font-size:11px;color:#999">${e(r.kalla||"")} · ${e((r.publicerad||"").slice(0,10))}</div></div>
+      </div>`).join("")}</div></div>`;
 }
 function nextStepHtml(){
   const td=today();
