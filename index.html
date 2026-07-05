@@ -298,7 +298,12 @@ textarea{resize:vertical;min-height:68px}
   .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
   .kpi{padding:12px}.kpi-n{font-size:26px}
   .chain-bar{grid-template-columns:repeat(2,1fr)}
-  .tw{overflow-x:auto}table{min-width:520px}
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}table{min-width:520px}
+  .modal .tw table{min-width:440px}
+  #las-modal-content .tw,#kb-content .tw{max-width:100%!important;overflow-x:auto}
+  #view-kb .tw{max-width:100%!important;overflow-x:auto}
+  #view-kb table,#las-modal-content table{min-width:380px}
+  .mbody{overflow-x:hidden}
   .fg,.ig{grid-template-columns:1fr}.fg .full{grid-column:1}
   .modal{width:98vw!important;max-height:96vh}
   .pipe{grid-template-columns:repeat(2,minmax(150px,1fr))}
@@ -486,6 +491,7 @@ textarea{resize:vertical;min-height:68px}
     <div class="nav-sec" onclick="toggleNavSec('kunskap')" style="cursor:pointer;user-select:none"><span data-i18n="navg_kunskap">Kunskapsbank</span> <span class="nav-sec-arrow" id="arr-kunskap">▾</span></div>
     <div class="nav-grp" id="grp-kunskap">
       <div class="nav-item" data-v="kb" onclick="gotoView('kb')"><span class="nav-icon">📚</span><span data-i18n="nav_faktabank">Faktabank</span></div>
+      <div class="nav-item" data-v="notebook" onclick="gotoView('notebook')"><span class="nav-icon">📓</span><span data-i18n="nav_notebook">Anteckningar</span></div>
       <div class="nav-item" data-v="cv" onclick="gotoView('cv')"><span class="nav-icon">📄</span><span data-i18n="nav_cv">CV / Erfarenhet</span></div>
     </div>
     <div class="nav-sec" onclick="toggleNavSec('system')" style="cursor:pointer;user-select:none"><span data-i18n="navg_system">System</span> <span class="nav-sec-arrow" id="arr-system">▾</span></div>
@@ -720,6 +726,15 @@ textarea{resize:vertical;min-height:68px}
       <div id="kb-pane-bokforing" class="kb-pane">
       <div id="kb-content"></div>
       </div>
+    </div>
+    <div class="view" id="view-notebook">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <input id="nb-sok" placeholder="Sök..." data-i18n-ph="nb_sok" oninput="renderNotebook()" style="flex:1;max-width:280px">
+        <select id="nb-bolag-f" onchange="renderNotebook()"><option value="" data-i18n="nb_alla_bolag">Alla bolag</option></select>
+        <select id="nb-typ-f" onchange="renderNotebook()"><option value="" data-i18n="nb_alla_typer">Alla typer</option><option value="info">Info</option><option value="komihag">Kom ihåg</option></select>
+        <button class="btn btn-primary btn-sm" onclick="openNyAnteckning()" data-i18n="nb_ny">+ Ny anteckning</button>
+      </div>
+      <div id="notebook-content"></div>
     </div>
     <div class="view" id="view-cv">
       <div id="cv-content"></div>
@@ -1165,6 +1180,10 @@ let liAktivitet=[],liInlagg=[],liInteraktion=[],liMal={gillningar:5,kommentarer:
 let meddelanden=[];
 let checklista=[],checklistaBockar=[];
 let aterUppgifter=[],aterBockar=[];
+let anteckningar=[];
+async function loadAnteckningar(){
+  try{const r=await sb.from("anteckningar").select("*").eq("user_id",me.id).order("datum",{ascending:false});anteckningar=r.data||[];}catch(e){anteckningar=[];}
+}
 async function loadAterUppgifter(){
   try{const r=await sb.from("aterkommande_uppgifter").select("*").eq("user_id",me.id).order("ordning");aterUppgifter=r.data||[];}catch(e){aterUppgifter=[];}
   try{const b=await sb.from("aterkommande_bock").select("*").eq("user_id",me.id);aterBockar=b.data||[];}catch(e){aterBockar=[];}
@@ -2126,7 +2145,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus],["ateruppg",loadAterUppgifter]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus],["ateruppg",loadAterUppgifter],["anteckningar",loadAnteckningar]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -2256,7 +2275,7 @@ function toggleNavSec(key){
   grp.classList.toggle("collapsed");
   if(arrParent)arrParent.classList.toggle("collapsed");
 }
-const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"focus",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"bolag",processer:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
+const VIEW_GROUP={dagbok:"arbetsbok",projects:"arbetsbok",tasks:"arbetsbok",linkedin:"focus",checklista:"arbetsbok",kcc:"focus",subconsultants:"natverk",contacts:"natverk",mellanhander:"natverk",network:"natverk",relmap:"natverk",companies:"bolag",koncern:"bolag",signals:"bolag",processer:"focus",stats:"analys",myactivity:"analys",log:"analys",tidrapport:"analys",finans:"analys",kb:"kunskap",notebook:"kunskap",cv:"kunskap",admin:"system",settings:"system"};
 const ALL_NAV_GROUPS=["focus","arbetsbok","natverk","bolag","analys","kunskap","system"];
 function expandActiveGroup(viewName){
   const grp=VIEW_GROUP[viewName];
