@@ -5697,7 +5697,7 @@ function renderNotebook(){
       const co=a.company_id?companies.find(c=>c.id===a.company_id):null;
       const aktiv=window._nbAktivAnt===a.id;
       const typLbl=(a.typ==="komihag")?"📌":"📄";
-      return `<div onclick="nbOppna('${a.id}')" style="padding:11px 12px;border-radius:var(--r);margin-bottom:6px;cursor:pointer;border:1px solid ${aktiv?"var(--accent)":"var(--cream)"};background:${aktiv?"var(--paper)":"#fff"}">
+      return `<div onclick="nbOppna('${a.id}')" style="padding:11px 12px;border-radius:var(--r);margin-bottom:6px;cursor:pointer;border:1px solid ${aktiv?"var(--accent)":"var(--cream)"};background:${a.farg||(aktiv?"var(--paper)":"#fff")};${a.farg?"border-left:4px solid "+a.farg.replace('f','d'):""}">
         <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typLbl} ${a.titel?e(a.titel):e((a.text||"").slice(0,40))||"(utan titel)"}</div>
         <div style="font-size:11px;color:#999;margin-top:2px">${co?"🏢 "+e(co.namn)+" · ":""}${e(a.datum||"")}</div>
       </div>`;
@@ -5719,13 +5719,16 @@ function nbRenderEditor(id){
   const a=anteckningar.find(x=>x.id===id);if(!a)return;
   const editorBox=document.getElementById("nb-editor");if(!editorBox)return;
   const co=a.company_id?companies.find(c=>c.id===a.company_id):null;
+  const NB_FARGER=[["","#ffffff"],["gul","#fffbe0"],["rosa","#ffeef2"],["persika","#fff0e6"],["mint","#e8f7ee"],["blå","#e8f2fc"],["lila","#f2ecfa"],["grön","#eaf5ea"]];
+  const lappBg=a.farg||"#ffffff";
   editorBox.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:16px;min-height:60vh;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-      <input id="nbe-titel" value="${e(a.titel||"")}" placeholder="${TR("nb_titel_ph")||"Titel..."}" oninput="nbAutospar()" style="border:none;font-size:20px;font-weight:600;width:100%;padding:4px 0;margin-bottom:8px;outline:none;font-family:'DM Serif Display',serif">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:12px;color:#888;border-bottom:1px solid var(--paper);padding-bottom:10px">
+    <div style="background:${lappBg};border:1px solid var(--cream);border-radius:var(--r);padding:16px;min-height:60vh;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+      <input id="nbe-titel" value="${e(a.titel||"")}" placeholder="${TR("nb_titel_ph")||"Titel..."}" oninput="nbAutospar()" style="border:none;background:transparent;font-size:20px;font-weight:600;width:100%;padding:4px 0;margin-bottom:8px;outline:none;font-family:'DM Serif Display',serif">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:12px;color:#888;border-bottom:1px solid rgba(0,0,0,.06);padding-bottom:10px">
         <select id="nbe-typ" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px"><option value="info"${a.typ!=="komihag"?" selected":""}>📄 Info</option><option value="komihag"${a.typ==="komihag"?" selected":""}>📌 Kom ihåg</option></select>
         <input id="nbe-datum" type="date" value="${e(a.datum||"")}" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px">
         <select id="nbe-company" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px"><option value="">${TR("nb_inget_bolag")||"Inget bolag"}</option>${companies.slice().sort((x,y)=>String(x.namn).localeCompare(String(y.namn),"sv")).map(c=>`<option value="${c.id}"${a.company_id===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+        <span style="display:flex;gap:3px;align-items:center;margin-left:6px">${NB_FARGER.map(([namn,hex])=>`<span onclick="nbSattFarg('${hex}')" title="${namn||"Ingen"}" style="width:18px;height:18px;border-radius:50%;background:${hex};border:2px solid ${a.farg===hex||(!a.farg&&hex==='#ffffff')?"var(--accent)":"var(--mid)"};cursor:pointer;display:inline-block"></span>`).join("")}</span>
         <span id="nbe-status" style="margin-left:auto;color:var(--green)"></span>
       </div>
       <div class="nb-toolbar" style="display:flex;gap:2px;flex-wrap:wrap;align-items:center;margin-bottom:8px;padding:4px;background:var(--paper);border-radius:var(--r)">
@@ -5739,6 +5742,11 @@ function nbRenderEditor(id){
         <button type="button" class="nb-tb-btn" title="Kryssruta" onmousedown="event.preventDefault()" onclick="nbInsertCheckbox()">☐</button>
         <span style="width:1px;height:20px;background:var(--mid);margin:0 4px"></span>
         <button type="button" class="nb-tb-btn" title="Gul" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#fff3a0')" style="background:#fff3a0">​</button>
+        <button type="button" class="nb-tb-btn" title="Rosa" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#ffd1dc')" style="background:#ffd1dc">​</button>
+        <button type="button" class="nb-tb-btn" title="Persika" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#ffddc9')" style="background:#ffddc9">​</button>
+        <button type="button" class="nb-tb-btn" title="Mint" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#c8f0d8')" style="background:#c8f0d8">​</button>
+        <button type="button" class="nb-tb-btn" title="Blå" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#cfe6ff')" style="background:#cfe6ff">​</button>
+        <button type="button" class="nb-tb-btn" title="Lila" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#e4d4f4')" style="background:#e4d4f4">​</button>
         <button type="button" class="nb-tb-btn" title="Grön" onmousedown="event.preventDefault()" onclick="nbFormat('hiliteColor','#c8e6c9')" style="background:#c8e6c9">​</button>
         <button type="button" class="nb-tb-btn" title="Röd text" onmousedown="event.preventDefault()" onclick="nbFormat('foreColor','#c0392b')" style="color:#c0392b"><b>A</b></button>
         <button type="button" class="nb-tb-btn" title="Rensa format" onmousedown="event.preventDefault()" onclick="nbFormat('removeFormat')">✕</button>
@@ -5752,6 +5760,13 @@ function nbRenderEditor(id){
     </div>`;
   // Aktivera sökbar bolagsväljare
   setTimeout(()=>{try{const el=document.getElementById("nbe-company");if(el)makeSelectSearchable(el);}catch(e){}},20);
+}
+async function nbSattFarg(hex){
+  const id=window._nbAktivAnt;if(!id)return;
+  const farg=hex==="#ffffff"?null:hex;
+  await sb.from("anteckningar").update({farg}).eq("id",id);
+  const a=anteckningar.find(x=>x.id===id);if(a)a.farg=farg;
+  renderNotebook();
 }
 function nbFormat(cmd,val){document.execCommand(cmd,false,val||null);const ed=document.getElementById("nbe-text");if(ed)ed.focus();nbAutospar();}
 function nbInsertCheckbox(){document.execCommand("insertHTML",false,'<label style="display:block"><input type="checkbox" onclick="nbAutospar()"> </label>');nbAutospar();}
