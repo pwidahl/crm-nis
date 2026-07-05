@@ -222,6 +222,13 @@ textarea{resize:vertical;min-height:68px}
 .kb-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .kb-pane{display:none}
 .kb-pane.active{display:block}
+.combo-wrap{position:relative}
+.combo-search{width:100%;box-sizing:border-box}
+.combo-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--mid);border-radius:var(--r);box-shadow:0 6px 20px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:9999;display:none}
+.combo-drop.open{display:block}
+.combo-opt{padding:8px 11px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--paper)}
+.combo-opt:hover,.combo-opt.hl{background:var(--paper)}
+.combo-opt.sel{font-weight:600;color:var(--accent)}
 .timer-panel{background:#fff;border:1px solid var(--cream);border-radius:10px;padding:15px;width:320px;box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;max-height:80vh;overflow-y:auto}
 .timer-panel select,.timer-panel input{max-width:100%;box-sizing:border-box;text-overflow:ellipsis}
 .timer-panel .fl{min-width:0}
@@ -1855,7 +1862,7 @@ function applyStaticI18n(){
   if(LANG==="en"){document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(el=>{const cur=el.getAttribute("placeholder");if(PH_EN[cur])el.setAttribute("placeholder",PH_EN[cur]);});}
   document.documentElement.lang=LANG;
 }
-const openM=id=>document.getElementById(id).classList.add("open");
+const openM=id=>{document.getElementById(id).classList.add("open");setTimeout(()=>{try{aktiveraBolagsSok();document.querySelectorAll("#"+id+" select").forEach(s=>{if(s._comboSync)s._comboSync();});}catch(e){}},30);};
 const closeM=id=>document.getElementById(id).classList.remove("open");
 // ── Navigeringshistorik (bakåt-pil i kort) ──
 let cardHistory=[];      // stack av {type,id,scroll}
@@ -5581,6 +5588,49 @@ function openNyAnteckningForBolag(companyId){
   openNyAnteckning();
   setTimeout(()=>{const s=document.getElementById("nb-company");if(s)s.value=companyId;},80);
 }
+function makeSelectSearchable(sel){
+  if(!sel||sel._searchable)return;
+  sel._searchable=true;
+  const wrap=document.createElement("div");wrap.className="combo-wrap";
+  sel.parentNode.insertBefore(wrap,sel);
+  const inp=document.createElement("input");inp.className="combo-search";inp.type="text";inp.autocomplete="off";
+  inp.placeholder=sel.getAttribute("data-combo-ph")||"Sök...";
+  const drop=document.createElement("div");drop.className="combo-drop";
+  wrap.appendChild(inp);wrap.appendChild(drop);
+  sel.style.display="none";
+  wrap.appendChild(sel);
+  const speglaVal=()=>{const o=sel.options[sel.selectedIndex];inp.value=o?o.textContent:"";};
+  const byggDrop=(filter="")=>{
+    const f=filter.toLowerCase();
+    drop.innerHTML="";
+    [...sel.options].forEach((o,i)=>{
+      if(f&&!o.textContent.toLowerCase().includes(f))return;
+      const d=document.createElement("div");d.className="combo-opt"+(i===sel.selectedIndex?" sel":"");
+      d.textContent=o.textContent;d.dataset.idx=i;
+      d.onclick=()=>{sel.selectedIndex=i;sel.dispatchEvent(new Event("change",{bubbles:true}));speglaVal();drop.classList.remove("open");};
+      drop.appendChild(d);
+    });
+  };
+  inp.addEventListener("focus",()=>{byggDrop("");drop.classList.add("open");inp.select();});
+  inp.addEventListener("input",()=>{byggDrop(inp.value);drop.classList.add("open");});
+  inp.addEventListener("keydown",(e)=>{
+    const opts=[...drop.querySelectorAll(".combo-opt")];let hl=drop.querySelector(".combo-opt.hl");
+    if(e.key==="ArrowDown"){e.preventDefault();let idx=hl?opts.indexOf(hl):-1;idx=Math.min(idx+1,opts.length-1);opts.forEach(o=>o.classList.remove("hl"));if(opts[idx]){opts[idx].classList.add("hl");opts[idx].scrollIntoView({block:"nearest"});}}
+    else if(e.key==="ArrowUp"){e.preventDefault();let idx=hl?opts.indexOf(hl):opts.length;idx=Math.max(idx-1,0);opts.forEach(o=>o.classList.remove("hl"));if(opts[idx]){opts[idx].classList.add("hl");opts[idx].scrollIntoView({block:"nearest"});}}
+    else if(e.key==="Enter"){e.preventDefault();if(hl)hl.click();else if(opts.length===1)opts[0].click();}
+    else if(e.key==="Escape"){drop.classList.remove("open");speglaVal();}
+  });
+  document.addEventListener("click",(ev)=>{if(!wrap.contains(ev.target)){drop.classList.remove("open");speglaVal();}});
+  const obs=new MutationObserver(()=>speglaVal());
+  obs.observe(sel,{childList:true});
+  sel.addEventListener("change",speglaVal);
+  sel._comboSync=speglaVal;
+  speglaVal();
+}
+function aktiveraBolagsSok(){
+  const ids=["nb-company","au-company","t-kund","de-kund","sig-coid","ar-coid","p-coid","sco-coid","focus-co-sel","fin-company"];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)makeSelectSearchable(el);});
+}
 function renderNotebook(){
   const box=document.getElementById("notebook-content");if(!box)return;
   // Fyll bolagsfilter
@@ -8200,6 +8250,7 @@ function fillTimerSelects(){
   const ks=document.getElementById("t-kund");if(ks)ks.innerHTML='<option value="">– Välj kund –</option>'+companies.filter(c=>projects.some(p=>p.company_id===c.id)).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
   const cs=document.getElementById("t-cat");if(cs)cs.innerHTML=WORK_CATS.map(c=>`<option>${c}</option>`).join("");
   loadTimerTodos();
+  setTimeout(()=>{try{const el=document.getElementById("t-kund");if(el){makeSelectSearchable(el);if(el._comboSync)el._comboSync();}}catch(e){}},20);
   const dco=document.getElementById("t-contacts");if(dco)dco.innerHTML=contacts.map(c=>`<option value="${c.id}">${e(c.fornamn)} ${e(c.efternamn)}</option>`).join("");
   loadTimerProjects();
 }
