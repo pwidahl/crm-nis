@@ -227,6 +227,8 @@ textarea{resize:vertical;min-height:68px}
 #nbe-text:empty:before{content:attr(data-ph);color:#bbb}
 #nbe-text h3{font-size:17px;font-weight:700;margin:10px 0 4px}
 #nbe-text ul,#nbe-text ol{margin:6px 0;padding-left:24px}
+#nbe-text .nb-cbx{cursor:pointer;user-select:none;font-size:17px;line-height:1;display:inline-block;margin-right:2px;color:#888}
+#nbe-text .nb-cbx.checked{color:var(--green)}
 #nbe-text label{cursor:pointer}
 #nbe-text .nb-check{display:inline}
 #nbe-text .nb-check input{vertical-align:middle;margin:0 3px 0 0;cursor:pointer}
@@ -5776,7 +5778,10 @@ function nbRenderEditor(id){
       </div>
     </div>`;
   // Aktivera sökbar bolagsväljare
-  setTimeout(()=>{try{const el=document.getElementById("nbe-company");if(el)makeSelectSearchable(el);}catch(e){}},20);
+  setTimeout(()=>{try{const el=document.getElementById("nbe-company");if(el)makeSelectSearchable(el);}catch(e){}
+    const ed=document.getElementById("nbe-text");
+    if(ed&&!ed._cbxBound){ed._cbxBound=true;ed.addEventListener("click",(ev)=>{const t=ev.target;if(t&&t.classList&&t.classList.contains("nb-cbx")){ev.preventDefault();nbToggleCbx(t);}});}
+  },20);
 }
 function nbToggleFold(id){if(!window._nbHopfallda)window._nbHopfallda=new Set();if(window._nbHopfallda.has(id))window._nbHopfallda.delete(id);else window._nbHopfallda.add(id);renderNotebook();}
 async function nbNyUnder(parentId){
@@ -5800,22 +5805,22 @@ async function nbSattFarg(hex){
 function nbFormat(cmd,val){document.execCommand(cmd,false,val||null);const ed=document.getElementById("nbe-text");if(ed)ed.focus();nbAutospar();}
 function nbInsertCheckbox(){
   const ed=document.getElementById("nbe-text");if(!ed)return;ed.focus();
-  const sel=window.getSelection();if(!sel||!sel.rangeCount){return;}
+  const sel=window.getSelection();if(!sel||!sel.rangeCount)return;
   const range=sel.getRangeAt(0);
   range.deleteContents();
-  const cb=document.createElement("input");
-  cb.type="checkbox";cb.setAttribute("onclick","nbAutospar()");
-  cb.style.verticalAlign="middle";cb.style.margin="0 4px 0 0";
+  // Klickbar ruta-symbol som ren text - fungerar i alla webbläsare, alltid inline
+  const box=document.createElement("span");
+  box.className="nb-cbx";box.contentEditable="false";box.textContent="☐";
   const space=document.createTextNode("\u00a0");
   range.insertNode(space);
-  range.insertNode(cb);
-  // Flytta markören efter mellanslaget så texten skrivs på samma rad
+  range.insertNode(box);
   const newRange=document.createRange();
-  newRange.setStartAfter(space);
-  newRange.collapse(true);
+  newRange.setStartAfter(space);newRange.collapse(true);
   sel.removeAllRanges();sel.addRange(newRange);
   nbAutospar();
 }
+// Klick på en ruta-symbol växlar ☐/☑
+function nbToggleCbx(el){el.textContent=el.textContent==="☐"?"☑":"☐";el.classList.toggle("checked",el.textContent==="☑");nbAutospar();}
 let _nbSparTimer=null;
 function nbAutospar(){
   const st=document.getElementById("nbe-status");if(st)st.textContent=TR("nb_sparar")||"Sparar...";
