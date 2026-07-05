@@ -306,6 +306,8 @@ textarea{resize:vertical;min-height:68px}
   .kpi{padding:12px}.kpi-n{font-size:26px}
   .chain-bar{grid-template-columns:repeat(2,1fr)}
   .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}table{min-width:520px}
+  .nb-layout{flex-direction:column}
+  #nb-lista{width:100%!important;max-height:none!important}
   .modal .tw table{min-width:440px}
   #las-modal-content .tw,#kb-content .tw{max-width:100%!important;overflow-x:auto}
   #view-kb .tw{max-width:100%!important;overflow-x:auto}
@@ -739,13 +741,17 @@ textarea{resize:vertical;min-height:68px}
       </div>
     </div>
     <div class="view" id="view-notebook">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-        <input id="nb-sok" placeholder="Sök..." data-i18n-ph="nb_sok" oninput="renderNotebook()" style="flex:1;max-width:280px">
+      <div id="nb-kat-tabs" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;border-bottom:2px solid var(--cream);margin-bottom:12px;padding-bottom:0"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <input id="nb-sok" placeholder="Sök..." data-i18n-ph="nb_sok" oninput="renderNotebook()" style="flex:1;max-width:240px">
         <select id="nb-bolag-f" onchange="renderNotebook()"><option value="" data-i18n="nb_alla_bolag">Alla bolag</option></select>
-        <select id="nb-typ-f" onchange="renderNotebook()"><option value="" data-i18n="nb_alla_typer">Alla typer</option><option value="info">Info</option><option value="komihag">Kom ihåg</option></select>
+        <button class="btn btn-outline btn-sm" onclick="openNyKategori()">+ Ny flik</button>
         <button class="btn btn-primary btn-sm" onclick="openNyAnteckning()" data-i18n="nb_ny">+ Ny anteckning</button>
       </div>
-      <div id="notebook-content"></div>
+      <div class="nb-layout" style="display:flex;gap:16px;align-items:flex-start">
+        <div id="nb-lista" style="width:280px;flex-shrink:0;max-height:70vh;overflow-y:auto"></div>
+        <div id="nb-editor" style="flex:1;min-width:0"></div>
+      </div>
     </div>
     <div class="view" id="view-cv">
       <div id="cv-content"></div>
@@ -1645,7 +1651,7 @@ const I18N={
     nav_konsultbehov:"Konsultbehov",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Kontakter",
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
-    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",nav_notebook:"Anteckningar",nb_sok:"Sök i anteckningar...",nb_alla_bolag:"Alla bolag",nb_alla_typer:"Alla typer",nb_ny:"+ Ny anteckning",nb_ny_titel:"Ny anteckning",nb_red_titel:"Redigera anteckning",nb_tom:"Inga anteckningar än. Klicka \"+ Ny anteckning\".",nb_ingen_match:"Inga anteckningar matchar.",nb_komihag:"Kom ihåg",nb_info:"Info",nb_inget_bolag:"Inget bolag",nb_text_krav:"Skriv en anteckning",nb_sparad:"Anteckning sparad ✓",nb_radera:"Ta bort anteckningen?",nb_borttagen:"Borttagen",nb_anteckning:"Anteckning",nb_till_bolag:"Till bolaget",gsearch_ph:"Sök allt: bolag, kontakter, artiklar, bokföring, anteckningar...",nb_inga_bolag:"Inga anteckningar för detta bolag än.",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_till_artikel:"Till artikel",art_till_bokf:"Till bokföring",ater_rubrik:"Återkommande uppgifter",ater_ny_btn:"Ny uppgift",ater_ny:"Ny uppgift",ater_red:"Redigera uppgift",ater_tom:"Inga återkommande uppgifter än. Lägg till moms, bokslut, rapporter m.m.",ater_titel_krav:"Titel krävs",ater_sparad:"Uppgift sparad ✓",ater_radera:"Ta bort uppgiften?",ater_borttagen:"Borttagen",ater_inget_bolag:"Inget bolag",ater_vy_alla:"Alla",ater_vy_vecka:"Denna vecka",ater_vy_manad:"Denna månad",ater_alla_perioder:"Alla perioder",ater_alla_bolag:"Alla bolag",ater_rensa:"Rensa",ater_inga_match:"Inga uppgifter matchar filtret.",ater_konton:"Aktuella konton",ater_kopplad_fakta:"Kopplad fakta",ater_fran_notering:"Konton från noteringen",ater_kalender:"Kalender",ater_exp_kal:"Exportera till kalender (.ics)",ater_exp_excel:"Exportera till Excel",ater_inga_export:"Inga uppgifter att exportera",ater_export_klar:"händelser exporterade",ater_export_klar_excel:"Exporterad till Excel/CSV",art_till_uppgift:"Till uppgift",ater_valda:"valda",ater_avmarkera:"Avmarkera",ater_vy_kommande:"Kommande (ej utförda)",ater_vy_historik:"Historik (utförda)",ater_ingen_historik:"Inga utförda uppgifter än.",ater_period:"Period",ater_utford:"Utförd",ater_markera_flera:"Markera flera",ater_estimat:"Est.",ater_snitt_av:"snitt av",ater_tidsest:"Tidsestimering",ater_per_gang:"per gång",ater_baserat:"baserat på",ater_loggningar:"loggningar",ater_totalt:"totalt",per_daglig:"Daglig",per_vecka:"Vecka",per_manad:"Månad",per_kvartal:"Kvartal",per_arsbokslut:"Årsbokslut",dagtyp_fast:"Fast datum (den N:e)",dagtyp_arbetsdag:"N:te arbetsdagen",dagtyp_veckodag:"N:te veckodagen",ater_varje_dag:"Varje dag",ater_varje_vecka:"Varje vecka",cl_tab_daglig:"📝 Daglig checklista",cl_tab_ater:"🔁 Återkommande uppgifter",au_titel:"Titel *",au_period:"Period",au_bolag:"Bolag",au_dagregel:"Dagregel",au_veckodag:"Veckodag",au_manad:"Månad",au_besk:"Kort beskrivning",au_info:"Mer information",au_lank:"🔗 Länk",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
+    nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",nav_notebook:"Anteckningar",nb_sok:"Sök i anteckningar...",nb_alla_bolag:"Alla bolag",nb_alla_typer:"Alla typer",nb_ny:"+ Ny anteckning",nb_ny_titel:"Ny anteckning",nb_red_titel:"Redigera anteckning",nb_tom:"Inga anteckningar än. Klicka \"+ Ny anteckning\".",nb_ingen_match:"Inga anteckningar matchar.",nb_komihag:"Kom ihåg",nb_info:"Info",nb_inget_bolag:"Inget bolag",nb_text_krav:"Skriv en anteckning",nb_sparad:"Anteckning sparad ✓",nb_radera:"Ta bort anteckningen?",nb_borttagen:"Borttagen",nb_anteckning:"Anteckning",nb_till_bolag:"Till bolaget",gsearch_ph:"Sök allt: bolag, kontakter, artiklar, bokföring, anteckningar...",nb_inga_bolag:"Inga anteckningar för detta bolag än.",nb_ny_kat:"Ny flik",nb_kat_namn:"Namn på ny flik:",nb_tom_kort:"Inga anteckningar i denna flik.",nb_valj:"Välj en anteckning eller skapa en ny.",nb_titel_ph:"Titel...",nb_skriv_ph:"Skriv här...",nb_sparar:"Sparar...",nb_sparat:"Sparat",nb_radera_btn:"Ta bort",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_till_artikel:"Till artikel",art_till_bokf:"Till bokföring",ater_rubrik:"Återkommande uppgifter",ater_ny_btn:"Ny uppgift",ater_ny:"Ny uppgift",ater_red:"Redigera uppgift",ater_tom:"Inga återkommande uppgifter än. Lägg till moms, bokslut, rapporter m.m.",ater_titel_krav:"Titel krävs",ater_sparad:"Uppgift sparad ✓",ater_radera:"Ta bort uppgiften?",ater_borttagen:"Borttagen",ater_inget_bolag:"Inget bolag",ater_vy_alla:"Alla",ater_vy_vecka:"Denna vecka",ater_vy_manad:"Denna månad",ater_alla_perioder:"Alla perioder",ater_alla_bolag:"Alla bolag",ater_rensa:"Rensa",ater_inga_match:"Inga uppgifter matchar filtret.",ater_konton:"Aktuella konton",ater_kopplad_fakta:"Kopplad fakta",ater_fran_notering:"Konton från noteringen",ater_kalender:"Kalender",ater_exp_kal:"Exportera till kalender (.ics)",ater_exp_excel:"Exportera till Excel",ater_inga_export:"Inga uppgifter att exportera",ater_export_klar:"händelser exporterade",ater_export_klar_excel:"Exporterad till Excel/CSV",art_till_uppgift:"Till uppgift",ater_valda:"valda",ater_avmarkera:"Avmarkera",ater_vy_kommande:"Kommande (ej utförda)",ater_vy_historik:"Historik (utförda)",ater_ingen_historik:"Inga utförda uppgifter än.",ater_period:"Period",ater_utford:"Utförd",ater_markera_flera:"Markera flera",ater_estimat:"Est.",ater_snitt_av:"snitt av",ater_tidsest:"Tidsestimering",ater_per_gang:"per gång",ater_baserat:"baserat på",ater_loggningar:"loggningar",ater_totalt:"totalt",per_daglig:"Daglig",per_vecka:"Vecka",per_manad:"Månad",per_kvartal:"Kvartal",per_arsbokslut:"Årsbokslut",dagtyp_fast:"Fast datum (den N:e)",dagtyp_arbetsdag:"N:te arbetsdagen",dagtyp_veckodag:"N:te veckodagen",ater_varje_dag:"Varje dag",ater_varje_vecka:"Varje vecka",cl_tab_daglig:"📝 Daglig checklista",cl_tab_ater:"🔁 Återkommande uppgifter",au_titel:"Titel *",au_period:"Period",au_bolag:"Bolag",au_dagregel:"Dagregel",au_veckodag:"Veckodag",au_manad:"Månad",au_besk:"Kort beskrivning",au_info:"Mer information",au_lank:"🔗 Länk",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
     nav_statistik:"Statistik",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
@@ -1750,7 +1756,7 @@ const I18N={
     nav_konsultbehov:"Assignment leads",nav_linkedin:"LinkedIn",nav_kcc:"KCC",nav_kontakter:"Contacts",
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
-    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",nav_notebook:"Notes",nb_sok:"Search notes...",nb_alla_bolag:"All companies",nb_alla_typer:"All types",nb_ny:"+ New note",nb_ny_titel:"New note",nb_red_titel:"Edit note",nb_tom:"No notes yet. Click \"+ New note\".",nb_ingen_match:"No notes match.",nb_komihag:"Reminder",nb_info:"Info",nb_inget_bolag:"No company",nb_text_krav:"Write a note",nb_sparad:"Note saved ✓",nb_radera:"Delete the note?",nb_borttagen:"Deleted",nb_anteckning:"Note",nb_till_bolag:"To company",gsearch_ph:"Search everything: companies, contacts, articles, bookkeeping, notes...",nb_inga_bolag:"No notes for this company yet.",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_till_artikel:"To article",art_till_bokf:"To bookkeeping",ater_rubrik:"Recurring tasks",ater_ny_btn:"New task",ater_ny:"New task",ater_red:"Edit task",ater_tom:"No recurring tasks yet. Add VAT, closing, reports, etc.",ater_titel_krav:"Title required",ater_sparad:"Task saved ✓",ater_radera:"Delete the task?",ater_borttagen:"Deleted",ater_inget_bolag:"No company",ater_vy_alla:"All",ater_vy_vecka:"This week",ater_vy_manad:"This month",ater_alla_perioder:"All periods",ater_alla_bolag:"All companies",ater_rensa:"Clear",ater_inga_match:"No tasks match the filter.",ater_konton:"Relevant accounts",ater_kopplad_fakta:"Linked facts",ater_fran_notering:"Accounts from the note",ater_kalender:"Calendar",ater_exp_kal:"Export to calendar (.ics)",ater_exp_excel:"Export to Excel",ater_inga_export:"No tasks to export",ater_export_klar:"events exported",ater_export_klar_excel:"Exported to Excel/CSV",art_till_uppgift:"To task",ater_valda:"selected",ater_avmarkera:"Deselect",ater_vy_kommande:"Upcoming (not done)",ater_vy_historik:"History (done)",ater_ingen_historik:"No completed tasks yet.",ater_period:"Period",ater_utford:"Done",ater_markera_flera:"Select multiple",ater_estimat:"Est.",ater_snitt_av:"avg of",ater_tidsest:"Time estimate",ater_per_gang:"per time",ater_baserat:"based on",ater_loggningar:"logs",ater_totalt:"total",per_daglig:"Daily",per_vecka:"Weekly",per_manad:"Monthly",per_kvartal:"Quarterly",per_arsbokslut:"Year-end",dagtyp_fast:"Fixed date (the Nth)",dagtyp_arbetsdag:"Nth working day",dagtyp_veckodag:"Nth weekday",ater_varje_dag:"Every day",ater_varje_vecka:"Every week",cl_tab_daglig:"📝 Daily checklist",cl_tab_ater:"🔁 Recurring tasks",au_titel:"Title *",au_period:"Period",au_bolag:"Company",au_dagregel:"Day rule",au_veckodag:"Weekday",au_manad:"Month",au_besk:"Short description",au_info:"More information",au_lank:"🔗 Link",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
+    nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",nav_notebook:"Notes",nb_sok:"Search notes...",nb_alla_bolag:"All companies",nb_alla_typer:"All types",nb_ny:"+ New note",nb_ny_titel:"New note",nb_red_titel:"Edit note",nb_tom:"No notes yet. Click \"+ New note\".",nb_ingen_match:"No notes match.",nb_komihag:"Reminder",nb_info:"Info",nb_inget_bolag:"No company",nb_text_krav:"Write a note",nb_sparad:"Note saved ✓",nb_radera:"Delete the note?",nb_borttagen:"Deleted",nb_anteckning:"Note",nb_till_bolag:"To company",gsearch_ph:"Search everything: companies, contacts, articles, bookkeeping, notes...",nb_inga_bolag:"No notes for this company yet.",nb_ny_kat:"New tab",nb_kat_namn:"Name of new tab:",nb_tom_kort:"No notes in this tab.",nb_valj:"Select a note or create a new one.",nb_titel_ph:"Title...",nb_skriv_ph:"Write here...",nb_sparar:"Saving...",nb_sparat:"Saved",nb_radera_btn:"Delete",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_till_artikel:"To article",art_till_bokf:"To bookkeeping",ater_rubrik:"Recurring tasks",ater_ny_btn:"New task",ater_ny:"New task",ater_red:"Edit task",ater_tom:"No recurring tasks yet. Add VAT, closing, reports, etc.",ater_titel_krav:"Title required",ater_sparad:"Task saved ✓",ater_radera:"Delete the task?",ater_borttagen:"Deleted",ater_inget_bolag:"No company",ater_vy_alla:"All",ater_vy_vecka:"This week",ater_vy_manad:"This month",ater_alla_perioder:"All periods",ater_alla_bolag:"All companies",ater_rensa:"Clear",ater_inga_match:"No tasks match the filter.",ater_konton:"Relevant accounts",ater_kopplad_fakta:"Linked facts",ater_fran_notering:"Accounts from the note",ater_kalender:"Calendar",ater_exp_kal:"Export to calendar (.ics)",ater_exp_excel:"Export to Excel",ater_inga_export:"No tasks to export",ater_export_klar:"events exported",ater_export_klar_excel:"Exported to Excel/CSV",art_till_uppgift:"To task",ater_valda:"selected",ater_avmarkera:"Deselect",ater_vy_kommande:"Upcoming (not done)",ater_vy_historik:"History (done)",ater_ingen_historik:"No completed tasks yet.",ater_period:"Period",ater_utford:"Done",ater_markera_flera:"Select multiple",ater_estimat:"Est.",ater_snitt_av:"avg of",ater_tidsest:"Time estimate",ater_per_gang:"per time",ater_baserat:"based on",ater_loggningar:"logs",ater_totalt:"total",per_daglig:"Daily",per_vecka:"Weekly",per_manad:"Monthly",per_kvartal:"Quarterly",per_arsbokslut:"Year-end",dagtyp_fast:"Fixed date (the Nth)",dagtyp_arbetsdag:"Nth working day",dagtyp_veckodag:"Nth weekday",ater_varje_dag:"Every day",ater_varje_vecka:"Every week",cl_tab_daglig:"📝 Daily checklist",cl_tab_ater:"🔁 Recurring tasks",au_titel:"Title *",au_period:"Period",au_bolag:"Company",au_dagregel:"Day rule",au_veckodag:"Weekday",au_manad:"Month",au_besk:"Short description",au_info:"More information",au_lank:"🔗 Link",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
     nav_statistik:"Statistics",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
@@ -5583,7 +5589,18 @@ function renderCompanyAnteckningar(companyId){
     }).join(""):`<p style="color:#aaa;font-size:12px;margin:0">${TR("nb_inga_bolag")||"Inga anteckningar för detta bolag än."}</p>`}
   </div>`;
 }
-function openNyAnteckningForBolag(companyId){
+async function openNyAnteckningForBolag(companyId){
+  closeM("m-company-card");
+  gotoView("notebook");
+  const kat=window._nbAktivKat||"Allmänt";
+  const r=await sb.from("anteckningar").insert({user_id:me.id,titel:null,text:"",typ:"info",datum:today(),kategori:kat,company_id:companyId}).select().single();
+  if(r.error){toast(r.error.message);return;}
+  anteckningar.unshift(r.data);
+  window._nbAktivAnt=r.data.id;
+  renderNotebook();
+  setTimeout(()=>{const t=document.getElementById("nbe-titel");if(t)t.focus();},100);
+}
+function openNyAnteckningForBolagGammal(companyId){
   closeM("m-company-card");
   openNyAnteckning();
   setTimeout(()=>{const s=document.getElementById("nb-company");if(s)s.value=companyId;},80);
@@ -5631,7 +5648,113 @@ function aktiveraBolagsSok(){
   const ids=["nb-company","au-company","t-kund","de-kund","sig-coid","ar-coid","p-coid","sco-coid","focus-co-sel","fin-company"];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)makeSelectSearchable(el);});
 }
+function nbKategorier(){
+  // Alla kategorier som finns + standard
+  const fromData=[...new Set((anteckningar||[]).map(a=>a.kategori||"Allmänt"))];
+  const bas=["Allmänt"];
+  const extra=JSON.parse(localStorage.getItem("nb_kategorier")||"[]");
+  return [...new Set([...bas,...extra,...fromData])];
+}
+function openNyKategori(){
+  const namn=prompt(TR("nb_kat_namn")||"Namn på ny flik:");if(!namn||!namn.trim())return;
+  const extra=JSON.parse(localStorage.getItem("nb_kategorier")||"[]");
+  if(!extra.includes(namn.trim())){extra.push(namn.trim());localStorage.setItem("nb_kategorier",JSON.stringify(extra));}
+  window._nbAktivKat=namn.trim();
+  renderNotebook();
+}
 function renderNotebook(){
+  const tabs=document.getElementById("nb-kat-tabs");
+  const listBox=document.getElementById("nb-lista");
+  const editorBox=document.getElementById("nb-editor");
+  if(!listBox)return;
+  // Bolagsfilter fyllning
+  const bf=document.getElementById("nb-bolag-f");
+  if(bf){const cur=bf.value;const bolag=[...new Set(anteckningar.map(a=>a.company_id).filter(Boolean))];bf.innerHTML='<option value="">'+(TR("nb_alla_bolag")||"Alla bolag")+'</option>'+bolag.map(cid=>{const c=companies.find(x=>x.id===cid);return c?`<option value="${cid}">${e(c.namn)}</option>`:"";}).join("");bf.value=cur;}
+  const kategorier=nbKategorier();
+  if(!window._nbAktivKat||!kategorier.includes(window._nbAktivKat))window._nbAktivKat=kategorier[0]||"Allmänt";
+  // Flikar
+  if(tabs){tabs.innerHTML=kategorier.map(k=>`<button class="kb-tab${k===window._nbAktivKat?" active":""}" onclick="window._nbAktivKat='${k.replace(/'/g,"\\'")}';window._nbAktivAnt=null;renderNotebook()">${e(k)}</button>`).join("");}
+  // Filtrering
+  const sok=(document.getElementById("nb-sok")?.value||"").toLowerCase().trim();
+  const bolagF=document.getElementById("nb-bolag-f")?.value||"";
+  let list=anteckningar.filter(a=>{
+    if((a.kategori||"Allmänt")!==window._nbAktivKat)return false;
+    if(bolagF&&a.company_id!==bolagF)return false;
+    if(sok){const hay=`${a.titel||""} ${a.text||""}`.toLowerCase();if(!sok.split(/\s+/).every(o=>hay.includes(o)))return false;}
+    return true;
+  });
+  // Lista
+  if(!list.length){
+    listBox.innerHTML=`<p style="color:#aaa;font-size:13px;padding:10px">${anteckningar.length?(TR("nb_ingen_match")||"Inga anteckningar matchar."):(TR("nb_tom_kort")||"Inga anteckningar i denna flik.")}</p>`;
+  }else{
+    listBox.innerHTML=list.map(a=>{
+      const co=a.company_id?companies.find(c=>c.id===a.company_id):null;
+      const aktiv=window._nbAktivAnt===a.id;
+      const typLbl=(a.typ==="komihag")?"📌":"📄";
+      return `<div onclick="nbOppna('${a.id}')" style="padding:11px 12px;border-radius:var(--r);margin-bottom:6px;cursor:pointer;border:1px solid ${aktiv?"var(--accent)":"var(--cream)"};background:${aktiv?"var(--paper)":"#fff"}">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typLbl} ${a.titel?e(a.titel):e((a.text||"").slice(0,40))||"(utan titel)"}</div>
+        <div style="font-size:11px;color:#999;margin-top:2px">${co?"🏢 "+e(co.namn)+" · ":""}${e(a.datum||"")}</div>
+      </div>`;
+    }).join("");
+  }
+  // Editor
+  if(!window._nbAktivAnt||!anteckningar.find(a=>a.id===window._nbAktivAnt)){
+    editorBox.innerHTML=`<div style="border:1px dashed var(--mid);border-radius:var(--r);padding:40px;text-align:center;color:#aaa">
+      <div style="font-size:32px;margin-bottom:8px">📓</div>
+      <p style="font-size:14px">${TR("nb_valj")||"Välj en anteckning eller skapa en ny."}</p>
+      <button class="btn btn-primary btn-sm" onclick="openNyAnteckning()" style="margin-top:8px">+ ${TR("nb_ny")||"Ny anteckning"}</button>
+    </div>`;
+  }else{
+    nbRenderEditor(window._nbAktivAnt);
+  }
+}
+function nbOppna(id){window._nbAktivAnt=id;renderNotebook();}
+function nbRenderEditor(id){
+  const a=anteckningar.find(x=>x.id===id);if(!a)return;
+  const editorBox=document.getElementById("nb-editor");if(!editorBox)return;
+  const co=a.company_id?companies.find(c=>c.id===a.company_id):null;
+  editorBox.innerHTML=`
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:16px;min-height:60vh;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+      <input id="nbe-titel" value="${e(a.titel||"")}" placeholder="${TR("nb_titel_ph")||"Titel..."}" oninput="nbAutospar()" style="border:none;font-size:20px;font-weight:600;width:100%;padding:4px 0;margin-bottom:8px;outline:none;font-family:'DM Serif Display',serif">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:12px;color:#888;border-bottom:1px solid var(--paper);padding-bottom:10px">
+        <select id="nbe-typ" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px"><option value="info"${a.typ!=="komihag"?" selected":""}>📄 Info</option><option value="komihag"${a.typ==="komihag"?" selected":""}>📌 Kom ihåg</option></select>
+        <input id="nbe-datum" type="date" value="${e(a.datum||"")}" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px">
+        <select id="nbe-company" onchange="nbAutospar()" style="font-size:12px;padding:3px 6px"><option value="">${TR("nb_inget_bolag")||"Inget bolag"}</option>${companies.slice().sort((x,y)=>String(x.namn).localeCompare(String(y.namn),"sv")).map(c=>`<option value="${c.id}"${a.company_id===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+        <span id="nbe-status" style="margin-left:auto;color:var(--green)"></span>
+      </div>
+      <textarea id="nbe-text" oninput="nbAutospar()" placeholder="${TR("nb_skriv_ph")||"Skriv här..."}" style="border:none;width:100%;min-height:45vh;font-size:15px;line-height:1.7;resize:vertical;outline:none;font-family:inherit;color:#333">${e(a.text||"")}</textarea>
+      <div style="border-top:1px solid var(--paper);padding-top:10px;margin-top:8px;display:flex;gap:8px">
+        ${co?`<button class="btn btn-outline btn-xs" onclick="gotoView('companies');openCompanyCard('${co.id}')">🏢 ${TR("nb_till_bolag")||"Till bolaget"}</button>`:""}
+        <div style="flex:1"></div>
+        <button class="btn btn-danger btn-xs" onclick="nbRadera('${a.id}')">🗑 ${TR("nb_radera_btn")||"Ta bort"}</button>
+      </div>
+    </div>`;
+  // Aktivera sökbar bolagsväljare
+  setTimeout(()=>{try{const el=document.getElementById("nbe-company");if(el)makeSelectSearchable(el);}catch(e){}},20);
+}
+let _nbSparTimer=null;
+function nbAutospar(){
+  const st=document.getElementById("nbe-status");if(st)st.textContent=TR("nb_sparar")||"Sparar...";
+  clearTimeout(_nbSparTimer);
+  _nbSparTimer=setTimeout(async()=>{
+    const id=window._nbAktivAnt;if(!id)return;
+    const data={titel:document.getElementById("nbe-titel")?.value||null,text:document.getElementById("nbe-text")?.value||"",typ:v("nbe-typ")||"info",datum:v("nbe-datum")||today(),company_id:v("nbe-company")||null,uppdaterad:new Date().toISOString()};
+    const r=await sb.from("anteckningar").update(data).eq("id",id);
+    if(!r.error){
+      const a=anteckningar.find(x=>x.id===id);if(a)Object.assign(a,data);
+      const st2=document.getElementById("nbe-status");if(st2){st2.textContent="✓ "+(TR("nb_sparat")||"Sparat");setTimeout(()=>{if(st2)st2.textContent="";},1500);}
+      // Uppdatera bara listan (inte editorn, så fokus behålls)
+      const listBox=document.getElementById("nb-lista");if(listBox&&document.activeElement?.id!=="nbe-text"&&document.activeElement?.id!=="nbe-titel"){/* skip */}
+    }
+  },700);
+}
+async function nbRadera(id){
+  confirm2(TR("nb_radera")||"Ta bort anteckningen?",async()=>{
+    await sb.from("anteckningar").delete().eq("id",id);
+    window._nbAktivAnt=null;await loadAnteckningar();renderNotebook();toast(TR("nb_borttagen")||"Borttagen");
+  });
+}
+function renderNotebook_gammal(){
   const box=document.getElementById("notebook-content");if(!box)return;
   // Fyll bolagsfilter
   const bf=document.getElementById("nb-bolag-f");
@@ -5664,7 +5787,19 @@ function fillAnteckningBolag(){
   const s=document.getElementById("nb-company");if(!s)return;
   s.innerHTML='<option value="">'+(TR("nb_inget_bolag")||"Inget bolag")+'</option>'+companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("");
 }
-function openNyAnteckning(){
+async function openNyAnteckning(){
+  // Notepad-flöde: skapa tom anteckning direkt i aktiv flik och öppna i editorn
+  if(curView!=="notebook")gotoView("notebook");
+  const kat=window._nbAktivKat||"Allmänt";
+  const data={user_id:me.id,titel:null,text:"",typ:"info",datum:today(),kategori:kat,company_id:null};
+  const r=await sb.from("anteckningar").insert(data).select().single();
+  if(r.error){toast(r.error.message);return;}
+  anteckningar.unshift(r.data);
+  window._nbAktivAnt=r.data.id;
+  renderNotebook();
+  setTimeout(()=>{const t=document.getElementById("nbe-titel");if(t)t.focus();},80);
+}
+function openNyAnteckningModalGammal(){
   document.getElementById("nb-modal-title").textContent=TR("nb_ny_titel")||"Ny anteckning";
   document.getElementById("nb-id").value="";
   document.getElementById("nb-titel").value="";
