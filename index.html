@@ -5798,7 +5798,24 @@ async function nbSattFarg(hex){
   renderNotebook();
 }
 function nbFormat(cmd,val){document.execCommand(cmd,false,val||null);const ed=document.getElementById("nbe-text");if(ed)ed.focus();nbAutospar();}
-function nbInsertCheckbox(){const ed=document.getElementById("nbe-text");if(ed)ed.focus();document.execCommand("insertHTML",false,'<span class="nb-check"><input type="checkbox" onclick="nbAutospar()">&nbsp;</span>');nbAutospar();}
+function nbInsertCheckbox(){
+  const ed=document.getElementById("nbe-text");if(!ed)return;ed.focus();
+  const sel=window.getSelection();if(!sel||!sel.rangeCount){return;}
+  const range=sel.getRangeAt(0);
+  range.deleteContents();
+  const cb=document.createElement("input");
+  cb.type="checkbox";cb.setAttribute("onclick","nbAutospar()");
+  cb.style.verticalAlign="middle";cb.style.margin="0 4px 0 0";
+  const space=document.createTextNode("\u00a0");
+  range.insertNode(space);
+  range.insertNode(cb);
+  // Flytta markören efter mellanslaget så texten skrivs på samma rad
+  const newRange=document.createRange();
+  newRange.setStartAfter(space);
+  newRange.collapse(true);
+  sel.removeAllRanges();sel.addRange(newRange);
+  nbAutospar();
+}
 let _nbSparTimer=null;
 function nbAutospar(){
   const st=document.getElementById("nbe-status");if(st)st.textContent=TR("nb_sparar")||"Sparar...";
