@@ -6388,7 +6388,7 @@ async function sparaBerakning(){
   const co=companyId?companies.find(c=>c.id===companyId):null;
   const namn=aktiv.namn+(co?" – "+co.namn:"")+" ("+new Date().toLocaleDateString("sv-SE")+")";
   const r=await sb.from("berakningar").insert({user_id:me.id,company_id:companyId||null,modell:aktiv.id,namn,varden:v,resultat:res});
-  if(r.error){toast(r.error.message);return;}
+  if(r.error){alert("Kunde inte spara: "+r.error.message+"\n\nKontrollera att tabellen 'berakningar' finns i Supabase.");return;}
   await loadBerakningar();renderSparadeBerakningar(aktiv.id);toast(TR("ber_sparad")||"Beräkning sparad ✓");
 }
 function v_(id){return document.getElementById(id)?.value||"";}
