@@ -550,10 +550,12 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-kcc"><div id="kcc-content"></div></div>
     <div class="view" id="view-bolagsanalys">
       <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;border-bottom:2px solid var(--cream);margin-bottom:14px;padding-bottom:0">
-        <button class="kb-tab active" id="ba-tab-berakningar" onclick="setBaTab('berakningar')">🧮 Beräkningsmodeller</button>
+        <button class="kb-tab active" id="ba-tab-bolagsdata" onclick="setBaTab('bolagsdata')">🏢 Bolagsdata</button>
+        <button class="kb-tab" id="ba-tab-berakningar" onclick="setBaTab('berakningar')">🧮 Beräkningsmodeller</button>
         <button class="kb-tab" id="ba-tab-investering" onclick="setBaTab('investering')">📈 Investeringsanalys</button>
       </div>
-      <div id="ba-pane-berakningar" class="kb-pane active"><div id="berakningar-content"></div></div>
+      <div id="ba-pane-bolagsdata" class="kb-pane active"><div id="bolagsdata-content"></div></div>
+      <div id="ba-pane-berakningar" class="kb-pane"><div id="berakningar-content"></div></div>
       <div id="ba-pane-investering" class="kb-pane"><div id="investering-content"></div></div>
     </div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
@@ -1671,7 +1673,7 @@ const I18N={
     nav_underkonsulter:"Underkonsulter",nav_projekt:"Uppdrag",nav_mellanhander:"Mellanhänder",
     nav_dagbok:"Dagbok",nav_tidrapport:"Tidrapport",nav_tasks:"Tasks",nav_natverk_item:"Nätverk",
     nav_relnet:"Relationsnät",relmap:"Relationskarta",nav_uppfoljningar:"Uppföljningar",nav_faktabank:"Faktabank",nav_notebook:"Anteckningar",nb_sok:"Sök i anteckningar...",nb_alla_bolag:"Alla bolag",nb_alla_typer:"Alla typer",nb_ny:"+ Ny anteckning",nb_ny_titel:"Ny anteckning",nb_red_titel:"Redigera anteckning",nb_tom:"Inga anteckningar än. Klicka \"+ Ny anteckning\".",nb_ingen_match:"Inga anteckningar matchar.",nb_komihag:"Kom ihåg",nb_info:"Info",nb_inget_bolag:"Inget bolag",nb_text_krav:"Skriv en anteckning",nb_sparad:"Anteckning sparad ✓",nb_radera:"Ta bort anteckningen?",nb_borttagen:"Borttagen",nb_anteckning:"Anteckning",nb_till_bolag:"Till bolaget",gsearch_ph:"Sök allt: bolag, kontakter, artiklar, bokföring, anteckningar...",nb_inga_bolag:"Inga anteckningar för detta bolag än.",nb_ny_kat:"Ny flik",nb_kat_namn:"Namn på ny flik:",nb_tom_kort:"Inga anteckningar i denna flik.",nb_valj:"Välj en anteckning eller skapa en ny.",nb_titel_ph:"Titel...",nb_skriv_ph:"Skriv här...",nb_sparar:"Sparar...",nb_sparat:"Sparat",nb_radera_btn:"Ta bort",nb_lista:"Lista",nb_under:"Under-anteckning",nb_radera_barn:"Anteckningen har under-anteckningar. De flyttas upp en nivå. Ta bort?",nb_drop_rot:"↑ Släpp här för huvudnivå",nb_drop_fel:"Kan inte flytta dit",nb_flyttad:"Flyttad ✓",kb_sok:"Sök på ett eller flera ord...",kb_alla_kat:"Alla kategorier",kb_alla_land:"Alla länder",kb_tom:"Faktabanken är tom. Klicka \"+ Ny notering\" för att börja.",kb_ingen_match:"Inga noteringar matchar sökningen",kb_oppna_lank:"Öppna länk",kb_regelnyheter:"Nya lagar & regler",kb_tab_artiklar:"📝 Artiklar",kb_tab_bokforing:"📒 Bokföring",kb_tab_regler:"⚖️ Regelnyheter",kb_tab_berakningar:"🧮 Beräkningsmodeller",kb_tab_investering:"📈 Investeringsanalys",inv_rubrik:"Investeringsanalys",inv_valj_bolag:"Välj bolag (valfritt)",inv_ingress:"Fyll i bolagets nyckelsiffror så beräknas nyckeltalen och flaggas mot vedertagna tumregler.",inv_spara:"Spara analys",inv_disclaimer:"⚠️ Detta är ett beslutsstöd, inte investeringsrådgivning. Tumreglerna är generella och varierar mellan branscher. Din egen bedömning avgör.",inv_fyll:"Fyll i siffror ovan för att se analysen.",inv_stark:"Stark profil",inv_blandad:"Blandad profil",inv_svag:"Svag profil",inv_poang:"Sammanvägt",inv_starka:"starka",inv_neutrala:"neutrala",inv_svaga:"svaga",inv_borsvarde:"Börsvärde",inv_ev:"Enterprise Value",inv_nettoskuld:"Nettoskuld",inv_tumregel:"Tumregel",inv_laddad:"Senaste analys laddad",inv_sparad:"Analys sparad ✓",inv_sparade:"Sparade analyser",inv_ta_bort:"Ta bort analysen?",ber_inget_bolag:"Inget bolag (räkna fritt)",ber_spara:"Spara beräkning",ber_rensa:"Rensa",ber_forklaring:"Förklaring",ber_sparade:"Sparade beräkningar",ber_sparad:"Beräkning sparad ✓",ber_ta_bort:"Ta bort beräkningen?",ber_borttagen:"Borttagen",ber_kalla:"Källa",kb_koppla_art:"Kopplad artikel",kb_ingen_art:"– Ingen –",art_oppna:"Öppna",kb_till_artikel:"Till artikel",art_till_bokf:"Till bokföring",ater_rubrik:"Återkommande uppgifter",ater_ny_btn:"Ny uppgift",ater_ny:"Ny uppgift",ater_red:"Redigera uppgift",ater_tom:"Inga återkommande uppgifter än. Lägg till moms, bokslut, rapporter m.m.",ater_titel_krav:"Titel krävs",ater_sparad:"Uppgift sparad ✓",ater_radera:"Ta bort uppgiften?",ater_borttagen:"Borttagen",ater_inget_bolag:"Inget bolag",ater_vy_alla:"Alla",ater_vy_vecka:"Denna vecka",ater_vy_manad:"Denna månad",ater_alla_perioder:"Alla perioder",ater_alla_bolag:"Alla bolag",ater_rensa:"Rensa",ater_inga_match:"Inga uppgifter matchar filtret.",ater_konton:"Aktuella konton",ater_kopplad_fakta:"Kopplad fakta",ater_fran_notering:"Konton från noteringen",ater_kalender:"Kalender",ater_exp_kal:"Exportera till kalender (.ics)",ater_exp_excel:"Exportera till Excel",ater_inga_export:"Inga uppgifter att exportera",ater_export_klar:"händelser exporterade",ater_export_klar_excel:"Exporterad till Excel/CSV",art_till_uppgift:"Till uppgift",ater_valda:"valda",ater_avmarkera:"Avmarkera",ater_vy_kommande:"Kommande (ej utförda)",ater_vy_historik:"Historik (utförda)",ater_ingen_historik:"Inga utförda uppgifter än.",ater_period:"Period",ater_utford:"Utförd",ater_markera_flera:"Markera flera",ater_estimat:"Est.",ater_snitt_av:"snitt av",ater_tidsest:"Tidsestimering",ater_per_gang:"per gång",ater_baserat:"baserat på",ater_loggningar:"loggningar",ater_totalt:"totalt",per_daglig:"Daglig",per_vecka:"Vecka",per_manad:"Månad",per_kvartal:"Kvartal",per_arsbokslut:"Årsbokslut",dagtyp_fast:"Fast datum (den N:e)",dagtyp_arbetsdag:"N:te arbetsdagen",dagtyp_veckodag:"N:te veckodagen",ater_varje_dag:"Varje dag",ater_varje_vecka:"Varje vecka",cl_tab_daglig:"📝 Daglig checklista",cl_tab_ater:"🔁 Återkommande uppgifter",au_titel:"Titel *",au_period:"Period",au_bolag:"Bolag",au_dagregel:"Dagregel",au_veckodag:"Veckodag",au_manad:"Månad",au_besk:"Kort beskrivning",au_info:"Mer information",au_lank:"🔗 Länk",kb_alla_omr:"Alla områden",kb_regel_tom:"Inga regelnyheter än. Hämtas automatiskt varje natt.",art_sok:"Sök i artiklar...",art_alla_ar:"Alla år",art_ny_btn:"+ Ny artikel",art_ny:"Ny artikel",art_redigera:"Redigera artikel",art_tom:"Inga artiklar än. Klicka \"+ Ny artikel\" för att börja samla det som är nytt.",art_utan_ar:"Utan år",art_st:"artiklar",art_gor:"→ Gör artikel",art_rubrik_krav:"Rubrik krävs",art_sparad:"Artikel sparad ✓",art_radera_fraga:"Ta bort artikeln?",art_borttagen:"Artikel borttagen",regel_sok:"Sök regelnyheter...",regel_sort_datum:"Senaste först",regel_sort_omrade:"Område",regel_period:"Period:",regel_rensa:"Rensa",regel_periodartikel:"📄 Gör periodartikel",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Genererar LinkedIn-inlägg…",regel_li_titel:"LinkedIn-inlägg (utkast)",regel_periodtitel:"Periodartikel",regel_inga_period:"Inga regelnyheter i vald period",regel_att_lasa:"Att läsa",regel_vill_lasa:"Vill läsa",regel_markera_last:"Läst",regel_ta_bort_lista:"Ta bort",regel_visa_lasta:"Visa lästa",regel_las_kalla:"Läs hela på källan:",regel_till_artikel:"Till min artikel",art_till_kalla:"Till källan",bev_profil:"Bevakning:",bev_alla:"Visa allt",bev_hantera:"⚙️ Hantera",bev_inga:"Inga profiler än.",bev_namn_krav:"Namn krävs",bev_titel:"Bevakningsprofiler",bev_info:"Skapa profiler med nyckelord. Aktivera en profil för att bara se regelnyheter som matchar dess ord.",bev_namn_label:"Namn",bev_ord_label:"Nyckelord (kommaseparerade)",bev_lagg_till:"+ Lägg till profil",bev_radera:"Ta bort bevakningsprofilen?",art_forstaelse:"Förståelsekontroll",art_redigera_btn:"Redigera",art_kallor:"Källor",art_las:"Artikel",art_till_li:"Till LinkedIn",kb_faktalankar:"Faktalänkar",kb_lagg_lank:"Lägg till länk",kb_inga_lankar:"Inga faktalänkar än. Lägg till genvägar till SKV, Bolagsverket m.fl.",li_till_artiklar:"Till artiklar",nav_cv:"CV / Erfarenhet",
-    nav_statistik:"Statistik",nav_bolagsanalys:"Bolagsanalys",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
+    nav_statistik:"Statistik",nav_bolagsanalys:"Bolagsanalys",bd_rubrik:"Bolagsdata",bd_valj:"Välj bolag",bd_ingress:"Fyll i bolagets grundsiffror en gång. De används automatiskt i beräkningsmodellerna och investeringsanalysen. EBITDA, EPS, börsvärde och nettoskuld räknas fram automatiskt.",bd_valj_forst:"Välj ett bolag ovan för att fylla i dess siffror.",bd_spara:"Spara bolagsdata",bd_sparad:"Bolagsdata sparad ✓",bd_harlett:"Beräknas automatiskt",nav_minaktivitet:"Min aktivitet",nav_logg:"Aktivitetslogg",nav_fokus:"Fokusläge",
     nav_todo:"Todo",nav_installningar:"Inställningar",
     nav_meddelanden:"Meddelanden",nav_checklista:"Daglig checklista",nav_anvandare:"Användare",nav_fokuslage:"Fokusläge",
     navg_focus:"Fokus",navg_oversikt:"Översikt",navg_arbetsbok:"Arbetsbok",navg_natverk:"Nätverk",navg_bolag:"Bolag",navg_salj:"Sälj & leads",navg_analys:"Analys",navg_kunskap:"Kunskapsbank",navg_system:"System",
@@ -1776,7 +1778,7 @@ const I18N={
     nav_underkonsulter:"Subconsultants",nav_projekt:"Assignments",nav_mellanhander:"Intermediaries",
     nav_dagbok:"Journal",nav_tidrapport:"Time tracking",nav_tasks:"Tasks",nav_natverk_item:"Network",
     nav_relnet:"Relationship map",relmap:"Relationship map",nav_uppfoljningar:"Follow-ups",nav_faktabank:"Knowledge base",nav_notebook:"Notes",nb_sok:"Search notes...",nb_alla_bolag:"All companies",nb_alla_typer:"All types",nb_ny:"+ New note",nb_ny_titel:"New note",nb_red_titel:"Edit note",nb_tom:"No notes yet. Click \"+ New note\".",nb_ingen_match:"No notes match.",nb_komihag:"Reminder",nb_info:"Info",nb_inget_bolag:"No company",nb_text_krav:"Write a note",nb_sparad:"Note saved ✓",nb_radera:"Delete the note?",nb_borttagen:"Deleted",nb_anteckning:"Note",nb_till_bolag:"To company",gsearch_ph:"Search everything: companies, contacts, articles, bookkeeping, notes...",nb_inga_bolag:"No notes for this company yet.",nb_ny_kat:"New tab",nb_kat_namn:"Name of new tab:",nb_tom_kort:"No notes in this tab.",nb_valj:"Select a note or create a new one.",nb_titel_ph:"Title...",nb_skriv_ph:"Write here...",nb_sparar:"Saving...",nb_sparat:"Saved",nb_radera_btn:"Delete",nb_lista:"List",nb_under:"Sub-note",nb_radera_barn:"This note has sub-notes. They move up one level. Delete?",nb_drop_rot:"↑ Drop here for top level",nb_drop_fel:"Cannot move there",nb_flyttad:"Moved ✓",kb_sok:"Search by one or more words...",kb_alla_kat:"All categories",kb_alla_land:"All countries",kb_tom:"The knowledge base is empty. Click \"+ New note\" to start.",kb_ingen_match:"No notes match your search",kb_oppna_lank:"Open link",kb_regelnyheter:"New laws & regulations",kb_tab_artiklar:"📝 Articles",kb_tab_bokforing:"📒 Bookkeeping",kb_tab_regler:"⚖️ Regulations",kb_tab_berakningar:"🧮 Calculation models",kb_tab_investering:"📈 Investment analysis",inv_rubrik:"Investment analysis",inv_valj_bolag:"Select company (optional)",inv_ingress:"Enter the company key figures to compute ratios flagged against common rules of thumb.",inv_spara:"Save analysis",inv_disclaimer:"⚠️ This is a decision aid, not investment advice. Rules of thumb are general and vary by industry. Your own judgment decides.",inv_fyll:"Enter figures above to see the analysis.",inv_stark:"Strong profile",inv_blandad:"Mixed profile",inv_svag:"Weak profile",inv_poang:"Weighted",inv_starka:"strong",inv_neutrala:"neutral",inv_svaga:"weak",inv_borsvarde:"Market cap",inv_ev:"Enterprise Value",inv_nettoskuld:"Net debt",inv_tumregel:"Rule of thumb",inv_laddad:"Latest analysis loaded",inv_sparad:"Analysis saved ✓",inv_sparade:"Saved analyses",inv_ta_bort:"Delete the analysis?",ber_inget_bolag:"No company (free calc)",ber_spara:"Save calculation",ber_rensa:"Clear",ber_forklaring:"Explanation",ber_sparade:"Saved calculations",ber_sparad:"Calculation saved ✓",ber_ta_bort:"Delete the calculation?",ber_borttagen:"Deleted",ber_kalla:"Source",kb_koppla_art:"Linked article",kb_ingen_art:"– None –",art_oppna:"Open",kb_till_artikel:"To article",art_till_bokf:"To bookkeeping",ater_rubrik:"Recurring tasks",ater_ny_btn:"New task",ater_ny:"New task",ater_red:"Edit task",ater_tom:"No recurring tasks yet. Add VAT, closing, reports, etc.",ater_titel_krav:"Title required",ater_sparad:"Task saved ✓",ater_radera:"Delete the task?",ater_borttagen:"Deleted",ater_inget_bolag:"No company",ater_vy_alla:"All",ater_vy_vecka:"This week",ater_vy_manad:"This month",ater_alla_perioder:"All periods",ater_alla_bolag:"All companies",ater_rensa:"Clear",ater_inga_match:"No tasks match the filter.",ater_konton:"Relevant accounts",ater_kopplad_fakta:"Linked facts",ater_fran_notering:"Accounts from the note",ater_kalender:"Calendar",ater_exp_kal:"Export to calendar (.ics)",ater_exp_excel:"Export to Excel",ater_inga_export:"No tasks to export",ater_export_klar:"events exported",ater_export_klar_excel:"Exported to Excel/CSV",art_till_uppgift:"To task",ater_valda:"selected",ater_avmarkera:"Deselect",ater_vy_kommande:"Upcoming (not done)",ater_vy_historik:"History (done)",ater_ingen_historik:"No completed tasks yet.",ater_period:"Period",ater_utford:"Done",ater_markera_flera:"Select multiple",ater_estimat:"Est.",ater_snitt_av:"avg of",ater_tidsest:"Time estimate",ater_per_gang:"per time",ater_baserat:"based on",ater_loggningar:"logs",ater_totalt:"total",per_daglig:"Daily",per_vecka:"Weekly",per_manad:"Monthly",per_kvartal:"Quarterly",per_arsbokslut:"Year-end",dagtyp_fast:"Fixed date (the Nth)",dagtyp_arbetsdag:"Nth working day",dagtyp_veckodag:"Nth weekday",ater_varje_dag:"Every day",ater_varje_vecka:"Every week",cl_tab_daglig:"📝 Daily checklist",cl_tab_ater:"🔁 Recurring tasks",au_titel:"Title *",au_period:"Period",au_bolag:"Company",au_dagregel:"Day rule",au_veckodag:"Weekday",au_manad:"Month",au_besk:"Short description",au_info:"More information",au_lank:"🔗 Link",kb_alla_omr:"All areas",kb_regel_tom:"No regulatory updates yet. Fetched automatically every night.",art_sok:"Search articles...",art_alla_ar:"All years",art_ny_btn:"+ New article",art_ny:"New article",art_redigera:"Edit article",art_tom:"No articles yet. Click \"+ New article\" to start collecting what is new.",art_utan_ar:"No year",art_st:"articles",art_gor:"→ Make article",art_rubrik_krav:"Title required",art_sparad:"Article saved ✓",art_radera_fraga:"Delete the article?",art_borttagen:"Article deleted",regel_sok:"Search updates...",regel_sort_datum:"Latest first",regel_sort_omrade:"Area",regel_period:"Period:",regel_rensa:"Clear",regel_periodartikel:"📄 Period article",regel_linkedin:"💼 LinkedIn",regel_li_genererar:"Generating LinkedIn post…",regel_li_titel:"LinkedIn post (draft)",regel_periodtitel:"Period article",regel_inga_period:"No updates in selected period",regel_att_lasa:"To read",regel_vill_lasa:"Want to read",regel_markera_last:"Read",regel_ta_bort_lista:"Remove",regel_visa_lasta:"Show read",regel_las_kalla:"Read the full text at the source:",regel_till_artikel:"To my article",art_till_kalla:"To source",bev_profil:"Watch:",bev_alla:"Show all",bev_hantera:"⚙️ Manage",bev_inga:"No profiles yet.",bev_namn_krav:"Name required",bev_titel:"Watch profiles",bev_info:"Create profiles with keywords. Activate one to only see updates matching its words.",bev_namn_label:"Name",bev_ord_label:"Keywords (comma-separated)",bev_lagg_till:"+ Add profile",bev_radera:"Delete the watch profile?",art_forstaelse:"Comprehension check",art_redigera_btn:"Edit",art_kallor:"Sources",art_las:"Article",art_till_li:"To LinkedIn",kb_faktalankar:"Fact links",kb_lagg_lank:"Add link",kb_inga_lankar:"No fact links yet. Add shortcuts to tax authority, company registry, etc.",li_till_artiklar:"To articles",nav_cv:"CV / Experience",
-    nav_statistik:"Statistics",nav_bolagsanalys:"Company analysis",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
+    nav_statistik:"Statistics",nav_bolagsanalys:"Company analysis",bd_rubrik:"Company data",bd_valj:"Select company",bd_ingress:"Enter the company base figures once. They are used automatically in the calculation models and investment analysis. EBITDA, EPS, market cap and net debt are derived automatically.",bd_valj_forst:"Select a company above to enter its figures.",bd_spara:"Save company data",bd_sparad:"Company data saved ✓",bd_harlett:"Calculated automatically",nav_minaktivitet:"My activity",nav_logg:"Activity log",nav_fokus:"Focus mode",
     nav_todo:"To-do",nav_installningar:"Settings",
     nav_meddelanden:"Messages",nav_checklista:"Daily checklist",nav_anvandare:"Users",nav_fokuslage:"Focus mode",
     navg_focus:"Focus",navg_oversikt:"Overview",navg_arbetsbok:"Workbook",navg_natverk:"Network",navg_bolag:"Companies",navg_salj:"Sales & leads",navg_analys:"Analytics",navg_kunskap:"Knowledge base",navg_system:"System",
@@ -2189,7 +2191,7 @@ async function getToken(){const{data:{session}}=await sb.auth.getSession();if(!s
 // LOAD
 async function loadAll(){
   if(!me)return;
-  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus],["ateruppg",loadAterUppgifter],["anteckningar",loadAnteckningar],["berakningar",loadBerakningar],["bolagsanalyser",loadBolagsanalyser]];
+  const tasks=[["contacts",loadContacts],["log",loadLog],["notes",loadNotes],["companies",loadCompanies],["signals",loadSignals],["network",loadNetwork],["settings",loadSettings2],["subs",loadSubs],["projects",loadProjects],["connections",loadConnections],["knowledge",loadKnowledge],["todos",loadTodos],["subRelations",loadSubRelations],["goals",loadGoals],["admins",loadAdmins],["finAnalyses",loadFinAnalyses],["quickLinks",loadQuickLinks],["checklist",loadChecklist],["profiles",loadProfiles],["linkedinPosts",loadLinkedinPosts],["activityTypes",loadActivityTypes],["contactCompanies",loadContactCompanies],["kccKrav",loadKccKrav],["kccKandidater",loadKccKandidater],["linkedin",loadLinkedin],["meddelanden",loadMeddelanden],["checklista",loadChecklista],["likateg",loadLiKategorier],["proccheck",loadProcessChecklista],["bolaglogg",loadBolagLogg],["leadcheck",loadLeadChecklista],["mallar",loadChecklistaMallar],["regelnyheter",loadRegelnyheter],["artiklar",loadKunskapsartiklar],["bevakning",loadBevakningsprofiler],["regelstatus",loadRegelStatus],["ateruppg",loadAterUppgifter],["anteckningar",loadAnteckningar],["berakningar",loadBerakningar],["bolagsanalyser",loadBolagsanalyser],["bolagsdata",loadBolagsdata]];
   const results=await Promise.allSettled(tasks.map(([_,fn])=>fn()));
   results.forEach((r,i)=>{if(r.status==="rejected")console.warn("Laddning misslyckades:",tasks[i][0],r.reason);});
   try{fillSelects();}catch(e){console.warn("fillSelects",e);}
@@ -6193,11 +6195,119 @@ const BERAKNINGS_MODELLER=[
 ];
 function setBaTab(tab){
   window._baTab=tab;
-  ["berakningar","investering"].forEach(t=>{const b=document.getElementById("ba-tab-"+t);if(b)b.classList.toggle("active",t===tab);const p=document.getElementById("ba-pane-"+t);if(p)p.classList.toggle("active",t===tab);});
+  ["bolagsdata","berakningar","investering"].forEach(t=>{const b=document.getElementById("ba-tab-"+t);if(b)b.classList.toggle("active",t===tab);const p=document.getElementById("ba-pane-"+t);if(p)p.classList.toggle("active",t===tab);});
+  if(tab==="bolagsdata"){try{renderBolagsdata();}catch(e){}}
   if(tab==="berakningar"){try{renderBerakningar();}catch(e){}}
   if(tab==="investering"){try{renderInvestering();}catch(e){}}
 }
-function renderBolagsanalys(){setBaTab(window._baTab||"berakningar");}
+// ===== BOLAGSDATA (grundsiffror per bolag - matas in en gång, används överallt) =====
+const BOLAGSDATA_FALT=[
+  {grp:"Resultaträkning",falt:[
+    {k:"omsattning",l:"Omsättning",e:"kr"},
+    {k:"omsattning_forra",l:"Omsättning föregående år",e:"kr"},
+    {k:"bruttoresultat",l:"Bruttoresultat",e:"kr"},
+    {k:"ebit",l:"Rörelseresultat (EBIT)",e:"kr"},
+    {k:"avskrivningar",l:"Av- och nedskrivningar",e:"kr"},
+    {k:"nettoresultat",l:"Nettoresultat (efter skatt)",e:"kr"},
+    {k:"rantekostnader",l:"Räntekostnader",e:"kr"}
+  ]},
+  {grp:"Balansräkning",falt:[
+    {k:"eget_kapital",l:"Eget kapital",e:"kr"},
+    {k:"tillgangar",l:"Totala tillgångar",e:"kr"},
+    {k:"omsattningstillgangar",l:"Omsättningstillgångar (exkl lager)",e:"kr"},
+    {k:"rantebarande_skulder",l:"Räntebärande skulder",e:"kr"},
+    {k:"totala_skulder",l:"Totala skulder",e:"kr"},
+    {k:"kortfristiga_skulder",l:"Kortfristiga skulder",e:"kr"},
+    {k:"kassa",l:"Kassa och likvida medel",e:"kr"}
+  ]},
+  {grp:"Aktie & marknad",falt:[
+    {k:"aktiekurs",l:"Aktiekurs",e:"kr"},
+    {k:"antal_aktier",l:"Antal aktier",e:"st"},
+    {k:"utdelning_aktie",l:"Utdelning per aktie",e:"kr"},
+    {k:"borsvarde",l:"Börsvärde (om känt)",e:"kr"},
+    {k:"ev",l:"Enterprise Value (om känt)",e:"kr"}
+  ]},
+  {grp:"Kassaflöde & investering",falt:[
+    {k:"operativt_kf",l:"Operativt kassaflöde",e:"kr"},
+    {k:"capex",l:"Investeringar (CAPEX)",e:"kr"}
+  ]}
+];
+// Härledda värden som räknas fram automatiskt (så modeller kan använda dem utan egen inmatning)
+function bolagsdataHarled(d){
+  const v=Object.assign({},d);
+  // EBITDA
+  if(v.ebitda==null||v.ebitda==="")v.ebitda=(parseFloat(v.ebit)||0)+(parseFloat(v.avskrivningar)||0);
+  // Börsvärde
+  if((!v.borsvarde||v.borsvarde==="")&&v.aktiekurs&&v.antal_aktier)v.borsvarde=(parseFloat(v.aktiekurs)||0)*(parseFloat(v.antal_aktier)||0);
+  // EPS
+  if((!v.eps||v.eps==="")&&v.nettoresultat&&v.antal_aktier)v.eps=(parseFloat(v.nettoresultat)||0)/(parseFloat(v.antal_aktier)||1);
+  // EK per aktie
+  if((!v.ek_per_aktie||v.ek_per_aktie==="")&&v.eget_kapital&&v.antal_aktier)v.ek_per_aktie=(parseFloat(v.eget_kapital)||0)/(parseFloat(v.antal_aktier)||1);
+  // Nettoskuld
+  if(v.nettoskuld==null||v.nettoskuld==="")v.nettoskuld=(parseFloat(v.rantebarande_skulder)||0)-(parseFloat(v.kassa)||0);
+  // EV
+  if((!v.ev||v.ev==="")&&v.borsvarde!=null)v.ev=(parseFloat(v.borsvarde)||0)+(parseFloat(v.nettoskuld)||0);
+  return v;
+}
+function bolagsdataFor(companyId){
+  const rad=(bolagsdata||[]).find(b=>b.company_id===companyId);
+  return rad?rad.data||{}:{};
+}
+function renderBolagsdata(){
+  const box=document.getElementById("bolagsdata-content");if(!box)return;
+  if(!window._bdBolag)window._bdBolag="";
+  const d=window._bdBolag?bolagsdataFor(window._bdBolag):{};
+  box.innerHTML=`
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+        <h2 style="margin:0;font-size:20px">🏢 ${TR("bd_rubrik")||"Bolagsdata"}</h2>
+        <select id="bd-bolag" onchange="bdValjBolag()" style="font-size:13px"><option value="">${TR("bd_valj")||"Välj bolag"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${window._bdBolag===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+      </div>
+      <p style="font-size:12px;color:#999;margin-bottom:14px">${TR("bd_ingress")||"Fyll i bolagets grundsiffror en gång. De används automatiskt i beräkningsmodellerna och investeringsanalysen. EBITDA, EPS, börsvärde och nettoskuld räknas fram automatiskt."}</p>
+      ${!window._bdBolag?`<p style="color:#aaa;font-size:13px;padding:20px;text-align:center">${TR("bd_valj_forst")||"Välj ett bolag ovan för att fylla i dess siffror."}</p>`:`
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+        ${BOLAGSDATA_FALT.map(g=>`<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:600;margin-bottom:6px">${e(g.grp)}</div>
+          ${g.falt.map(f=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="flex:1;font-size:12px">${e(f.l)}</label>
+            <input type="number" step="any" id="bd-${f.k}" value="${d[f.k]??""}" style="width:120px;text-align:right;font-size:13px"><span style="font-size:11px;color:#999;width:20px">${e(f.e)}</span>
+          </div>`).join("")}
+        </div>`).join("")}
+      </div>
+      <div id="bd-harlett" style="background:var(--paper);border-radius:var(--r);padding:12px;margin-top:14px;font-size:12px;color:#666"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn btn-primary btn-sm" onclick="bdSpara()">💾 ${TR("bd_spara")||"Spara bolagsdata"}</button>
+        <span id="bd-status" style="align-self:center;color:var(--green);font-size:13px"></span>
+      </div>`}
+    </div>`;
+  if(window._bdBolag){setTimeout(()=>{BOLAGSDATA_FALT.forEach(g=>g.falt.forEach(f=>{const el=document.getElementById("bd-"+f.k);if(el)el.addEventListener("input",bdVisaHarlett);}));bdVisaHarlett();},20);}
+  setTimeout(()=>{try{const el=document.getElementById("bd-bolag");if(el)makeSelectSearchable(el);}catch(e){}},20);
+}
+function bdLasFalt(){const d={};BOLAGSDATA_FALT.forEach(g=>g.falt.forEach(f=>{const val=document.getElementById("bd-"+f.k)?.value;if(val!=="")d[f.k]=val;}));return d;}
+function bdVisaHarlett(){
+  const box=document.getElementById("bd-harlett");if(!box)return;
+  const v=bolagsdataHarled(bdLasFalt());
+  const rader=[];
+  const fmt=x=>Math.round(parseFloat(x)||0).toLocaleString("sv-SE");
+  if(v.ebitda)rader.push(`EBITDA: <strong>${fmt(v.ebitda)} kr</strong>`);
+  if(v.borsvarde)rader.push(`Börsvärde: <strong>${fmt(v.borsvarde)} kr</strong>`);
+  if(v.eps)rader.push(`EPS: <strong>${(parseFloat(v.eps)||0).toFixed(2).replace(".",",")} kr</strong>`);
+  if(v.nettoskuld!=null)rader.push(`Nettoskuld: <strong>${fmt(v.nettoskuld)} kr</strong>`);
+  if(v.ev)rader.push(`Enterprise Value: <strong>${fmt(v.ev)} kr</strong>`);
+  box.innerHTML=rader.length?("⚙️ "+(TR("bd_harlett")||"Beräknas automatiskt")+": "+rader.join(" · ")):"";
+}
+function bdValjBolag(){window._bdBolag=document.getElementById("bd-bolag")?.value||"";renderBolagsdata();}
+async function bdSpara(){
+  if(!window._bdBolag){toast(TR("bd_valj_forst")||"Välj ett bolag först");return;}
+  const d=bdLasFalt();
+  const r=await sb.from("bolagsdata").upsert({user_id:me.id,company_id:window._bdBolag,data:d,uppdaterad:new Date().toISOString()},{onConflict:"user_id,company_id"});
+  if(r.error){toast(r.error.message);return;}
+  await loadBolagsdata();
+  const st=document.getElementById("bd-status");if(st){st.textContent="✓ "+(TR("bd_sparad")||"Sparad");setTimeout(()=>{if(st)st.textContent="";},2000);}
+  toast(TR("bd_sparad")||"Bolagsdata sparad ✓");
+}
+let bolagsdata=[];
+async function loadBolagsdata(){try{const r=await sb.from("bolagsdata").select("*").eq("user_id",me.id);bolagsdata=r.data||[];}catch(e){bolagsdata=[];}}
+function renderBolagsanalys(){setBaTab(window._baTab||"bolagsdata");}
 function renderBerakningar(){
   const box=document.getElementById("berakningar-content");if(!box)return;
   if(!window._berModell)window._berModell=BERAKNINGS_MODELLER[0].id;
