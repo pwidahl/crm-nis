@@ -550,13 +550,11 @@ textarea{resize:vertical;min-height:68px}
     <div class="view" id="view-kcc"><div id="kcc-content"></div></div>
     <div class="view" id="view-bolagsanalys">
       <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;border-bottom:2px solid var(--cream);margin-bottom:14px;padding-bottom:0">
-        <button class="kb-tab active" id="ba-tab-bolagsdata" onclick="setBaTab('bolagsdata')">🏢 Bolagsdata</button>
+        <button class="kb-tab active" id="ba-tab-analys" onclick="setBaTab('analys')">📊 Bolagsanalys</button>
         <button class="kb-tab" id="ba-tab-berakningar" onclick="setBaTab('berakningar')">🧮 Beräkningsmodeller</button>
-        <button class="kb-tab" id="ba-tab-investering" onclick="setBaTab('investering')">📈 Investeringsanalys</button>
       </div>
-      <div id="ba-pane-bolagsdata" class="kb-pane active"><div id="bolagsdata-content"></div></div>
+      <div id="ba-pane-analys" class="kb-pane active"><div id="bolagsanalys-content"></div></div>
       <div id="ba-pane-berakningar" class="kb-pane"><div id="berakningar-content"></div></div>
-      <div id="ba-pane-investering" class="kb-pane"><div id="investering-content"></div></div>
     </div>
     <div class="view" id="view-finans"><div id="finans-content"></div></div>
     <div class="view" id="view-mellanhander"><div id="mellanhander-content"></div></div>
@@ -6194,11 +6192,11 @@ const BERAKNINGS_MODELLER=[
     kalla:{namn:"Investopedia – Break-Even",url:"https://www.investopedia.com/terms/b/breakevenpoint.asp"}}
 ];
 function setBaTab(tab){
+  if(tab!=="berakningar")tab="analys";
   window._baTab=tab;
-  ["bolagsdata","berakningar","investering"].forEach(t=>{const b=document.getElementById("ba-tab-"+t);if(b)b.classList.toggle("active",t===tab);const p=document.getElementById("ba-pane-"+t);if(p)p.classList.toggle("active",t===tab);});
-  if(tab==="bolagsdata"){try{renderBolagsdata();}catch(e){}}
+  ["analys","berakningar"].forEach(t=>{const b=document.getElementById("ba-tab-"+t);if(b)b.classList.toggle("active",t===tab);const p=document.getElementById("ba-pane-"+t);if(p)p.classList.toggle("active",t===tab);});
+  if(tab==="analys"){try{renderBaAnalys();}catch(e){}}
   if(tab==="berakningar"){try{renderBerakningar();}catch(e){}}
-  if(tab==="investering"){try{renderInvestering();}catch(e){}}
 }
 // ===== BOLAGSDATA (grundsiffror per bolag - matas in en gång, används överallt) =====
 const BOLAGSDATA_FALT=[
@@ -6249,65 +6247,203 @@ function bolagsdataHarled(d){
   if((!v.ev||v.ev==="")&&v.borsvarde!=null)v.ev=(parseFloat(v.borsvarde)||0)+(parseFloat(v.nettoskuld)||0);
   return v;
 }
-function bolagsdataFor(companyId){
-  const rad=(bolagsdata||[]).find(b=>b.company_id===companyId);
-  return rad?rad.data||{}:{};
+function bolagsdataPerioder(companyId){
+  return (bolagsdata||[]).filter(b=>b.company_id===companyId).slice().sort((a,b)=>String(a.datum||"").localeCompare(String(b.datum||"")));
 }
-function renderBolagsdata(){
-  const box=document.getElementById("bolagsdata-content");if(!box)return;
-  if(!window._bdBolag)window._bdBolag="";
-  const d=window._bdBolag?bolagsdataFor(window._bdBolag):{};
+function bolagsdataFor(companyId){
+  const per=bolagsdataPerioder(companyId);
+  return per.length?(per[per.length-1].data||{}):{};
+}
+// ===== SAMLAD BOLAGSANALYS: välj bolag + datum → fyll i grundsiffror → analys direkt → spara period → jämför över tid =====
+function baAnalysAv(data){
+  const h=bolagsdataHarled(data||{});
+  const v={};
+  ["aktiekurs","antal_aktier","eps","utdelning_aktie","ek_per_aktie","omsattning","ebit","ebitda","nettoresultat","omsattning_forra","eget_kapital","tillgangar","rantebarande_skulder","kassa"].forEach(k=>{v[k]=parseFloat(h[k])||0;});
+  return invBerakna(v);
+}
+function baPoang(rader){
+  const p=rader.reduce((s,r)=>s+(r.betyg==="gron"?2:r.betyg==="gul"?1:0),0);
+  return rader.length?Math.round(p/(rader.length*2)*100):0;
+}
+function renderBaAnalys(){
+  const box=document.getElementById("bolagsanalys-content");if(!box)return;
+  if(!window._baBolag)window._baBolag="";
+  if(!window._baData)window._baData={};
+  if(!window._baDatum)window._baDatum=new Date().toISOString().slice(0,10);
   box.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <h2 style="margin:0;font-size:20px">🏢 ${TR("bd_rubrik")||"Bolagsdata"}</h2>
-        <select id="bd-bolag" onchange="bdValjBolag()" style="font-size:13px"><option value="">${TR("bd_valj")||"Välj bolag"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${window._bdBolag===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+        <h2 style="margin:0;font-size:20px">📊 Bolagsanalys</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select id="ba-bolag" onchange="baValjBolag()" style="font-size:13px"><option value="">${TR("bd_valj")||"Välj bolag"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${window._baBolag===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+          <input type="date" id="ba-datum" value="${e(window._baDatum)}" onchange="window._baDatum=this.value" style="font-size:13px">
+          <input type="text" id="ba-periodnamn" value="${e(window._baPeriodNamn||"")}" oninput="window._baPeriodNamn=this.value" placeholder="t.ex. Bokslut 2025" style="font-size:13px;width:150px">
+        </div>
       </div>
-      <p style="font-size:12px;color:#999;margin-bottom:14px">${TR("bd_ingress")||"Fyll i bolagets grundsiffror en gång. De används automatiskt i beräkningsmodellerna och investeringsanalysen. EBITDA, EPS, börsvärde och nettoskuld räknas fram automatiskt."}</p>
-      ${!window._bdBolag?`<p style="color:#aaa;font-size:13px;padding:20px;text-align:center">${TR("bd_valj_forst")||"Välj ett bolag ovan för att fylla i dess siffror."}</p>`:`
+      <p style="font-size:12px;color:#999;margin-bottom:14px">Fyll i grundsiffrorna en gång per period – nyckeltal och bedömning räknas fram automatiskt här under. Spara perioden med datum för att bygga historik och se utvecklingen över tid.</p>
+      ${!window._baBolag?`<p style="color:#aaa;font-size:13px;padding:20px;text-align:center">${TR("bd_valj_forst")||"Välj ett bolag ovan för att fylla i dess siffror."}</p>`:`
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
         ${BOLAGSDATA_FALT.map(g=>`<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:600;margin-bottom:6px">${e(g.grp)}</div>
           ${g.falt.map(f=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
             <label style="flex:1;font-size:12px">${e(f.l)}</label>
-            <input type="number" step="any" id="bd-${f.k}" value="${d[f.k]??""}" style="width:120px;text-align:right;font-size:13px"><span style="font-size:11px;color:#999;width:20px">${e(f.e)}</span>
+            <input type="number" step="any" id="ba-f-${f.k}" value="${window._baData[f.k]??""}" oninput="baUppdatera()" style="width:120px;text-align:right;font-size:13px"><span style="font-size:11px;color:#999;width:20px">${e(f.e)}</span>
           </div>`).join("")}
         </div>`).join("")}
       </div>
-      <div id="bd-harlett" style="background:var(--paper);border-radius:var(--r);padding:12px;margin-top:14px;font-size:12px;color:#666"></div>
+      <div id="ba-harlett" style="background:var(--paper);border-radius:var(--r);padding:12px;margin-top:14px;font-size:12px;color:#666"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-        <button class="btn btn-primary btn-sm" onclick="bdSpara()">💾 ${TR("bd_spara")||"Spara bolagsdata"}</button>
-        <span id="bd-status" style="align-self:center;color:var(--green);font-size:13px"></span>
+        <button class="btn btn-primary btn-sm" onclick="baSparaPeriod()">💾 Spara period</button>
+        <button class="btn btn-outline btn-sm" onclick="window._baData={};window._baPeriodNamn='';window._baRadId=null;renderBaAnalys()">${TR("ber_rensa")||"Rensa"}</button>
+        <span id="ba-status" style="align-self:center;color:var(--green);font-size:13px"></span>
       </div>`}
+    </div>
+    <div id="ba-resultat"></div>
+    <div id="ba-utveckling" style="margin-top:16px"></div>
+    <div id="ba-perioder" style="margin-top:16px"></div>
+    <p style="font-size:11px;color:#aaa;margin-top:14px;font-style:italic">${TR("inv_disclaimer")||"⚠️ Detta är ett beslutsstöd, inte investeringsrådgivning. Tumreglerna är generella och varierar mellan branscher. Din egen bedömning avgör."}</p>`;
+  if(window._baBolag){baUppdatera();renderBaUtveckling();renderBaPerioder();}
+  setTimeout(()=>{try{const el=document.getElementById("ba-bolag");if(el)makeSelectSearchable(el);}catch(err){}},20);
+}
+function baLasFalt(){const d={};BOLAGSDATA_FALT.forEach(g=>g.falt.forEach(f=>{const val=document.getElementById("ba-f-"+f.k)?.value;if(val!==""&&val!=null)d[f.k]=val;}));return d;}
+function baValjBolag(){
+  window._baBolag=document.getElementById("ba-bolag")?.value||"";
+  window._baPeriodNamn="";
+  window._baDatum=new Date().toISOString().slice(0,10);
+  window._baRadId=null;
+  // Förifyll med senaste sparade period som utgångspunkt för ny period
+  window._baData=window._baBolag?Object.assign({},bolagsdataFor(window._baBolag)):{};
+  renderBaAnalys();
+}
+function baUppdatera(){
+  window._baData=baLasFalt();
+  const h=bolagsdataHarled(window._baData);
+  const fmtKr=x=>Math.round(parseFloat(x)||0).toLocaleString("sv-SE");
+  const hbox=document.getElementById("ba-harlett");
+  if(hbox){
+    const info=[];
+    if(h.ebitda)info.push(`EBITDA: <strong>${fmtKr(h.ebitda)} kr</strong>`);
+    if(h.borsvarde)info.push(`Börsvärde: <strong>${fmtKr(h.borsvarde)} kr</strong>`);
+    if(h.eps)info.push(`EPS: <strong>${(parseFloat(h.eps)||0).toFixed(2).replace(".",",")} kr</strong>`);
+    if(h.nettoskuld!=null&&h.nettoskuld!=="")info.push(`Nettoskuld: <strong>${fmtKr(h.nettoskuld)} kr</strong>`);
+    if(h.ev)info.push(`Enterprise Value: <strong>${fmtKr(h.ev)} kr</strong>`);
+    hbox.innerHTML=info.length?("⚙️ "+(TR("bd_harlett")||"Beräknas automatiskt")+": "+info.join(" · ")):"";
+  }
+  const box=document.getElementById("ba-resultat");if(!box)return;
+  const {rader,borsvarde,ev,nettoskuld}=baAnalysAv(window._baData);
+  if(!rader.length){box.innerHTML=`<p style="color:#aaa;font-size:13px;padding:10px">${TR("inv_fyll")||"Fyll i siffror ovan för att se analysen."}</p>`;return;}
+  const procent=baPoang(rader);
+  const gron=rader.filter(r=>r.betyg==="gron").length,gul=rader.filter(r=>r.betyg==="gul").length,rod=rader.filter(r=>r.betyg==="rod").length;
+  const samlad=procent>=70?{txt:TR("inv_stark")||"Stark profil",f:"var(--green)"}:procent>=45?{txt:TR("inv_blandad")||"Blandad profil",f:"var(--warm)"}:{txt:TR("inv_svag")||"Svag profil",f:"var(--red)"};
+  const fmt=(varde,enh)=>enh==="kr"?Math.round(varde).toLocaleString("sv-SE"):enh==="x"||enh==="%"?varde.toFixed(1).replace(".",","):varde.toLocaleString("sv-SE");
+  const fbg={gron:"#e8f5e9",gul:"#fff8e1",rod:"#ffebee"},fc={gron:"var(--green)",gul:"#b8860b",rod:"var(--red)"},fi={gron:"✓",gul:"!",rod:"✗"};
+  box.innerHTML=`
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream)">
+        <div style="text-align:center"><div style="font-size:34px;font-weight:800;color:${samlad.f};line-height:1">${procent}%</div><div style="font-size:12px;color:#888">${TR("inv_poang")||"Sammanvägt"}</div></div>
+        <div><div style="font-size:17px;font-weight:700;color:${samlad.f}">${samlad.txt}</div>
+          <div style="font-size:12px;color:#888;margin-top:3px">🟢 ${gron} ${TR("inv_starka")||"starka"} · 🟡 ${gul} ${TR("inv_neutrala")||"neutrala"} · 🔴 ${rod} ${TR("inv_svaga")||"svaga"}</div></div>
+        <div style="margin-left:auto;text-align:right;font-size:12px;color:#888">
+          <div>${TR("inv_borsvarde")||"Börsvärde"}: <strong>${Math.round(borsvarde).toLocaleString("sv-SE")} kr</strong></div>
+          <div>${TR("inv_ev")||"Enterprise Value"}: <strong>${Math.round(ev).toLocaleString("sv-SE")} kr</strong></div>
+          <div>${TR("inv_nettoskuld")||"Nettoskuld"}: <strong>${Math.round(nettoskuld).toLocaleString("sv-SE")} kr</strong></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
+        ${rader.map(r=>`<div style="background:${fbg[r.betyg]};border-radius:var(--r);padding:10px 12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:600">${e(r.namn)}</span><span style="font-size:16px;font-weight:700;color:${fc[r.betyg]}">${fmt(r.varde,r.enhet)} ${e(r.enhet)}</span></div>
+          <div style="font-size:11px;color:${fc[r.betyg]};margin-top:2px">${fi[r.betyg]} ${e(r.kommentar)}</div>
+          <div style="font-size:10px;color:#999;margin-top:1px">${TR("inv_tumregel")||"Tumregel"}: ${e(r.tumregel)}</div>
+        </div>`).join("")}
+      </div>
     </div>`;
-  if(window._bdBolag){setTimeout(()=>{BOLAGSDATA_FALT.forEach(g=>g.falt.forEach(f=>{const el=document.getElementById("bd-"+f.k);if(el)el.addEventListener("input",bdVisaHarlett);}));bdVisaHarlett();},20);}
-  setTimeout(()=>{try{const el=document.getElementById("bd-bolag");if(el)makeSelectSearchable(el);}catch(e){}},20);
 }
-function bdLasFalt(){const d={};BOLAGSDATA_FALT.forEach(g=>g.falt.forEach(f=>{const val=document.getElementById("bd-"+f.k)?.value;if(val!=="")d[f.k]=val;}));return d;}
-function bdVisaHarlett(){
-  const box=document.getElementById("bd-harlett");if(!box)return;
-  const v=bolagsdataHarled(bdLasFalt());
-  const rader=[];
-  const fmt=x=>Math.round(parseFloat(x)||0).toLocaleString("sv-SE");
-  if(v.ebitda)rader.push(`EBITDA: <strong>${fmt(v.ebitda)} kr</strong>`);
-  if(v.borsvarde)rader.push(`Börsvärde: <strong>${fmt(v.borsvarde)} kr</strong>`);
-  if(v.eps)rader.push(`EPS: <strong>${(parseFloat(v.eps)||0).toFixed(2).replace(".",",")} kr</strong>`);
-  if(v.nettoskuld!=null)rader.push(`Nettoskuld: <strong>${fmt(v.nettoskuld)} kr</strong>`);
-  if(v.ev)rader.push(`Enterprise Value: <strong>${fmt(v.ev)} kr</strong>`);
-  box.innerHTML=rader.length?("⚙️ "+(TR("bd_harlett")||"Beräknas automatiskt")+": "+rader.join(" · ")):"";
-}
-function bdValjBolag(){window._bdBolag=document.getElementById("bd-bolag")?.value||"";renderBolagsdata();}
-async function bdSpara(){
-  if(!window._bdBolag){toast(TR("bd_valj_forst")||"Välj ett bolag först");return;}
-  const d=bdLasFalt();
-  const r=await sb.from("bolagsdata").upsert({user_id:me.id,company_id:window._bdBolag,data:d,uppdaterad:new Date().toISOString()},{onConflict:"user_id,company_id"});
+async function baSparaPeriod(){
+  if(!window._baBolag){toast(TR("bd_valj_forst")||"Välj ett bolag först");return;}
+  const datum=document.getElementById("ba-datum")?.value||"";
+  if(!datum){toast("Sätt ett datum för perioden");return;}
+  window._baDatum=datum;
+  const d=baLasFalt();
+  const befintlig=(bolagsdata||[]).find(b=>b.company_id===window._baBolag&&String(b.datum||"").slice(0,10)===datum);
+  const payload={user_id:me.id,company_id:window._baBolag,data:d,datum,period_namn:window._baPeriodNamn||null,uppdaterad:new Date().toISOString()};
+  let r;
+  if(befintlig)r=await sb.from("bolagsdata").update(payload).eq("id",befintlig.id);
+  else r=await sb.from("bolagsdata").insert(payload);
   if(r.error){toast(r.error.message);return;}
   await loadBolagsdata();
-  const st=document.getElementById("bd-status");if(st){st.textContent="✓ "+(TR("bd_sparad")||"Sparad");setTimeout(()=>{if(st)st.textContent="";},2000);}
-  toast(TR("bd_sparad")||"Bolagsdata sparad ✓");
+  window._baRadId=null;
+  renderBaAnalys();
+  const st=document.getElementById("ba-status");if(st){st.textContent="✓ Period sparad";setTimeout(()=>{if(st)st.textContent="";},2000);}
+  toast("Period sparad ✓");
+}
+function baLaddaPeriod(id){
+  const rad=(bolagsdata||[]).find(b=>b.id===id);if(!rad)return;
+  window._baBolag=rad.company_id;
+  window._baData=Object.assign({},rad.data||{});
+  window._baDatum=String(rad.datum||"").slice(0,10)||new Date().toISOString().slice(0,10);
+  window._baPeriodNamn=rad.period_namn||"";
+  window._baRadId=rad.id;
+  renderBaAnalys();
+  toast("Period öppnad för redigering");
+}
+function baTaBortPeriod(id){
+  confirm2("Ta bort perioden?",async()=>{
+    await sb.from("bolagsdata").delete().eq("id",id);
+    await loadBolagsdata();
+    if(window._baRadId===id)window._baRadId=null;
+    renderBaAnalys();
+    toast(TR("ber_borttagen")||"Borttagen");
+  });
+}
+function renderBaPerioder(){
+  const box=document.getElementById("ba-perioder");if(!box)return;
+  const per=bolagsdataPerioder(window._baBolag).slice().reverse();
+  if(!per.length){box.innerHTML="";return;}
+  box.innerHTML=`<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#999;margin-bottom:8px">💾 Sparade perioder</div>`+per.map(p=>{
+    const an=baAnalysAv(p.data||{});
+    const proc=an.rader.length?baPoang(an.rader):null;
+    const f=proc==null?"#999":proc>=70?"var(--green)":proc>=45?"var(--warm)":"var(--red)";
+    return `<div class="week-row" style="display:flex;align-items:center;gap:10px;padding:9px 11px${window._baRadId===p.id?";outline:2px solid var(--accent)":""}">
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">📅 ${e(String(p.datum||"").slice(0,10))}${p.period_namn?" · "+e(p.period_namn):""}</div></div>
+      ${proc!=null?`<span style="font-weight:700;color:${f};font-size:13px">${proc}%</span>`:""}
+      <button class="btn-icon" title="Öppna för redigering" onclick="baLaddaPeriod('${p.id}')">↺</button>
+      <button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="baTaBortPeriod('${p.id}')">🗑</button>
+    </div>`;
+  }).join("");
+}
+function renderBaUtveckling(){
+  const box=document.getElementById("ba-utveckling");if(!box)return;
+  const per=bolagsdataPerioder(window._baBolag);
+  if(per.length<2){box.innerHTML="";return;}
+  const analyser=per.map(p=>({p,an:baAnalysAv(p.data||{})}));
+  const namnOrdning=[];
+  analyser.forEach(a=>a.an.rader.forEach(r=>{if(!namnOrdning.includes(r.namn))namnOrdning.push(r.namn);}));
+  if(!namnOrdning.length){box.innerHTML="";return;}
+  const fmt=(varde,enh)=>enh==="kr"?Math.round(varde).toLocaleString("sv-SE"):varde.toFixed(1).replace(".",",");
+  const fc={gron:"var(--green)",gul:"#b8860b",rod:"var(--red)"};
+  const kol=analyser.map(a=>`<th style="padding:6px 10px;text-align:right;font-size:12px;white-space:nowrap">${e(String(a.p.datum||"").slice(0,10))}${a.p.period_namn?`<br><span style="font-weight:400;color:#999">${e(a.p.period_namn)}</span>`:""}</th>`).join("");
+  const sista=analyser[analyser.length-1],nastSista=analyser[analyser.length-2];
+  const tabellRader=namnOrdning.map(namn=>{
+    const celler=analyser.map(a=>{
+      const r=a.an.rader.find(x=>x.namn===namn);
+      return `<td style="padding:6px 10px;text-align:right;font-size:13px;white-space:nowrap;${r?`color:${fc[r.betyg]};font-weight:600`:"color:#ccc"}">${r?fmt(r.varde,r.enhet)+" "+e(r.enhet):"–"}</td>`;
+    }).join("");
+    const rNu=sista.an.rader.find(x=>x.namn===namn),rFor=nastSista.an.rader.find(x=>x.namn===namn);
+    let diff="–";
+    if(rNu&&rFor){const delta=rNu.varde-rFor.varde;const pil=delta>0?"▲":delta<0?"▼":"→";diff=`${pil} ${fmt(Math.abs(delta),rNu.enhet)}`;}
+    return `<tr style="border-top:1px solid var(--cream)"><td style="padding:6px 10px;font-size:13px;font-weight:600;white-space:nowrap">${e(namn)}</td>${celler}<td style="padding:6px 10px;text-align:right;font-size:12px;color:#666;white-space:nowrap">${diff}</td></tr>`;
+  }).join("");
+  const sam=analyser.map(a=>{const proc=baPoang(a.an.rader);const f=proc>=70?"var(--green)":proc>=45?"var(--warm)":"var(--red)";return `<td style="padding:6px 10px;text-align:right;font-weight:800;color:${f}">${proc}%</td>`;}).join("");
+  box.innerHTML=`<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
+    <h3 style="margin:0 0 10px;font-size:16px">📈 Utveckling över tid</h3>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:collapse;min-width:100%">
+      <thead><tr><th style="padding:6px 10px;text-align:left;font-size:12px">Nyckeltal</th>${kol}<th style="padding:6px 10px;text-align:right;font-size:12px">Förändring</th></tr></thead>
+      <tbody>${tabellRader}<tr style="border-top:2px solid var(--cream)"><td style="padding:6px 10px;font-size:13px;font-weight:800">${TR("inv_poang")||"Sammanvägt"}</td>${sam}<td></td></tr></tbody>
+    </table></div>
+  </div>`;
 }
 let bolagsdata=[];
 async function loadBolagsdata(){try{const r=await sb.from("bolagsdata").select("*").eq("user_id",me.id);bolagsdata=r.data||[];}catch(e){bolagsdata=[];}}
-function renderBolagsanalys(){setBaTab(window._baTab||"bolagsdata");}
+function renderBolagsanalys(){setBaTab(window._baTab||"analys");}
 function berValjBolag(){
   window._berBolag=document.getElementById("ber-bolag-top")?.value||"";
   const aktiv=BERAKNINGS_MODELLER.find(m=>m.id===window._berModell);if(!aktiv)return;
@@ -6467,117 +6603,6 @@ function invBerakna(v){
   // Nettoskuld/EBITDA
   if(v.ebitda>0){const ne=nettoskuld/v.ebitda;add("Nettoskuld/EBITDA",ne,"x",ne<2?"gron":ne<4?"gul":"rod",ne<0?"Nettokassa":ne<2?"Låg skuld":ne<4?"Måttlig":"Hög skuldsättning","< 3 hälsosamt");}
   return {rader:r,borsvarde,ev,nettoskuld};
-}
-function renderInvestering(){
-  const box=document.getElementById("investering-content");if(!box)return;
-  if(!window._invData)window._invData={};
-  const grupper=[...new Set(INV_FALT.map(f=>f.grp))];
-  box.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <h2 style="margin:0;font-size:20px">📈 ${TR("inv_rubrik")||"Investeringsanalys"}</h2>
-        <select id="inv-bolag" onchange="invValjBolag()" style="font-size:13px"><option value="">${TR("inv_valj_bolag")||"Välj bolag (valfritt)"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}">${e(c.namn)}</option>`).join("")}</select>
-      </div>
-      <p style="font-size:12px;color:#999;margin-bottom:14px">${TR("inv_ingress")||"Fyll i bolagets nyckelsiffror så beräknas nyckeltalen och flaggas mot vedertagna tumregler."}</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
-        ${grupper.map(g=>`<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:600;margin-bottom:6px">${e(g)}</div>
-          ${INV_FALT.filter(f=>f.grp===g).map(f=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <label style="flex:1;font-size:12px">${e(f.l)}</label>
-            <input type="number" step="any" id="inv-${f.k}" value="${window._invData[f.k]??""}" oninput="invUppdatera()" style="width:110px;text-align:right;font-size:13px"><span style="font-size:11px;color:#999;width:20px">${e(f.e)}</span>
-          </div>`).join("")}
-        </div>`).join("")}
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-        <button class="btn btn-primary btn-sm" onclick="invSpara()">💾 ${TR("inv_spara")||"Spara analys"}</button>
-        <button class="btn btn-outline btn-sm" onclick="window._invData={};renderInvestering()">${TR("ber_rensa")||"Rensa"}</button>
-      </div>
-    </div>
-    <div id="inv-resultat"></div>
-    <div id="inv-sparade" style="margin-top:16px"></div>
-    <p style="font-size:11px;color:#aaa;margin-top:14px;font-style:italic">${TR("inv_disclaimer")||"⚠️ Detta är ett beslutsstöd, inte investeringsrådgivning. Tumreglerna är generella och varierar mellan branscher. Din egen bedömning avgör."}</p>`;
-  invUppdatera();
-  renderSparadeInv();
-  setTimeout(()=>{try{const el=document.getElementById("inv-bolag");if(el)makeSelectSearchable(el);}catch(e){}},20);
-}
-function invUppdatera(){
-  const v={};INV_FALT.forEach(f=>{v[f.k]=parseFloat(document.getElementById("inv-"+f.k)?.value)||0;window._invData[f.k]=document.getElementById("inv-"+f.k)?.value||"";});
-  const box=document.getElementById("inv-resultat");if(!box)return;
-  const {rader,borsvarde,ev,nettoskuld}=invBerakna(v);
-  if(!rader.length){box.innerHTML=`<p style="color:#aaa;font-size:13px;padding:10px">${TR("inv_fyll")||"Fyll i siffror ovan för att se analysen."}</p>`;return;}
-  // Poäng
-  const poang=rader.reduce((s,r)=>s+(r.betyg==="gron"?2:r.betyg==="gul"?1:0),0);
-  const maxPoang=rader.length*2;
-  const procent=maxPoang?Math.round(poang/maxPoang*100):0;
-  const gron=rader.filter(r=>r.betyg==="gron").length,gul=rader.filter(r=>r.betyg==="gul").length,rod=rader.filter(r=>r.betyg==="rod").length;
-  const samlad=procent>=70?{txt:TR("inv_stark")||"Stark profil",f:"var(--green)"}:procent>=45?{txt:TR("inv_blandad")||"Blandad profil",f:"var(--warm)"}:{txt:TR("inv_svag")||"Svag profil",f:"var(--red)"};
-  const fmt=(varde,enh)=>enh==="kr"?Math.round(varde).toLocaleString("sv-SE"):enh==="x"||enh==="%"?varde.toFixed(1).replace(".",","):varde.toLocaleString("sv-SE");
-  const fbg={gron:"#e8f5e9",gul:"#fff8e1",rod:"#ffebee"},fc={gron:"var(--green)",gul:"#b8860b",rod:"var(--red)"},fi={gron:"✓",gul:"!",rod:"✗"};
-  box.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream)">
-        <div style="text-align:center"><div style="font-size:34px;font-weight:800;color:${samlad.f};line-height:1">${procent}%</div><div style="font-size:12px;color:#888">${TR("inv_poang")||"Sammanvägt"}</div></div>
-        <div><div style="font-size:17px;font-weight:700;color:${samlad.f}">${samlad.txt}</div>
-          <div style="font-size:12px;color:#888;margin-top:3px">🟢 ${gron} ${TR("inv_starka")||"starka"} · 🟡 ${gul} ${TR("inv_neutrala")||"neutrala"} · 🔴 ${rod} ${TR("inv_svaga")||"svaga"}</div></div>
-        <div style="margin-left:auto;text-align:right;font-size:12px;color:#888">
-          <div>${TR("inv_borsvarde")||"Börsvärde"}: <strong>${Math.round(borsvarde).toLocaleString("sv-SE")} kr</strong></div>
-          <div>${TR("inv_ev")||"Enterprise Value"}: <strong>${Math.round(ev).toLocaleString("sv-SE")} kr</strong></div>
-          <div>${TR("inv_nettoskuld")||"Nettoskuld"}: <strong>${Math.round(nettoskuld).toLocaleString("sv-SE")} kr</strong></div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
-        ${rader.map(r=>`<div style="background:${fbg[r.betyg]};border-radius:var(--r);padding:10px 12px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:600">${e(r.namn)}</span><span style="font-size:16px;font-weight:700;color:${fc[r.betyg]}">${fmt(r.varde,r.enhet)} ${e(r.enhet)}</span></div>
-          <div style="font-size:11px;color:${fc[r.betyg]};margin-top:2px">${fi[r.betyg]} ${e(r.kommentar)}</div>
-          <div style="font-size:10px;color:#999;margin-top:1px">${TR("inv_tumregel")||"Tumregel"}: ${e(r.tumregel)}</div>
-        </div>`).join("")}
-      </div>
-    </div>`;
-}
-function invValjBolag(){
-  const id=document.getElementById("inv-bolag")?.value;if(!id)return;
-  // Hämta grunddata från bolagsdata (Alternativ A)
-  const d=bolagsdataHarled(bolagsdataFor(id));
-  let hittade=0;
-  INV_FALT.forEach(f=>{if(d[f.k]!=null&&d[f.k]!==""){window._invData[f.k]=d[f.k];hittade++;}});
-  if(hittade){renderInvestering();setTimeout(()=>{const el=document.getElementById("inv-bolag");if(el)el.value=id;},40);toast(`${TR("inv_fran_bolagsdata")||"Hämtat från bolagsdata"} (${hittade} ${TR("inv_falt")||"fält"}) ✓`);return;}
-  // Annars: ladda ev. senaste sparade analys
-  const sparad=(bolagsanalyser||[]).filter(b=>b.typ==="investering"&&b.company_id===id).sort((a,b)=>new Date(b.skapad)-new Date(a.skapad))[0];
-  if(sparad&&sparad.indata){window._invData=sparad.indata;renderInvestering();setTimeout(()=>{const el=document.getElementById("inv-bolag");if(el)el.value=id;},40);toast(TR("inv_laddad")||"Senaste analys laddad");}
-}
-async function invSpara(){
-  const companyId=document.getElementById("inv-bolag")?.value||null;
-  const co=companyId?companies.find(c=>c.id===companyId):null;
-  const v={};INV_FALT.forEach(f=>{v[f.k]=document.getElementById("inv-"+f.k)?.value||"";});
-  const vNum={};INV_FALT.forEach(f=>{vNum[f.k]=parseFloat(v[f.k])||0;});
-  const res=invBerakna(vNum);
-  const namn=(co?co.namn:"Analys")+" – "+new Date().toLocaleDateString("sv-SE");
-  const r=await sb.from("bolagsanalyser").insert({user_id:me.id,company_id:companyId,typ:"investering",namn,indata:v,resultat:res.rader});
-  if(r.error){toast(r.error.message);return;}
-  await loadBolagsanalyser();renderSparadeInv();toast(TR("inv_sparad")||"Analys sparad ✓");
-}
-function renderSparadeInv(){
-  const box=document.getElementById("inv-sparade");if(!box)return;
-  const lista=(bolagsanalyser||[]).filter(b=>b.typ==="investering");
-  if(!lista.length){box.innerHTML="";return;}
-  box.innerHTML=`<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#999;margin-bottom:8px">💾 ${TR("inv_sparade")||"Sparade analyser"}</div>`+lista.map(b=>{
-    const co=b.company_id?companies.find(c=>c.id===b.company_id):null;
-    return `<div class="week-row" style="display:flex;align-items:center;gap:10px;padding:9px 11px">
-      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${co?"🏢 "+e(co.namn):e(b.namn||"")}</div><div style="font-size:12px;color:#888">${e((b.skapad||"").slice(0,10))}</div></div>
-      <button class="btn-icon" title="Ladda in" onclick="invLadda('${b.id}')">↺</button>
-      <button class="btn-icon" style="color:var(--red)" title="Ta bort" onclick="invTaBort('${b.id}')">🗑</button>
-    </div>`;
-  }).join("");
-}
-function invLadda(id){
-  const b=(bolagsanalyser||[]).find(x=>x.id===id);if(!b)return;
-  window._invData=b.indata||{};renderInvestering();
-  if(b.company_id)setTimeout(()=>{const el=document.getElementById("inv-bolag");if(el)el.value=b.company_id;},40);
-}
-async function invTaBort(id){
-  confirm2(TR("inv_ta_bort")||"Ta bort analysen?",async()=>{
-    await sb.from("bolagsanalyser").delete().eq("id",id);
-    await loadBolagsanalyser();renderInvestering();toast(TR("ber_borttagen")||"Borttagen");
-  });
 }
 let bolagsanalyser=[];
 async function loadBolagsanalyser(){try{const r=await sb.from("bolagsanalyser").select("*").eq("user_id",me.id).order("skapad",{ascending:false});bolagsanalyser=r.data||[];}catch(e){bolagsanalyser=[];}}
