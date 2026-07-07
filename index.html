@@ -6271,36 +6271,33 @@ function renderBaAnalys(){
   if(!window._baData)window._baData={};
   if(!window._baDatum)window._baDatum=new Date().toISOString().slice(0,10);
   box.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <h2 style="margin:0;font-size:20px">📊 Bolagsanalys</h2>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select id="ba-bolag" onchange="baValjBolag()" style="font-size:13px"><option value="">${TR("bd_valj")||"Välj bolag"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${window._baBolag===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
-          <input type="date" id="ba-datum" value="${e(window._baDatum)}" onchange="window._baDatum=this.value" style="font-size:13px">
-          <input type="text" id="ba-periodnamn" value="${e(window._baPeriodNamn||"")}" oninput="window._baPeriodNamn=this.value" placeholder="t.ex. Bokslut 2025" style="font-size:13px;width:150px">
-        </div>
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0;font-size:16px;flex-shrink:0">📊 Bolagsanalys</h2>
+        <select id="ba-bolag" onchange="baValjBolag()" style="font-size:12px;flex:1;min-width:130px"><option value="">${TR("bd_valj")||"Välj bolag"}</option>${companies.slice().sort((a,b)=>String(a.namn).localeCompare(String(b.namn),"sv")).map(c=>`<option value="${c.id}"${window._baBolag===c.id?" selected":""}>${e(c.namn)}</option>`).join("")}</select>
+        <input type="date" id="ba-datum" value="${e(window._baDatum)}" onchange="window._baDatum=this.value" style="font-size:12px;padding:4px 6px">
+        <input type="text" id="ba-periodnamn" value="${e(window._baPeriodNamn||"")}" oninput="window._baPeriodNamn=this.value" placeholder="Bokslut 2025" style="font-size:12px;width:110px;padding:4px 6px">
       </div>
-      <p style="font-size:12px;color:#999;margin-bottom:14px">Fyll i grundsiffrorna en gång per period – nyckeltal och bedömning räknas fram automatiskt här under. Spara perioden med datum för att bygga historik och se utvecklingen över tid.</p>
-      ${!window._baBolag?`<p style="color:#aaa;font-size:13px;padding:20px;text-align:center">${TR("bd_valj_forst")||"Välj ett bolag ovan för att fylla i dess siffror."}</p>`:`
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
-        ${BOLAGSDATA_FALT.map(g=>`<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:600;margin-bottom:6px">${e(g.grp)}</div>
-          ${g.falt.map(f=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <label style="flex:1;font-size:12px">${e(f.l)}</label>
-            <input type="number" step="any" id="ba-f-${f.k}" value="${window._baData[f.k]??""}" oninput="baUppdatera()" style="width:120px;text-align:right;font-size:13px"><span style="font-size:11px;color:#999;width:20px">${e(f.e)}</span>
+      ${!window._baBolag?`<p style="color:#aaa;font-size:12px;padding:14px;text-align:center;margin:0">${TR("bd_valj_forst")||"Välj ett bolag ovan för att fylla i dess siffror."}</p>`:`
+      ${BOLAGSDATA_FALT.map(g=>`
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);font-weight:600;margin:10px 0 5px">${e(g.grp)}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px">
+          ${g.falt.map(f=>`<div>
+            <label style="display:block;font-size:10px;color:#888;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(f.l)} <span style="color:#bbb">(${e(f.e)})</span></label>
+            <input type="number" step="any" id="ba-f-${f.k}" value="${window._baData[f.k]??""}" oninput="baUppdatera()" style="width:100%;box-sizing:border-box;text-align:right;font-size:12px;padding:5px 6px">
           </div>`).join("")}
         </div>`).join("")}
-      </div>
-      <div id="ba-harlett" style="background:var(--paper);border-radius:var(--r);padding:12px;margin-top:14px;font-size:12px;color:#666"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-        <button class="btn btn-primary btn-sm" onclick="baSparaPeriod()">💾 Spara period</button>
-        <button class="btn btn-outline btn-sm" onclick="window._baData={};window._baPeriodNamn='';window._baRadId=null;renderBaAnalys()">${TR("ber_rensa")||"Rensa"}</button>
-        <span id="ba-status" style="align-self:center;color:var(--green);font-size:13px"></span>
+      <div id="ba-harlett" style="background:var(--paper);border-radius:var(--r);padding:8px 10px;margin-top:10px;font-size:11px;color:#666"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="baSparaPeriod()" style="font-size:12px">💾 Spara period</button>
+        <button class="btn btn-outline btn-sm" onclick="window._baData={};window._baPeriodNamn='';window._baRadId=null;renderBaAnalys()" style="font-size:12px">${TR("ber_rensa")||"Rensa"}</button>
+        <span id="ba-status" style="color:var(--green);font-size:12px"></span>
       </div>`}
     </div>
     <div id="ba-resultat"></div>
-    <div id="ba-utveckling" style="margin-top:16px"></div>
-    <div id="ba-perioder" style="margin-top:16px"></div>
-    <p style="font-size:11px;color:#aaa;margin-top:14px;font-style:italic">${TR("inv_disclaimer")||"⚠️ Detta är ett beslutsstöd, inte investeringsrådgivning. Tumreglerna är generella och varierar mellan branscher. Din egen bedömning avgör."}</p>`;
+    <div id="ba-utveckling" style="margin-top:12px"></div>
+    <div id="ba-perioder" style="margin-top:12px"></div>
+    <p style="font-size:10px;color:#aaa;margin-top:10px;font-style:italic">${TR("inv_disclaimer")||"⚠️ Detta är ett beslutsstöd, inte investeringsrådgivning. Tumreglerna är generella och varierar mellan branscher. Din egen bedömning avgör."}</p>`;
   if(window._baBolag){baUppdatera();renderBaUtveckling();renderBaPerioder();}
   setTimeout(()=>{try{const el=document.getElementById("ba-bolag");if(el)makeSelectSearchable(el);}catch(err){}},20);
 }
@@ -6330,29 +6327,30 @@ function baUppdatera(){
   }
   const box=document.getElementById("ba-resultat");if(!box)return;
   const {rader,borsvarde,ev,nettoskuld}=baAnalysAv(window._baData);
-  if(!rader.length){box.innerHTML=`<p style="color:#aaa;font-size:13px;padding:10px">${TR("inv_fyll")||"Fyll i siffror ovan för att se analysen."}</p>`;return;}
+  if(!rader.length){box.innerHTML=`<p style="color:#aaa;font-size:12px;padding:8px">${TR("inv_fyll")||"Fyll i siffror ovan för att se analysen."}</p>`;return;}
   const procent=baPoang(rader);
   const gron=rader.filter(r=>r.betyg==="gron").length,gul=rader.filter(r=>r.betyg==="gul").length,rod=rader.filter(r=>r.betyg==="rod").length;
   const samlad=procent>=70?{txt:TR("inv_stark")||"Stark profil",f:"var(--green)"}:procent>=45?{txt:TR("inv_blandad")||"Blandad profil",f:"var(--warm)"}:{txt:TR("inv_svag")||"Svag profil",f:"var(--red)"};
   const fmt=(varde,enh)=>enh==="kr"?Math.round(varde).toLocaleString("sv-SE"):enh==="x"||enh==="%"?varde.toFixed(1).replace(".",","):varde.toLocaleString("sv-SE");
   const fbg={gron:"#e8f5e9",gul:"#fff8e1",rod:"#ffebee"},fc={gron:"var(--green)",gul:"#b8860b",rod:"var(--red)"},fi={gron:"✓",gul:"!",rod:"✗"};
   box.innerHTML=`
-    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream)">
-        <div style="text-align:center"><div style="font-size:34px;font-weight:800;color:${samlad.f};line-height:1">${procent}%</div><div style="font-size:12px;color:#888">${TR("inv_poang")||"Sammanvägt"}</div></div>
-        <div><div style="font-size:17px;font-weight:700;color:${samlad.f}">${samlad.txt}</div>
-          <div style="font-size:12px;color:#888;margin-top:3px">🟢 ${gron} ${TR("inv_starka")||"starka"} · 🟡 ${gul} ${TR("inv_neutrala")||"neutrala"} · 🔴 ${rod} ${TR("inv_svaga")||"svaga"}</div></div>
-        <div style="margin-left:auto;text-align:right;font-size:12px;color:#888">
-          <div>${TR("inv_borsvarde")||"Börsvärde"}: <strong>${Math.round(borsvarde).toLocaleString("sv-SE")} kr</strong></div>
-          <div>${TR("inv_ev")||"Enterprise Value"}: <strong>${Math.round(ev).toLocaleString("sv-SE")} kr</strong></div>
-          <div>${TR("inv_nettoskuld")||"Nettoskuld"}: <strong>${Math.round(nettoskuld).toLocaleString("sv-SE")} kr</strong></div>
+    <div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:14px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--cream)">
+        <div style="text-align:center"><div style="font-size:24px;font-weight:800;color:${samlad.f};line-height:1">${procent}%</div><div style="font-size:10px;color:#888">${TR("inv_poang")||"Sammanvägt"}</div></div>
+        <div style="min-width:0"><div style="font-size:14px;font-weight:700;color:${samlad.f}">${samlad.txt}</div>
+          <div style="font-size:11px;color:#888">🟢 ${gron} · 🟡 ${gul} · 🔴 ${rod}</div></div>
+        <div style="margin-left:auto;text-align:right;font-size:10px;color:#888;line-height:1.5">
+          <div>${TR("inv_borsvarde")||"Börsvärde"}: <strong>${Math.round(borsvarde).toLocaleString("sv-SE")}</strong></div>
+          <div>EV: <strong>${Math.round(ev).toLocaleString("sv-SE")}</strong></div>
+          <div>${TR("inv_nettoskuld")||"Nettoskuld"}: <strong>${Math.round(nettoskuld).toLocaleString("sv-SE")}</strong></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
-        ${rader.map(r=>`<div style="background:${fbg[r.betyg]};border-radius:var(--r);padding:10px 12px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:600">${e(r.namn)}</span><span style="font-size:16px;font-weight:700;color:${fc[r.betyg]}">${fmt(r.varde,r.enhet)} ${e(r.enhet)}</span></div>
-          <div style="font-size:11px;color:${fc[r.betyg]};margin-top:2px">${fi[r.betyg]} ${e(r.kommentar)}</div>
-          <div style="font-size:10px;color:#999;margin-top:1px">${TR("inv_tumregel")||"Tumregel"}: ${e(r.tumregel)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+        ${rader.map(r=>`<div style="background:${fbg[r.betyg]};border-radius:var(--r);padding:7px 9px">
+          <div style="font-size:11px;font-weight:600">${e(r.namn)}</div>
+          <div style="font-size:14px;font-weight:700;color:${fc[r.betyg]}">${fmt(r.varde,r.enhet)} ${e(r.enhet)}</div>
+          <div style="font-size:10px;color:${fc[r.betyg]}">${fi[r.betyg]} ${e(r.kommentar)}</div>
+          <div style="font-size:9px;color:#999">${e(r.tumregel)}</div>
         </div>`).join("")}
       </div>
     </div>`;
@@ -6420,24 +6418,24 @@ function renderBaUtveckling(){
   if(!namnOrdning.length){box.innerHTML="";return;}
   const fmt=(varde,enh)=>enh==="kr"?Math.round(varde).toLocaleString("sv-SE"):varde.toFixed(1).replace(".",",");
   const fc={gron:"var(--green)",gul:"#b8860b",rod:"var(--red)"};
-  const kol=analyser.map(a=>`<th style="padding:6px 10px;text-align:right;font-size:12px;white-space:nowrap">${e(String(a.p.datum||"").slice(0,10))}${a.p.period_namn?`<br><span style="font-weight:400;color:#999">${e(a.p.period_namn)}</span>`:""}</th>`).join("");
+  const kol=analyser.map(a=>`<th style="padding:4px 8px;text-align:right;font-size:11px;white-space:nowrap">${e(String(a.p.datum||"").slice(0,10))}${a.p.period_namn?`<br><span style="font-weight:400;color:#999">${e(a.p.period_namn)}</span>`:""}</th>`).join("");
   const sista=analyser[analyser.length-1],nastSista=analyser[analyser.length-2];
   const tabellRader=namnOrdning.map(namn=>{
     const celler=analyser.map(a=>{
       const r=a.an.rader.find(x=>x.namn===namn);
-      return `<td style="padding:6px 10px;text-align:right;font-size:13px;white-space:nowrap;${r?`color:${fc[r.betyg]};font-weight:600`:"color:#ccc"}">${r?fmt(r.varde,r.enhet)+" "+e(r.enhet):"–"}</td>`;
+      return `<td style="padding:4px 8px;text-align:right;font-size:12px;white-space:nowrap;${r?`color:${fc[r.betyg]};font-weight:600`:"color:#ccc"}">${r?fmt(r.varde,r.enhet)+" "+e(r.enhet):"–"}</td>`;
     }).join("");
     const rNu=sista.an.rader.find(x=>x.namn===namn),rFor=nastSista.an.rader.find(x=>x.namn===namn);
     let diff="–";
     if(rNu&&rFor){const delta=rNu.varde-rFor.varde;const pil=delta>0?"▲":delta<0?"▼":"→";diff=`${pil} ${fmt(Math.abs(delta),rNu.enhet)}`;}
-    return `<tr style="border-top:1px solid var(--cream)"><td style="padding:6px 10px;font-size:13px;font-weight:600;white-space:nowrap">${e(namn)}</td>${celler}<td style="padding:6px 10px;text-align:right;font-size:12px;color:#666;white-space:nowrap">${diff}</td></tr>`;
+    return `<tr style="border-top:1px solid var(--cream)"><td style="padding:4px 8px;font-size:12px;font-weight:600;white-space:nowrap">${e(namn)}</td>${celler}<td style="padding:4px 8px;text-align:right;font-size:11px;color:#666;white-space:nowrap">${diff}</td></tr>`;
   }).join("");
-  const sam=analyser.map(a=>{const proc=baPoang(a.an.rader);const f=proc>=70?"var(--green)":proc>=45?"var(--warm)":"var(--red)";return `<td style="padding:6px 10px;text-align:right;font-weight:800;color:${f}">${proc}%</td>`;}).join("");
+  const sam=analyser.map(a=>{const proc=baPoang(a.an.rader);const f=proc>=70?"var(--green)":proc>=45?"var(--warm)":"var(--red)";return `<td style="padding:4px 8px;text-align:right;font-weight:800;color:${f}">${proc}%</td>`;}).join("");
   box.innerHTML=`<div style="background:#fff;border:1px solid var(--cream);border-radius:var(--r);padding:18px">
-    <h3 style="margin:0 0 10px;font-size:16px">📈 Utveckling över tid</h3>
+    <h3 style="margin:0 0 8px;font-size:14px">📈 Utveckling över tid</h3>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="border-collapse:collapse;min-width:100%">
-      <thead><tr><th style="padding:6px 10px;text-align:left;font-size:12px">Nyckeltal</th>${kol}<th style="padding:6px 10px;text-align:right;font-size:12px">Förändring</th></tr></thead>
-      <tbody>${tabellRader}<tr style="border-top:2px solid var(--cream)"><td style="padding:6px 10px;font-size:13px;font-weight:800">${TR("inv_poang")||"Sammanvägt"}</td>${sam}<td></td></tr></tbody>
+      <thead><tr><th style="padding:4px 8px;text-align:left;font-size:11px">Nyckeltal</th>${kol}<th style="padding:4px 8px;text-align:right;font-size:11px">Förändring</th></tr></thead>
+      <tbody>${tabellRader}<tr style="border-top:2px solid var(--cream)"><td style="padding:4px 8px;font-size:12px;font-weight:800">${TR("inv_poang")||"Sammanvägt"}</td>${sam}<td></td></tr></tbody>
     </table></div>
   </div>`;
 }
